@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas import Item, ItemCreate, ItemUpdate
+from app.schemas.schemas import Item, ItemCreate, ItemUpdate
 from typing import List
 
 router = APIRouter()
