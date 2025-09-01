@@ -110,22 +110,3 @@ async def mongodb_get_messages():
             }
         ]
     }
-
-@router.post("/test-connection")
-async def test_mongodb_connection():
-    """Test MongoDB database connection"""
-    try:
-        # Mock connection test
-        mongodb_url = os.getenv("MONGODB_URL")
-        if not mongodb_url:
-            return {"status": "error", "message": "MONGODB_URL not configured"}
-        
-        # In real implementation, test actual connection
-        return {
-            "status": "success",
-            "message": "MongoDB connection successful",
-            "database": "mongodb",
-            "timestamp": "2025-09-01T00:00:00"
-        }
-    except Exception as e:
-        return {"status": "error", "message": f"Connection failed: {str(e)}"}

@@ -58,22 +58,3 @@ async def mysql_get_orders():
             {"id": 1, "buyer_id": 2, "seller_id": 1, "item_id": 1, "amount": 899.99, "status": "completed"}
         ]
     }
-
-@router.post("/test-connection")
-async def test_mysql_connection():
-    """Test MySQL database connection"""
-    try:
-        # Mock connection test
-        database_url = os.getenv("DATABASE_URL")
-        if not database_url:
-            return {"status": "error", "message": "DATABASE_URL not configured"}
-        
-        # In real implementation, test actual connection
-        return {
-            "status": "success",
-            "message": "MySQL connection successful",
-            "database": "mysql",
-            "timestamp": "2025-09-01T00:00:00"
-        }
-    except Exception as e:
-        return {"status": "error", "message": f"Connection failed: {str(e)}"}

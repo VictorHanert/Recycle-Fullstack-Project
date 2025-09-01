@@ -50,7 +50,7 @@ class Item(ItemBase):
     class Config:
         from_attributes = True
 
-# Token schemas
+# Token schemas for authentication
 class Token(BaseModel):
     access_token: str
     token_type: str

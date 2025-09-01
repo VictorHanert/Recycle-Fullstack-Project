@@ -119,24 +119,3 @@ async def neo4j_get_shortest_path(from_user_id: int, to_user_id: int):
         }
     }
 
-@router.post("/test-connection")
-async def test_neo4j_connection():
-    """Test Neo4j database connection"""
-    try:
-        # Mock connection test
-        neo4j_url = os.getenv("NEO4J_URL")
-        neo4j_user = os.getenv("NEO4J_USER")
-        
-        if not neo4j_url or not neo4j_user:
-            return {"status": "error", "message": "Neo4j credentials not configured"}
-        
-        # In real implementation, test actual connection
-        return {
-            "status": "success",
-            "message": "Neo4j connection successful",
-            "database": "neo4j",
-            "user": neo4j_user,
-            "timestamp": "2025-09-01T00:00:00"
-        }
-    except Exception as e:
-        return {"status": "error", "message": f"Connection failed: {str(e)}"}

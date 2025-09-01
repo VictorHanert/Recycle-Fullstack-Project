@@ -9,7 +9,7 @@ from app.routers import auth, items, admin, mysql, mongodb, neo4j
 load_dotenv()
 
 app = FastAPI(
-    title="Marketplace API",
+    title="Marketplace Fullstack",
     description="A marketplace platform where users can list and sell items",
     version="1.0.0"
 )
