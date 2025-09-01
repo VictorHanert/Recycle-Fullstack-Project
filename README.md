@@ -1,15 +1,30 @@
-# Start everything
+# Fullstack Project
+React
+Python
+FastAPI
+
+MySQL
+MongoDB
+Neo4j
+
+## Getting Started
+
+### Start the Application
+
+```bash
+# Start all services (frontend, backend, and databases)
 docker-compose up
 
-# Or start just frontend + backend (without databases if they're already running)
+# Start only frontend and backend (if databases are already running)
 docker-compose up frontend backend
 
-# Stop everything
+# Stop all services
 docker-compose down
+```
 
+## Access Points
 
-# Check:
-Access your frontend: http://localhost:5173
-Access your backend API: http://localhost:8000
-Check backend health: http://localhost:8000/health
-Test API endpoint: http://localhost:8000/api/test
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **Health Check**: http://localhost:8000/health
+- **Test Endpoint**: http://localhost:8000/api/test
