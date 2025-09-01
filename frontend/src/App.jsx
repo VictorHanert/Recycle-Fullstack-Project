@@ -4,7 +4,13 @@ import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
 
 // Import pages
-import { Home, Login, Register, Dashboard, Admin, ProductDetail, Products } from "./pages";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
+import ProductDetail from "./pages/ProductDetail";
+import Products from "./pages/Products";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
