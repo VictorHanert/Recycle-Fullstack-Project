@@ -13,7 +13,7 @@ fake_users_db = {
         "username": "admin",
         "email": "admin@marketplace.com",
         "full_name": "Admin User",
-        "hashed_password": "fake_hashed_password",
+        "hashed_password": "hashed_admin",
         "is_active": True,
         "is_admin": True
     }
@@ -66,7 +66,12 @@ async def login_user(user_credentials: UserLogin):
     # Mock token creation (replace with real JWT token)
     access_token = f"fake_token_for_{user['username']}"
     
-    return Token(access_token=access_token, token_type="bearer")
+    return Token(
+        access_token=access_token, 
+        token_type="bearer",
+        is_admin=user["is_admin"],
+        username=user["username"]
+    )
 
 @router.get("/me", response_model=User)
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
