@@ -24,23 +24,23 @@ class User(UserBase):
     class Config:
         from_attributes = True
 
-# Item schemas
-class ItemBase(BaseModel):
+# Product schemas
+class ProductBase(BaseModel):
     title: str
     description: Optional[str] = None
     price: float
     category: str
 
-class ItemCreate(ItemBase):
+class ProductCreate(ProductBase):
     pass
 
-class ItemUpdate(BaseModel):
+class ProductUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
     category: Optional[str] = None
 
-class Item(ItemBase):
+class Product(ProductBase):
     id: int
     seller_id: int
     is_sold: bool = False

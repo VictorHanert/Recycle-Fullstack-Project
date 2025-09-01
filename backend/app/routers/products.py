@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas.schemas import Item, ItemCreate, ItemUpdate
+from app.schemas.schemas import Product, ProductCreate, ProductUpdate
 from typing import List
 
 router = APIRouter()
@@ -37,40 +37,34 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
     # In real implementation, decode JWT token here
     return 1  # Mock user ID
 
-@router.get("/", response_model=List[Item])
+@router.get("/", response_model=List[Product])
 async def get_all_products():
     """Get all available products"""
     products = []
     for product_data in fake_products_db.values():
         if not product_data["is_sold"]:  # Only show unsold products
-            products.append(Item(**product_data))
-    return products
-    """Get all available products"""
-    products = []
-    for product_data in fake_products_db.values():
-        if not product_data["is_sold"]:  # Only show unsold products
-            products.append(Item(**product_data))
+            products.append(Product(**product_data))
     return products
 
-@router.get("/my-products", response_model=List[Item])
+@router.get("/my-products", response_model=List[Product])
 async def get_my_products(current_user_id: int = Depends(get_current_user_id)):
-    """Get items posted by the current user"""
+    """Get products posted by the current user"""
     user_products = []
     for product_data in fake_products_db.values():
         if product_data["seller_id"] == current_user_id:
-            user_products.append(Item(**product_data))
+            user_products.append(Product(**product_data))
     return user_products
 
-@router.get("/{product_id}", response_model=Item)
+@router.get("/{product_id}", response_model=Product)
 async def get_product(product_id: int):
     """Get a specific product by ID"""
     product = fake_products_db.get(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return Item(**product)
+        return Product(**product)
 
-@router.post("/", response_model=Item)
-async def create_product(product: ItemCreate, current_user_id: int = Depends(get_current_user_id)):
+@router.post("/", response_model=Product)
+async def create_product(product: ProductCreate, current_user_id: int = Depends(get_current_user_id)):
     """Create a new product listing"""
     product_id = max(fake_products_db.keys()) + 1 if fake_products_db else 1
     
@@ -87,10 +81,10 @@ async def create_product(product: ItemCreate, current_user_id: int = Depends(get
     }
     
     fake_products_db[product_id] = new_product
-    return Item(**new_product)
+    return Product(**new_product)
 
-@router.put("/{product_id}", response_model=Item)
-async def update_product(product_id: int, product_update: ItemUpdate, current_user_id: int = Depends(get_current_user_id)):
+@router.put("/{product_id}", response_model=Product)
+async def update_product(product_id: int, product_update: ProductUpdate, current_user_id: int = Depends(get_current_user_id)):
     """Update an existing product"""
     product = fake_products_db.get(product_id)
     if not product:
@@ -106,8 +100,8 @@ async def update_product(product_id: int, product_update: ItemUpdate, current_us
     
     product["updated_at"] = "2025-09-01T00:00:00"
     fake_products_db[product_id] = product
-    
-    return Item(**product)
+
+    return Product(**product)
 
 @router.delete("/{product_id}")
 async def delete_product(product_id: int, current_user_id: int = Depends(get_current_user_id)):
@@ -138,11 +132,11 @@ async def mark_product_sold(product_id: int, current_user_id: int = Depends(get_
     
     return {"message": "Product marked as sold"}
 
-@router.get("/category/{category}", response_model=List[Item])
+@router.get("/category/{category}", response_model=List[Product])
 async def get_products_by_category(category: str):
     """Get products by category"""
     products = []
     for product_data in fake_products_db.values():
         if not product_data["is_sold"] and product_data["category"].lower() == category.lower():
-            products.append(Item(**product_data))
+            products.append(Product(**product_data))
     return products

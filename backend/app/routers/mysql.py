@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 import os
-from typing import Dict, Any
 
 router = APIRouter()
 
@@ -34,7 +33,7 @@ async def mysql_get_users():
         ]
     }
 
-@router.get("/items")
+@router.get("/products")
 async def mysql_get_products():
     """Get products from MySQL (structured data)"""
     # Mock data - replace with actual SQLAlchemy queries
@@ -55,6 +54,6 @@ async def mysql_get_orders():
         "message": "MySQL orders endpoint",
         "note": "This would contain transaction/order data",
         "mock_data": [
-            {"id": 1, "buyer_id": 2, "seller_id": 1, "item_id": 1, "amount": 899.99, "status": "completed"}
+            {"id": 1, "buyer_id": 2, "seller_id": 1, "product_id": 1, "amount": 899.99, "status": "completed"}
         ]
     }

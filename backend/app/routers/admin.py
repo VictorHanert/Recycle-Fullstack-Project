@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas.schemas import User, Item
+from app.schemas.schemas import User, Product
 from typing import List
 
 router = APIRouter()
@@ -40,14 +40,14 @@ async def admin_get_all_users(admin_user = Depends(get_current_admin_user)):
         ))
     return users
 
-@router.get("/items", response_model=List[Item])
+@router.get("/products", response_model=List[Product])
 async def admin_get_all_products(admin_user = Depends(get_current_admin_user)):
     """Admin: Get all products (including sold ones)"""
     from app.routers.products import fake_products_db
     
     products = []
     for product_data in fake_products_db.values():
-        products.append(Item(**product_data))
+        products.append(Product(**product_data))
     return products
 
 @router.delete("/users/{user_id}")
@@ -77,52 +77,3 @@ async def admin_delete_user(user_id: int, admin_user = Depends(get_current_admin
     else:
         raise HTTPException(status_code=404, detail="User not found")
 
-@router.delete("/items/{item_id}")
-async def admin_delete_item(item_id: int, admin_user = Depends(get_current_admin_user)):
-    """Admin: Delete any item"""
-    from app.routers.items import fake_items_db
-    
-    if item_id not in fake_items_db:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    del fake_items_db[item_id]
-    return {"message": "Item deleted successfully"}
-
-@router.patch("/users/{user_id}/toggle-active")
-async def admin_toggle_user_active(user_id: int, admin_user = Depends(get_current_admin_user)):
-    """Admin: Toggle user active status"""
-    from app.routers.auth import fake_users_db
-    
-    # Find user by ID
-    user_to_toggle = None
-    for user_data in fake_users_db.values():
-        if user_data["id"] == user_id:
-            user_to_toggle = user_data
-            break
-    
-    if not user_to_toggle:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user_to_toggle["is_active"] = not user_to_toggle["is_active"]
-    status_text = "activated" if user_to_toggle["is_active"] else "deactivated"
-    
-    return {"message": f"User {status_text} successfully"}
-
-@router.get("/stats")
-async def admin_get_stats(admin_user = Depends(get_current_admin_user)):
-    """Admin: Get platform statistics"""
-    from app.routers.auth import fake_users_db
-    from app.routers.items import fake_items_db
-    
-    total_users = len(fake_users_db)
-    active_users = sum(1 for user in fake_users_db.values() if user["is_active"])
-    total_items = len(fake_items_db)
-    sold_items = sum(1 for item in fake_items_db.values() if item["is_sold"])
-    
-    return {
-        "total_users": total_users,
-        "active_users": active_users,
-        "total_items": total_items,
-        "available_items": total_items - sold_items,
-        "sold_items": sold_items
-    }
