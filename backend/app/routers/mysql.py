@@ -35,12 +35,12 @@ async def mysql_get_users():
     }
 
 @router.get("/items")
-async def mysql_get_items():
-    """Get items from MySQL (structured data)"""
+async def mysql_get_products():
+    """Get products from MySQL (structured data)"""
     # Mock data - replace with actual SQLAlchemy queries
     return {
-        "message": "MySQL items endpoint",
-        "note": "This would contain item listings from MySQL database",
+        "message": "MySQL products endpoint",
+        "note": "This would contain product listings from MySQL database",
         "mock_data": [
             {"id": 1, "title": "iPhone 15", "price": 899.99, "seller_id": 1},
             {"id": 2, "title": "Vintage Bike", "price": 250.00, "seller_id": 1}

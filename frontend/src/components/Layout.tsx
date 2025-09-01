@@ -1,68 +1,68 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+
 interface LayoutProps {
   children: React.ReactNode;
-  currentView: string;
-  onViewChange: (view: string) => void;
-  isLoggedIn: boolean;
-  isAdmin: boolean;
-  onLogin: () => void;
-  onLogout: () => void;
-  username?: string;
 }
 
-const Layout = ({ 
-  children, 
-  currentView, 
-  onViewChange, 
-  isLoggedIn, 
-  isAdmin, 
-  onLogin, 
-  onLogout, 
-  username 
-}: LayoutProps) => {
+const Layout = ({ children }: LayoutProps) => {
+  const { isLoggedIn, isAdmin, username, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const isActiveRoute = (path: string) => {
+    return location.pathname === path;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">
+            <Link to="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
               MyMarketplace
-            </h1>
+            </Link>
             
             <div className="flex items-center space-x-4">
               {/* Navigation */}
               <div className="flex space-x-1">
-                <button
-                  onClick={() => onViewChange('status')}
+                <Link
+                  to="/"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    currentView === 'status'
+                    isActiveRoute('/')
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  Status
-                </button>
-                <button
-                  onClick={() => onViewChange('items')}
+                  Home
+                </Link>
+                <Link
+                  to="/products"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    currentView === 'items'
+                    isActiveRoute('/products')
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  Items
-                </button>
+                  Products
+                </Link>
                 {isAdmin && (
-                  <button
-                    onClick={() => onViewChange('admin')}
+                  <Link
+                    to="/admin"
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      currentView === 'admin'
+                      isActiveRoute('/admin')
                         ? 'bg-red-100 text-red-700'
                         : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     Admin
-                  </button>
+                  </Link>
                 )}
               </div>
 
@@ -75,19 +75,19 @@ const Layout = ({
                       {isAdmin && <span className="text-red-600 font-medium"> (Admin)</span>}
                     </span>
                     <button
-                      onClick={onLogout}
+                      onClick={handleLogout}
                       className="px-3 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
                     >
                       Logout
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={onLogin}
+                  <Link
+                    to="/login"
                     className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
                     Login
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>

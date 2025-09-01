@@ -3,14 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 
-from app.routers import auth, items, admin, mysql, mongodb, neo4j
+from app.routers import auth, products, admin, mysql, mongodb, neo4j
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI(
     title="Marketplace Fullstack",
-    description="A marketplace platform where users can list and sell items",
+    description="A marketplace platform where users can list and sell products",
     version="1.0.0"
 )
 
@@ -25,7 +25,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(items.router, prefix="/api/items", tags=["Items"])
+app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(mysql.router, prefix="/api/mysql", tags=["MySQL"])
 app.include_router(mongodb.router, prefix="/api/mongodb", tags=["MongoDB"])

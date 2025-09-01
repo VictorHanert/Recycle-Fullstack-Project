@@ -23,10 +23,10 @@ interface AdminItem {
 
 const Admin = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [items, setItems] = useState<AdminItem[]>([]);
+  const [products, setProducts] = useState<AdminItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'items'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'products'>('users');
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -37,15 +37,19 @@ const Admin = () => {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const [usersResponse, itemsResponse] = await Promise.all([
+        const [usersResponse, productsResponse] = await Promise.all([
           api.get('/api/admin/users', { headers }),
           api.get('/api/admin/items', { headers })
         ]);
 
         setUsers(usersResponse.data);
-        setItems(itemsResponse.data);
-      } catch (err: any) {
-        setError(err.response?.data?.detail || 'Failed to fetch admin data');
+        setProducts(productsResponse.data);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Failed to fetch admin data');
+        }
       } finally {
         setLoading(false);
       }
@@ -93,14 +97,14 @@ const Admin = () => {
                 Users ({users.length})
               </button>
               <button
-                onClick={() => setActiveTab('items')}
+                onClick={() => setActiveTab('products')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'items'
+                  activeTab === 'products'
                     ? 'border-red-500 text-red-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Items ({items.length})
+                Products ({products.length})
               </button>
             </nav>
           </div>
@@ -162,28 +166,28 @@ const Admin = () => {
             </div>
           )}
 
-          {/* Items Tab */}
-          {activeTab === 'items' && (
+          {/* Products Tab */}
+          {activeTab === 'products' && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((item) => (
-                <div key={item.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {products.map((product: AdminItem) => (
+                <div key={product.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">{item.title}</h4>
+                    <h4 className="text-sm font-medium text-gray-900 truncate">{product.title}</h4>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      item.is_available 
+                      product.is_available 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {item.is_available ? 'Available' : 'Sold'}
+                      {product.is_available ? 'Available' : 'Sold'}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">{product.description}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-green-600">
-                      ${item.price.toFixed(2)}
+                      ${product.price.toFixed(2)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Seller: {item.seller_id}
+                      Seller: {product.seller_id}
                     </span>
                   </div>
                 </div>

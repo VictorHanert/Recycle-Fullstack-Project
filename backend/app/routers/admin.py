@@ -41,14 +41,14 @@ async def admin_get_all_users(admin_user = Depends(get_current_admin_user)):
     return users
 
 @router.get("/items", response_model=List[Item])
-async def admin_get_all_items(admin_user = Depends(get_current_admin_user)):
-    """Admin: Get all items (including sold ones)"""
-    from app.routers.items import fake_items_db
+async def admin_get_all_products(admin_user = Depends(get_current_admin_user)):
+    """Admin: Get all products (including sold ones)"""
+    from app.routers.products import fake_products_db
     
-    items = []
-    for item_data in fake_items_db.values():
-        items.append(Item(**item_data))
-    return items
+    products = []
+    for product_data in fake_products_db.values():
+        products.append(Item(**product_data))
+    return products
 
 @router.delete("/users/{user_id}")
 async def admin_delete_user(user_id: int, admin_user = Depends(get_current_admin_user)):

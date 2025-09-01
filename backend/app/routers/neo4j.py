@@ -43,31 +43,31 @@ async def neo4j_get_user_relationships():
 
 @router.get("/recommendations/{user_id}")
 async def neo4j_get_recommendations(user_id: int):
-    """Get item recommendations based on graph relationships"""
+    """Get product recommendations based on graph relationships"""
     # Mock data - replace with actual Neo4j recommendation algorithms
     return {
         "message": f"Neo4j recommendations for user {user_id}",
-        "note": "This would use graph algorithms to recommend items",
+        "note": "This would use graph algorithms to recommend products",
         "mock_data": {
-            "recommended_items": [
-                {"item_id": 3, "title": "MacBook Pro", "score": 0.85, "reason": "Similar to items you've viewed"},
-                {"item_id": 4, "title": "Wireless Headphones", "score": 0.72, "reason": "Bought by users with similar interests"}
+            "recommended_products": [
+                {"product_id": 3, "title": "MacBook Pro", "score": 0.85, "reason": "Similar to products you've viewed"},
+                {"product_id": 4, "title": "Wireless Headphones", "score": 0.72, "reason": "Bought by users with similar interests"}
             ],
             "recommended_sellers": [
-                {"seller_id": 3, "username": "tech_seller", "score": 0.68, "reason": "Sells items you're interested in"}
+                {"seller_id": 3, "username": "tech_seller", "score": 0.68, "reason": "Sells products you're interested in"}
             ]
         }
     }
 
-@router.get("/item-connections/{item_id}")
-async def neo4j_get_item_connections(item_id: int):
-    """Get related items and connections"""
+@router.get("/product-connections/{product_id}")
+async def neo4j_get_product_connections(product_id: int):
+    """Get related products and connections"""
     # Mock data - replace with actual Neo4j queries
     return {
-        "message": f"Neo4j item connections for item {item_id}",
-        "note": "This would show how items are connected through categories, buyers, etc.",
+        "message": f"Neo4j product connections for product {product_id}",
+        "note": "This would show how products are connected through categories, buyers, etc.",
         "mock_data": {
-            "related_items": [
+            "related_products": [
                 {"item_id": 2, "relationship": "SAME_CATEGORY", "strength": 0.9},
                 {"item_id": 5, "relationship": "VIEWED_TOGETHER", "strength": 0.75}
             ],
