@@ -52,8 +52,7 @@ async def root():
     """Root endpoint"""
     return {
         "message": "Marketplace API is running!",
-        "status": "healthy",
-        "version": "1.0.0"
+        "status": "healthy"
     }
 
 @app.get("/health")
@@ -63,7 +62,6 @@ async def health_check():
         "status": "healthy",
         "environment": settings.environment,
         "message": "Marketplace API is running!",
-        "version": "1.0.0",
         "databases": {
             "mysql_configured": bool(settings.database_url)
         }

@@ -23,20 +23,45 @@ function Register() {
     });
   };
 
+  const validateForm = () => {
+    const errors = [];
+    
+    if (!formData.username) {
+      errors.push("Username is required");
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.push("Username can only contain letters, numbers, and underscores");
+    } else if (formData.username.length < 3) {
+      errors.push("Username must be at least 3 characters long");
+    }
+    
+    if (!formData.email) {
+      errors.push("Email is required");
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push("Please enter a valid email address");
+    }
+    
+    if (!formData.password) {
+      errors.push("Password is required");
+    } else if (formData.password.length < 8) {
+      errors.push("Password must be at least 8 characters long");
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      errors.push("Passwords do not match");
+    }
+    
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     setIsLoading(true);
 
-    if (!formData.username || !formData.email || !formData.password) {
-      setError("Please fill in all required fields");
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(". "));
       setIsLoading(false);
       return;
     }
@@ -100,6 +125,7 @@ function Register() {
                 placeholder="Choose a username"
                 required
               />
+              <p className="mt-1 text-xs text-gray-500">Only letters, numbers, and underscores. At least 3 characters.</p>
             </div>
 
             <div>
@@ -147,6 +173,7 @@ function Register() {
                 placeholder="Enter your password"
                 required
               />
+              <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters long.</p>
             </div>
             
             <div>

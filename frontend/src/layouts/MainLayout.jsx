@@ -8,7 +8,7 @@ function MainLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Navigation */}
+        {/* Navigation Bar */}
         <Navbar user={user} isAuthenticated={isAuthenticated} onLogout={logout} />
 
         {/* Main content */}

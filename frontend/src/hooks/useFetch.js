@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 
-export function useFetch(url, options = {}) {
+// API configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export function useFetch(endpoint, options = {}) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,6 +14,9 @@ export function useFetch(url, options = {}) {
         setLoading(true);
         setError(null);
         
+        // Construct full URL
+        const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+        
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
@@ -20,7 +26,17 @@ export function useFetch(url, options = {}) {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          
+          if (response.status === 422 && errorData.details) {
+            // Handle validation errors
+            const errorMessages = errorData.details.map(detail => detail.message).join('. ');
+            throw new Error(errorMessages);
+          } else if (errorData.message) {
+            throw new Error(errorData.message);
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
 
         const result = await response.json();
@@ -32,14 +48,51 @@ export function useFetch(url, options = {}) {
       }
     };
 
-    if (url) {
+    if (endpoint) {
       fetchData();
     }
-  }, [url]);
+  }, [endpoint, JSON.stringify(options)]);
 
-  const refetch = () => {
-    if (url) {
-      fetchData();
+  const refetch = async () => {
+    if (endpoint) {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          
+          const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...options.headers
+            },
+            ...options
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            if (response.status === 422 && errorData.details) {
+              const errorMessages = errorData.details.map(detail => detail.message).join('. ');
+              throw new Error(errorMessages);
+            } else if (errorData.message) {
+              throw new Error(errorData.message);
+            } else {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+          }
+
+          const result = await response.json();
+          setData(result);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      await fetchData();
     }
   };
 

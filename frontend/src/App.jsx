@@ -14,17 +14,39 @@ import Products from "./pages/Products";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-lg">Loading...</div>
+    </div>;
+  }
+  
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
 // Admin Route wrapper component  
 function AdminRoute({ children }) {
-  const { isAdmin } = useAuth();
-  return isAdmin ? children : <Navigate to="/" />;
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-lg">Loading...</div>
+    </div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return children;
 }
 
-// App routes component (needs to be inside AuthProvider)
+// App routes component
 function AppRoutes() {
   return (
     <Router>

@@ -1,41 +1,42 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useFetch } from "../hooks/useFetch";
 
 function Products() {
   const navigate = useNavigate();
+  const { data: products, loading, error, refetch } = useFetch('/api/products');
 
-  // Mock products data - in real app, this would come from API
-  const [products] = useState([
-    {
-      id: 1,
-      name: "Wireless Bluetooth Headphones",
-      owner: "John Doe",
-      location: "København V",
-      price: 45,
-      description:
-        "High-quality wireless headphones with noise cancellation and 30-hour battery life. Perfect for music lovers and professionals who need crystal-clear audio quality.",
-      image: "https://placehold.co/600x400.png",
-      sold: false,
-      likes: 2,
-    },
-    {
-      id: 2,
-      name: "Smart Watch Series 8",
-      owner: "Jane Smith",
-      location: "Aarhus",
-      price: 299,
-      description:
-        "The latest Smart Watch with health tracking, GPS, and customizable watch faces.",
-      image: "https://placehold.co/600x400.png",
-      sold: false,
-      likes: 5,
-    }
-  ]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const handleProductClick = (product) => {
     navigate(`/product/${product.id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="px-4 flex justify-center items-center min-h-64">
+        <div className="text-lg text-gray-600">Loading products...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          Error loading products: {error}
+        </div>
+        <button 
+          onClick={refetch}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4">
@@ -71,13 +72,19 @@ function Products() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onClick={handleProductClick}
-          />
-        ))}
+        {products && products.length > 0 ? (
+          products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={handleProductClick}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-500 text-lg">No products found.</p>
+          </div>
+        )}
       </div>
 
       {/* Load More Button */}

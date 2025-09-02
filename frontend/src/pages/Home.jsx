@@ -7,7 +7,7 @@ function Home() {
       <div className="mb-12 text-center">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to MyMarketplace</h1>
         <p className="text-xl text-gray-600 mb-8">
-          Discover and browse our collection of products to the best prices.
+          Discover and browse our collection of used items at the best prices.
         </p>
         <div className="space-x-4">
           <Link
@@ -25,24 +25,24 @@ function Home() {
         </div>
       </div>
       
-      {/* Feature Cards */}
+      {/* Category Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-          <div className="text-3xl mb-4">🎧</div>
-          <h3 className="text-xl font-semibold mb-2">Premium Audio</h3>
-          <p className="text-gray-600">High-quality headphones and speakers for the ultimate audio experience.</p>
+          <div className="text-3xl mb-4">📱</div>
+          <h3 className="text-xl font-semibold mb-2">Electronics</h3>
+          <p className="text-gray-600">Find quality used phones, laptops, gaming consoles and other electronics at great prices.</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-          <div className="text-3xl mb-4">⌚</div>
-          <h3 className="text-xl font-semibold mb-2">Smart Devices</h3>
-          <p className="text-gray-600">Stay connected with our range of smart watches and fitness trackers.</p>
+          <div className="text-3xl mb-4">👕</div>
+          <h3 className="text-xl font-semibold mb-2">Clothes</h3>
+          <p className="text-gray-600">Discover pre-loved fashion items, designer pieces and everyday wear for all styles.</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-          <div className="text-3xl mb-4">💻</div>
-          <h3 className="text-xl font-semibold mb-2">Tech Accessories</h3>
-          <p className="text-gray-600">Essential accessories to enhance your tech setup and productivity.</p>
+          <div className="text-3xl mb-4">🪑</div>
+          <h3 className="text-xl font-semibold mb-2">Furniture</h3>
+          <p className="text-gray-600">Browse used furniture pieces to furnish your home with unique and affordable finds.</p>
         </div>
       </div>
 
@@ -50,7 +50,7 @@ function Home() {
       <div className="bg-gray-100 rounded-lg p-8 text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Ready to Start Shopping?</h2>
         <p className="text-gray-600 mb-6">
-          Join us today and explore our wide range of products tailored to your needs.
+          Join us today and explore our wide range of used items tailored to your needs.
         </p>
         <Link
           to="/products"

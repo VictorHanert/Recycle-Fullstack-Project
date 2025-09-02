@@ -1,14 +1,25 @@
 import { useAuth } from "../hooks/useAuth";
+import { useFetch } from "../hooks/useFetch";
 
 function Admin() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  
+  // Fetch users data with authentication
+  const { data: users, loading: usersLoading, error: usersError } = useFetch('/api/admin/users', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  // Fetch products data  
+  const { data: products, loading: productsLoading, error: productsError } = useFetch('/api/products');
 
   return (
     <div className="px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Admin Panel</h1>
         <p className="text-lg text-gray-600">
-          Welcome to the admin dashboard, {user?.name || user?.email}!
+          Welcome to the admin dashboard, {user?.full_name || user?.username}!
         </p>
       </div>
       
@@ -16,22 +27,34 @@ function Admin() {
         {/* Stats Cards */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-900">Total Users</h3>
-          <p className="text-3xl font-bold text-blue-600">1,234</p>
+          {usersLoading ? (
+            <p className="text-3xl font-bold text-gray-400">Loading...</p>
+          ) : usersError ? (
+            <p className="text-sm text-red-600">Error loading</p>
+          ) : (
+            <p className="text-3xl font-bold text-blue-600">{users?.length || 0}</p>
+          )}
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-900">Total Products</h3>
-          <p className="text-3xl font-bold text-green-600">567</p>
+          {productsLoading ? (
+            <p className="text-3xl font-bold text-gray-400">Loading...</p>
+          ) : productsError ? (
+            <p className="text-sm text-red-600">Error loading</p>
+          ) : (
+            <p className="text-3xl font-bold text-green-600">{products?.length || 0}</p>
+          )}
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-900">Total Orders</h3>
-          <p className="text-3xl font-bold text-purple-600">890</p>
+          <p className="text-3xl font-bold text-blue-600">890</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-900">Revenue</h3>
-          <p className="text-3xl font-bold text-yellow-600">$12,345</p>
+          <p className="text-3xl font-bold text-green-600">$12,345</p>
         </div>
       </div>
       

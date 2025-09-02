@@ -19,8 +19,8 @@ function Navbar({ user, onLogout }) {
                 <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
                   Dashboard
                 </a>
-                {user.role === "admin" && (
-                  <a href="/admin" className="text-red-700 hover:text-gray-900">
+                {user.is_admin && (
+                  <a href="/admin" className="text-red-700 hover:text-red-900">
                     Admin
                   </a>
                 )}

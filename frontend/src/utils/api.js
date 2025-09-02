@@ -40,7 +40,17 @@ export const apiClient = {
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      
+      if (response.status === 422 && errorData.details) {
+        // Handle validation errors
+        const errorMessages = errorData.details.map(detail => detail.message).join('. ');
+        throw new Error(errorMessages);
+      } else if (errorData.message) {
+        throw new Error(errorData.message);
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
     
     return response.json();
@@ -103,17 +113,17 @@ export const authAPI = {
 
 // Products API calls
 export const productsAPI = {
-  getAll: () => apiClient.get('/products'),
-  getById: (id) => apiClient.get(`/products/${id}`),
-  create: (product) => apiClient.post('/products', product),
-  update: (id, product) => apiClient.put(`/products/${id}`, product),
-  delete: (id) => apiClient.delete(`/products/${id}`)
+  getAll: () => apiClient.get('/api/products'),
+  getById: (id) => apiClient.get(`/api/products/${id}`),
+  create: (product) => apiClient.post('/api/products', product),
+  update: (id, product) => apiClient.put(`/api/products/${id}`, product),
+  delete: (id) => apiClient.delete(`/api/products/${id}`)
 };
 
 // Users API calls (admin only)
 export const usersAPI = {
-  getAll: () => apiClient.get('/admin/users'),
-  getById: (id) => apiClient.get(`/admin/users/${id}`),
-  update: (id, userData) => apiClient.put(`/admin/users/${id}`, userData),
-  delete: (id) => apiClient.delete(`/admin/users/${id}`)
+  getAll: () => apiClient.get('/api/admin/users'),
+  getById: (id) => apiClient.get(`/api/admin/users/${id}`),
+  update: (id, userData) => apiClient.put(`/api/admin/users/${id}`, userData),
+  delete: (id) => apiClient.delete(`/api/admin/users/${id}`)
 };

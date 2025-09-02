@@ -32,18 +32,14 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      const { access_token, username, is_admin } = response;
+      const { access_token, user } = response;
       
       // Store token in localStorage
       localStorage.setItem('token', access_token);
       setToken(access_token);
       
-      // Set user data
-      const userData = {
-        username,
-        is_admin
-      };
-      setUser(userData);
+      // Set user data from the user object
+      setUser(user);
       
       return { success: true };
     } catch (error) {
