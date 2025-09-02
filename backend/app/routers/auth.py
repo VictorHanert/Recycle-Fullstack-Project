@@ -1,114 +1,55 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas.schemas import UserCreate, UserLogin, User, Token
-from typing import List
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+from datetime import timedelta
+
+from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, UserUpdate
+from app.services.auth_service import AuthService
+from app.db.mysql import get_db
+from app.models.user import User
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
-security = HTTPBearer()
 
-# Mock user database (replace with real database later)
-fake_users_db = {
-    "admin": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@marketplace.com",
-        "full_name": "Admin User",
-        "hashed_password": "hashed_admin",
-        "is_active": True,
-        "is_admin": True
-    }
-}
-
-@router.post("/register", response_model=User)
-async def register_user(user: UserCreate):
+# Authentication endpoints
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """Register a new user"""
-    if user.username in fake_users_db:
-        raise HTTPException(
-            status_code=400,
-            detail="Username already registered"
-        )
-    
-    # Mock user creation (replace with real database logic)
-    new_user = {
-        "id": len(fake_users_db) + 1,
-        "username": user.username,
-        "email": user.email,
-        "full_name": user.full_name,
-        "hashed_password": f"hashed_{user.password}",
-        "is_active": True,
-        "is_admin": False
-    }
-    
-    fake_users_db[user.username] = new_user
-    
-    return User(
-        id=new_user["id"],
-        username=new_user["username"],
-        email=new_user["email"],
-        full_name=new_user["full_name"],
-        is_active=new_user["is_active"],
-        is_admin=new_user["is_admin"],
-        created_at="2025-09-01T00:00:00"
-    )
+    db_user = AuthService.register_user(db, user)
+    return db_user
 
 @router.post("/login", response_model=Token)
-async def login_user(user_credentials: UserLogin):
-    """Login user and return access token"""
-    user = fake_users_db.get(user_credentials.username)
+async def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    """Login user and return JWT token"""
+    # Authenticate user
+    db_user = AuthService.authenticate_user(db, user.username, user.password)
     
-    if not user or user["hashed_password"] != f"hashed_{user_credentials.password}":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Mock token creation (replace with real JWT token)
-    access_token = f"fake_token_for_{user['username']}"
+    # Create access token
+    access_token_expires = timedelta(minutes=30)
+    access_token = AuthService.create_access_token(
+        data={"sub": db_user.username}, 
+        expires_delta=access_token_expires
+    )
     
     return Token(
-        access_token=access_token, 
+        access_token=access_token,
         token_type="bearer",
-        is_admin=user["is_admin"],
-        username=user["username"]
+        expires_in=30 * 60,  # 30 minutes in seconds
+        user=UserResponse.model_validate(db_user)
     )
 
-@router.get("/me", response_model=User)
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user information"""
-    # Mock token verification (replace with real JWT verification)
-    username = credentials.credentials.replace("fake_token_for_", "")
-    
-    user = fake_users_db.get(username)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    return User(
-        id=user["id"],
-        username=user["username"],
-        email=user["email"],
-        full_name=user["full_name"],
-        is_active=user["is_active"],
-        is_admin=user["is_admin"],
-        created_at="2025-09-01T00:00:00"
-    )
+# User profile endpoints
+@router.get("/me", response_model=UserResponse)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    """Get current user info"""
+    return current_user
 
-@router.get("/users", response_model=List[User])
-async def get_all_users():
-    """Get all users (for testing purposes)"""
-    users = []
-    for user_data in fake_users_db.values():
-        users.append(User(
-            id=user_data["id"],
-            username=user_data["username"],
-            email=user_data["email"],
-            full_name=user_data["full_name"],
-            is_active=user_data["is_active"],
-            is_admin=user_data["is_admin"],
-            created_at="2025-09-01T00:00:00"
-        ))
-    return users
+@router.put("/me", response_model=UserResponse)
+async def update_user_me(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user info"""
+    updated_user = AuthService.update_user(db, current_user.id, user_update)
+    return updated_user
+

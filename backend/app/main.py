@@ -1,21 +1,39 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from dotenv import load_dotenv
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, mysql, mongodb, neo4j
-
-# Load environment variables
-load_dotenv()
-
-app = FastAPI(
-    title="Marketplace Fullstack",
-    description="A marketplace platform where users can list and sell products",
-    version="1.0.0"
+from app.routers import auth, products, admin
+from app.db.mysql import create_tables
+from app.config import get_settings
+from app.middleware import (
+    http_exception_handler, 
+    validation_exception_handler, 
+    general_exception_handler
 )
 
+settings = get_settings()
+
+app = FastAPI(
+    title="Marketplace API",
+    description="A modern marketplace platform where users can list and sell products",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Create database tables on startup
+@app.on_event("startup")
+async def startup_event():
+    create_tables()
+
+# Add exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 # Configure CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+cors_origins = settings.cors_origins.split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -28,13 +46,10 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
-app.include_router(mysql.router, prefix="/api/mysql", tags=["MySQL"])
-app.include_router(mongodb.router, prefix="/api/mongodb", tags=["MongoDB"])
-app.include_router(neo4j.router, prefix="/api/neo4j", tags=["Neo4j"])
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Root endpoint"""
     return {
         "message": "Marketplace API is running!",
         "status": "healthy",
@@ -43,17 +58,17 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Detailed health check"""
+    """Detailed health check endpoint for monitoring"""
     return {
         "status": "healthy",
-        "environment": "development",
+        "environment": settings.environment,
+        "message": "Marketplace API is running!",
+        "version": "1.0.0",
         "databases": {
-            "mysql_configured": bool(os.getenv("DATABASE_URL")),
-            "mongodb_configured": bool(os.getenv("MONGODB_URL")),
-            "neo4j_configured": bool(os.getenv("NEO4J_URL"))
+            "mysql_configured": bool(settings.database_url)
         }
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=settings.api_host, port=settings.api_port)

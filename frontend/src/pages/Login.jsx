@@ -1,31 +1,31 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
-    // Simple demo authentication
-    if (email && password) {
-      // Mock user data - in real app, this would come from API
-      const userData = {
-        email: email,
-        name: email.split("@")[0],
-        role: email === "admin@test.com" ? "admin" : "user"
-      };
-      
-      login(userData);
-      navigate("/dashboard");
-    } else {
-      setError("Please enter both email and password");
+    try {
+      const result = await login({ username, password });
+      if (result.success) {
+        navigate("/dashboard");
+      } else {
+        setError(result.error || "Login failed");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,16 +46,16 @@ function Login() {
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your email (try admin@test.com for admin access)"
+                placeholder="Enter your username"
               />
             </div>
             
@@ -69,7 +69,7 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter any password"
+                placeholder="Enter your password"
               />
             </div>
           </div>
@@ -77,10 +77,20 @@ function Login() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Sign in
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
+          </div>
+          
+          <div className="text-center">
+            <Link 
+              to="/register"
+              className="text-indigo-600 hover:text-indigo-500"
+            >
+              Don't have an account? Register here
+            </Link>
           </div>
           
           <div className="text-center">

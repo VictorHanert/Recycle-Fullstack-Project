@@ -1,79 +1,72 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas.schemas import User, Product
+from fastapi import APIRouter, HTTPException, Depends, status, Query
+from sqlalchemy.orm import Session
 from typing import List
+from math import ceil
+
+from app.schemas.user import UserResponse
+from app.schemas.product import ProductResponse, ProductListResponse
+from app.services.auth_service import AuthService
+from app.services.product_service import ProductService
+from app.db.mysql import get_db
+from app.models.user import User
+from app.dependencies import get_admin_user
 
 router = APIRouter()
-security = HTTPBearer()
 
-def get_current_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify that the current user is an admin"""
-    # Mock admin verification (replace with real implementation)
-    username = credentials.credentials.replace("fake_token_for_", "")
-    
-    # Import fake_users_db from auth router (in real app, use a shared service)
-    from app.routers.auth import fake_users_db
-    
-    user = fake_users_db.get(username)
-    if not user or not user.get("is_admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    return user
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(50, ge=1, le=100, description="Items per page"),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get all users (admin only)"""
+    skip = (page - 1) * size
+    users = db.query(User).offset(skip).limit(size).all()
+    return [UserResponse.model_validate(user) for user in users]
 
-@router.get("/users", response_model=List[User])
-async def admin_get_all_users(admin_user = Depends(get_current_admin_user)):
-    """Admin: Get all users"""
-    from app.routers.auth import fake_users_db
+@router.get("/products", response_model=ProductListResponse)
+async def get_all_products_admin(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(50, ge=1, le=100, description="Items per page"),
+    include_sold: bool = Query(True, description="Include sold products"),
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get all products including sold ones (admin only)"""
+    skip = (page - 1) * size
     
-    users = []
-    for user_data in fake_users_db.values():
-        users.append(User(
-            id=user_data["id"],
-            username=user_data["username"],
-            email=user_data["email"],
-            full_name=user_data["full_name"],
-            is_active=user_data["is_active"],
-            is_admin=user_data["is_admin"],
-            created_at="2025-09-01T00:00:00"
-        ))
-    return users
+    # Get all products for admin (including sold)
+    from app.schemas.product import ProductFilter
+    filter_params = ProductFilter(is_sold=None if include_sold else False)
+    products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
+    total_pages = ceil(total / size) if total > 0 else 1
+    
+    return ProductListResponse(
+        products=[ProductResponse.model_validate(product) for product in products],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages
+    )
 
-@router.get("/products", response_model=List[Product])
-async def admin_get_all_products(admin_user = Depends(get_current_admin_user)):
-    """Admin: Get all products (including sold ones)"""
-    from app.routers.products import fake_products_db
+@router.get("/stats")
+async def get_platform_stats(
+    admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get platform statistics (admin only)"""
+    from app.models.product import Product
     
-    products = []
-    for product_data in fake_products_db.values():
-        products.append(Product(**product_data))
-    return products
-
-@router.delete("/users/{user_id}")
-async def admin_delete_user(user_id: int, admin_user = Depends(get_current_admin_user)):
-    """Admin: Delete a user"""
-    from app.routers.auth import fake_users_db
+    total_users = db.query(User).count()
+    total_products = db.query(Product).count()
+    sold_products = db.query(Product).filter(Product.is_sold == True).count()
+    active_products = total_products - sold_products
     
-    # Find user by ID
-    user_to_delete = None
-    username_to_delete = None
-    
-    for username, user_data in fake_users_db.items():
-        if user_data["id"] == user_id:
-            user_to_delete = user_data
-            username_to_delete = username
-            break
-    
-    if not user_to_delete:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if user_to_delete["is_admin"]:
-        raise HTTPException(status_code=400, detail="Cannot delete admin user")
-    
-    if username_to_delete:
-        del fake_users_db[username_to_delete]
-        return {"message": f"User {username_to_delete} deleted successfully"}
-    else:
-        raise HTTPException(status_code=404, detail="User not found")
-
+    return {
+        "total_users": total_users,
+        "total_products": total_products,
+        "sold_products": sold_products,
+        "active_products": active_products,
+        "conversion_rate": round((sold_products / total_products * 100) if total_products > 0 else 0, 2)
+    }

@@ -92,11 +92,13 @@ export const apiClient = {
 
 // Auth API calls
 export const authAPI = {
-  login: (credentials) => apiClient.post('/auth/login', credentials),
-  register: (userData) => apiClient.post('/auth/register', userData),
-  logout: () => apiClient.post('/auth/logout'),
-  refreshToken: () => apiClient.post('/auth/refresh'),
-  getProfile: () => apiClient.get('/auth/profile')
+  login: (credentials) => apiClient.post('/api/auth/login', credentials),
+  register: (userData) => apiClient.post('/api/auth/register', userData),
+  getProfile: (token) => apiClient.get('/api/auth/me', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
 };
 
 // Products API calls

@@ -9,8 +9,8 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=mysql+pymysql://user:pass@mysql-db/dbname
-      - MONGODB_URL=mongodb://mongo-db:27017/dbname
+      - DATABASE_URL=mysql+pymysql://root:root@mysql-db:3306/marketplace
+      - MONGODB_URL=mongodb://mongo-db:27017/marketplace
       - NEO4J_URL=bolt://neo4j-db:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=neo4j_pass
@@ -37,7 +37,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: dbname
+      MYSQL_DATABASE: marketplace
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
     ports:

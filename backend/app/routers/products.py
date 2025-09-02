@@ -1,142 +1,141 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.schemas.schemas import Product, ProductCreate, ProductUpdate
-from typing import List
+from fastapi import APIRouter, HTTPException, Depends, status, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from math import ceil
+
+from app.schemas.product import (
+    ProductResponse, ProductCreate, ProductUpdate, 
+    ProductFilter, ProductListResponse, ProductWithSeller
+)
+from app.services.product_service import ProductService
+from app.db.mysql import get_db
+from app.models.user import User
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
-security = HTTPBearer()
 
-# Mock products database (replace with real database later)
-fake_products_db = {
-    1: {
-        "id": 1,
-        "title": "iPhone 15",
-        "description": "Brand new iPhone 15 in excellent condition",
-        "price": 899.99,
-        "category": "Electronics",
-        "seller_id": 1,
-        "is_sold": False,
-        "created_at": "2025-09-01T00:00:00",
-        "updated_at": "2025-09-01T00:00:00"
-    },
-    2: {
-        "id": 2,
-        "title": "Vintage Bike",
-        "description": "Classic road bike from the 80s",
-        "price": 250.00,
-        "category": "Sports",
-        "seller_id": 1,
-        "is_sold": False,
-        "created_at": "2025-09-01T00:00:00",
-        "updated_at": "2025-09-01T00:00:00"
-    }
-}
+@router.get("/", response_model=ProductListResponse)
+async def get_all_products(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Items per page"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
+    max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
+    search: Optional[str] = Query(None, description="Search in title and description"),
+    show_sold: bool = Query(False, description="Include sold products"),
+    db: Session = Depends(get_db)
+):
+    """Get all products with filtering and pagination"""
+    skip = (page - 1) * size
+    
+    # Create filter object
+    filter_params = ProductFilter(
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        search_term=search,
+        is_sold=None if show_sold else False
+    )
+    
+    products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
+    total_pages = ceil(total / size) if total > 0 else 1
+    
+    return ProductListResponse(
+        products=[ProductResponse.model_validate(product) for product in products],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages
+    )
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> int:
-    """Mock function to get current user ID from token"""
-    # In real implementation, decode JWT token here
-    return 1  # Mock user ID
-
-@router.get("/", response_model=List[Product])
-async def get_all_products():
-    """Get all available products"""
-    products = []
-    for product_data in fake_products_db.values():
-        if not product_data["is_sold"]:  # Only show unsold products
-            products.append(Product(**product_data))
-    return products
-
-@router.get("/my-products", response_model=List[Product])
-async def get_my_products(current_user_id: int = Depends(get_current_user_id)):
+@router.get("/my-products", response_model=ProductListResponse)
+async def get_my_products(
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Items per page"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Get products posted by the current user"""
-    user_products = []
-    for product_data in fake_products_db.values():
-        if product_data["seller_id"] == current_user_id:
-            user_products.append(Product(**product_data))
-    return user_products
+    skip = (page - 1) * size
+    products, total = ProductService.get_products_by_seller(db, current_user.id, skip=skip, limit=size)
+    total_pages = ceil(total / size) if total > 0 else 1
+    
+    return ProductListResponse(
+        products=[ProductResponse.model_validate(product) for product in products],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages
+    )
 
-@router.get("/{product_id}", response_model=Product)
-async def get_product(product_id: int):
-    """Get a specific product by ID"""
-    product = fake_products_db.get(product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-        return Product(**product)
-
-@router.post("/", response_model=Product)
-async def create_product(product: ProductCreate, current_user_id: int = Depends(get_current_user_id)):
-    """Create a new product listing"""
-    product_id = max(fake_products_db.keys()) + 1 if fake_products_db else 1
-    
-    new_product = {
-        "id": product_id,
-        "title": product.title,
-        "description": product.description,
-        "price": product.price,
-        "category": product.category,
-        "seller_id": current_user_id,
-        "is_sold": False,
-        "created_at": "2025-09-01T00:00:00",
-        "updated_at": "2025-09-01T00:00:00"
-    }
-    
-    fake_products_db[product_id] = new_product
-    return Product(**new_product)
-
-@router.put("/{product_id}", response_model=Product)
-async def update_product(product_id: int, product_update: ProductUpdate, current_user_id: int = Depends(get_current_user_id)):
-    """Update an existing product"""
-    product = fake_products_db.get(product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    if product["seller_id"] != current_user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to update this product")
-    
-    # Update only provided fields
-    update_data = product_update.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        product[field] = value
-    
-    product["updated_at"] = "2025-09-01T00:00:00"
-    fake_products_db[product_id] = product
-
-    return Product(**product)
-
-@router.delete("/{product_id}")
-async def delete_product(product_id: int, current_user_id: int = Depends(get_current_user_id)):
-    """Delete a product"""
-    product = fake_products_db.get(product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    if product["seller_id"] != current_user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this product")
-    
-    del fake_products_db[product_id]
-    return {"message": "Product deleted successfully"}
-
-@router.patch("/{product_id}/mark-sold")
-async def mark_product_sold(product_id: int, current_user_id: int = Depends(get_current_user_id)):
-    """Mark a product as sold"""
-    product = fake_products_db.get(product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    if product["seller_id"] != current_user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this product")
-    
-    product["is_sold"] = True
-    product["updated_at"] = "2025-09-01T00:00:00"
-    fake_products_db[product_id] = product
-    
-    return {"message": "Product marked as sold"}
-
-@router.get("/category/{category}", response_model=List[Product])
-async def get_products_by_category(category: str):
+@router.get("/category/{category}", response_model=ProductListResponse)
+async def get_products_by_category(
+    category: str,
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(20, ge=1, le=100, description="Items per page"),
+    db: Session = Depends(get_db)
+):
     """Get products by category"""
-    products = []
-    for product_data in fake_products_db.values():
-        if not product_data["is_sold"] and product_data["category"].lower() == category.lower():
-            products.append(Product(**product_data))
-    return products
+    skip = (page - 1) * size
+    products, total = ProductService.get_products_by_category(db, category, skip=skip, limit=size)
+    total_pages = ceil(total / size) if total > 0 else 1
+    
+    return ProductListResponse(
+        products=[ProductResponse.model_validate(product) for product in products],
+        total=total,
+        page=page,
+        size=size,
+        total_pages=total_pages
+    )
+
+@router.get("/{product_id}", response_model=ProductResponse)
+async def get_product(product_id: int, db: Session = Depends(get_db)):
+    """Get a specific product by ID"""
+    product = ProductService.get_product_by_id(db, product_id)
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Product not found"
+        )
+    return ProductResponse.model_validate(product)
+
+@router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    product: ProductCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new product listing"""
+    db_product = ProductService.create_product(db, product, current_user.id)
+    return ProductResponse.model_validate(db_product)
+
+@router.put("/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: int,
+    product_update: ProductUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update an existing product"""
+    updated_product = ProductService.update_product(db, product_id, product_update, current_user.id)
+    return ProductResponse.model_validate(updated_product)
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a product"""
+    ProductService.delete_product(db, product_id, current_user.id)
+    return
+
+@router.patch("/{product_id}/mark-sold", response_model=ProductResponse)
+async def mark_product_sold(
+    product_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Mark a product as sold"""
+    updated_product = ProductService.mark_product_sold(db, product_id, current_user.id)
+    return ProductResponse.model_validate(updated_product)

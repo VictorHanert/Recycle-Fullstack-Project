@@ -1,26 +1,80 @@
-import { createContext, useState, useContext } from "react";
+import { createContext, useState, useContext, useEffect } from "react";
+import { authAPI } from "../utils/api";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
 
-  const login = (userData) => {
-    setUser(userData);
+  // Check for existing token on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        try {
+          const userData = await authAPI.getProfile(storedToken);
+          setUser(userData);
+          setToken(storedToken);
+        } catch (error) {
+          // Token is invalid, remove it
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (credentials) => {
+    try {
+      const response = await authAPI.login(credentials);
+      const { access_token, username, is_admin } = response;
+      
+      // Store token in localStorage
+      localStorage.setItem('token', access_token);
+      setToken(access_token);
+      
+      // Set user data
+      const userData = {
+        username,
+        is_admin
+      };
+      setUser(userData);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      await authAPI.register(userData);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setUser(null);
+    setToken(null);
   };
-
-  const isAdmin = user?.role === "admin";
 
   const value = {
     user,
+    token,
     login,
+    register,
     logout,
-    isAdmin,
-    isAuthenticated: !!user
+    loading,
+    isAdmin: user?.is_admin || false,
+    isAuthenticated: !!user && !!token
   };
 
   return (
