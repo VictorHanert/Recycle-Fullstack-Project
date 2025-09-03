@@ -7,8 +7,8 @@ from app.routers import auth, products, admin
 from app.db.mysql import create_tables
 from app.config import get_settings
 from app.middleware import (
-    http_exception_handler, 
-    validation_exception_handler, 
+    http_exception_handler,
+    validation_exception_handler,
     general_exception_handler
 )
 

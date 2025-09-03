@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
-from sqlalchemy import (
-    Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey,
-    CheckConstraint, Index, Enum
-)
+from sqlalchemy import (Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey,CheckConstraint, Index, Enum)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 from app.db.mysql import Base
 
@@ -73,3 +71,4 @@ class Product(Base):
 
     def __repr__(self):
         return f"<Product(id={self.id}, title='{self.title}', price={self.price_amount}, seller_id={self.seller_id})>"
+

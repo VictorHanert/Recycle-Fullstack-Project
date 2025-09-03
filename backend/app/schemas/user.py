@@ -1,6 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional
+"""User schemas for request/response validation."""
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserBase(BaseModel):
@@ -31,7 +33,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     """Schema for user response (without sensitive data)"""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     is_active: bool = True
     is_admin: bool = False

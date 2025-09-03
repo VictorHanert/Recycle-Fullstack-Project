@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+"""User model for database operations."""
+from datetime import datetime, timezone
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from sqlalchemy.orm import relationship
 from app.db.mysql import Base
-from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "users"
@@ -16,6 +17,10 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
+
+
+    # Relationship with products
+    products = relationship("Product", back_populates="seller", cascade="all, delete-orphan")
 
     location = relationship("Location", back_populates="users")
     products = relationship("Product", back_populates="seller")
