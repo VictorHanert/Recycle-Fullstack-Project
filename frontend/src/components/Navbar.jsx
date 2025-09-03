@@ -5,6 +5,7 @@ function Navbar({ user, onLogout }) {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <a href="/" className="text-xl font-bold text-gray-900">
+              <img src="/logo-shop.png" alt="MyMarketplace" className="h-8 w-8 inline-block mr-2" />
               MyMarketplace
             </a>
           </div>
