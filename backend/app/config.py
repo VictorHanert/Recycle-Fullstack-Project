@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Application settings from environment variables"""
 
     # Database
-    database_url: str = "mysql+pymysql://root:root@localhost:3306/marketplace"
+    database_url: str = "mysql+pymysql://root:root@localhost:3307/marketplace"
 
     # JWT
     secret_key: str = "your-secret-key-here-change-in-production"
