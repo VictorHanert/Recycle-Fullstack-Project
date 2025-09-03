@@ -33,7 +33,7 @@ services:
       - backend
 
   mysql-db:
-    image: mysql:8.4
+    image: mysql:8.0
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -41,7 +41,7 @@ services:
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   mongo-db:
     image: mongo:7.0
