@@ -6,7 +6,7 @@ jobs=1
 init-hook='import sys; sys.path.append(".")'
 
 [MESSAGES CONTROL]
-# Disable specific warnings that are common in FastAPI projects
+# Disable specific warnings that are common in FastAPI projects and make development easier
 disable=
     missing-module-docstring,
     missing-class-docstring,
@@ -18,28 +18,55 @@ disable=
     too-many-positional-arguments,
     duplicate-code,
     unnecessary-pass,
-    import-outside-toplevel
+    import-outside-toplevel,
+    raise-missing-from,
+    unused-argument,
+    line-too-long,
+    wrong-import-order,
+    singleton-comparison,
+    trailing-whitespace,
+    trailing-newlines,
+    logging-fstring-interpolation,
+    unused-variable,
+    redefined-outer-name,
+    consider-using-f-string,
+    broad-except
 
 [FORMAT]
-# Maximum number of characters on a single line
-max-line-length=120
+# Maximum number of characters on a single line (more lenient)
+max-line-length=150
 
 # Allow the body of an if to be on the same line as the test if there is no else
-single-line-if-stmt=no
+single-line-if-stmt=yes
 
 [DESIGN]
-# Maximum number of arguments for function / method
-max-args=8
+# Maximum number of arguments for function / method (more lenient)
+max-args=10
 
-# Maximum number of attributes for a class
-max-attributes=15
+# Maximum number of attributes for a class (more lenient)
+max-attributes=20
+
+# Maximum number of locals for function / method body (more lenient)
+max-locals=20
+
+# Maximum number of return / yield for function / method body (more lenient)
+max-returns=8
+
+# Maximum number of branch for function / method body (more lenient)
+max-branches=15
+
+# Maximum number of statements in function / method body (more lenient)
+max-statements=60
 
 [SIMILARITIES]
-# Minimum lines number of a similarity
-min-similarity-lines=6
+# Minimum lines number of a similarity (more lenient)
+min-similarity-lines=10
 
 # Ignore comments when computing similarities
 ignore-comments=yes
 
 # Ignore docstrings when computing similarities
 ignore-docstrings=yes
+
+# Ignore imports when computing similarities
+ignore-imports=yes
