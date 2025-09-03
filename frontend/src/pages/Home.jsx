@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Button from "@mui/material/Button";
 
 function Home() {
   return (
@@ -10,18 +11,26 @@ function Home() {
           Discover and browse our collection of used items at the best prices.
         </p>
         <div className="space-x-4">
-          <Link
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="large"
+            component={Link}
             to="/products"
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
+            sx={{ px: 4, py: 1.5 }}
           >
             Shop Now
-          </Link>
-          <Link
+          </Button>
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            size="large"
+            component={Link}
             to="/register"
-            className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors inline-block"
+            sx={{ px: 4, py: 1.5 }}
           >
             Sign Up
-          </Link>
+          </Button>
         </div>
       </div>
       
@@ -52,12 +61,16 @@ function Home() {
         <p className="text-gray-600 mb-6">
           Join us today and explore our wide range of used items tailored to your needs.
         </p>
-        <Link
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          component={Link}
           to="/products"
-          className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-block"
+          sx={{ px: 4, py: 1.5 }}
         >
           Browse Products →
-        </Link>
+        </Button>
       </div>
     </div>
   );
