@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
+import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
@@ -58,6 +60,8 @@ function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<Products />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:id" element={<UserProfile />} />
 
           {/* Protected route (requires login) */}
           <Route
@@ -65,6 +69,22 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/:id"
+            element={
+              <ProtectedRoute>
+                <UserProfile />
               </ProtectedRoute>
             }
           />

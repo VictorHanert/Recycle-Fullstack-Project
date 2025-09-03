@@ -25,12 +25,19 @@ function Navbar({ user, onLogout }) {
                     Admin
                   </a>
                 )}
-                <button
-                  onClick={onLogout}
-                  className="text-gray-700 hover:text-gray-900"
-                >
-                  Logout
-                </button>
+                  <button
+                    onClick={onLogout}
+                    className="text-gray-700 hover:text-gray-900"
+                  >
+                    Logout
+                  </button>
+                  <a href="/profile">
+                    <img
+                      src="/user-avatar.png"
+                      alt="User Avatar"
+                      className="h-6 w-6 rounded-full cursor-pointer"
+                    />
+                  </a>
               </>
             ) : (
               <>

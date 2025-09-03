@@ -19,10 +19,16 @@ function Dashboard({ user: propUser }) {
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-semibold mb-2 text-blue-600">Profile</h3>
           <p className="text-gray-600 mb-4">Manage your account settings and preferences.</p>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 mb-4">
             <p><strong>Email:</strong> {currentUser?.email}</p>
             <p><strong>Role:</strong> {currentUser?.role || 'user'}</p>
           </div>
+          <button 
+            onClick={() => window.location.href = '/profile'}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            Go to Profile →
+          </button>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">
