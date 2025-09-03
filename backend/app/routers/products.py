@@ -1,16 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
+"""Products router for product-related operations."""
 from math import ceil
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.db.mysql import get_db
+from app.dependencies import get_current_active_user
+from app.models.user import User
 from app.schemas.product import (
-    ProductResponse, ProductCreate, ProductUpdate,
-    ProductFilter, ProductListResponse, ProductWithSeller
+    ProductCreate,
+    ProductFilter,
+    ProductListResponse,
+    ProductResponse,
+    ProductUpdate,
+    ProductWithSeller,
 )
 from app.services.product_service import ProductService
-from app.db.mysql import get_db
-from app.models.user import User
-from app.dependencies import get_current_active_user
 
 router = APIRouter()
 

@@ -101,7 +101,7 @@ class ProductService:
         query = db.query(Product).filter(
             and_(
                 Product.category.ilike(f"%{category}%"),
-                Product.is_sold == False
+                Product.is_sold.is_(False)
             )
         ).options(joinedload(Product.seller))
 

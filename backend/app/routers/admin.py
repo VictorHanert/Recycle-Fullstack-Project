@@ -1,15 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Query
-from sqlalchemy.orm import Session
-from typing import List
+"""Admin router for administrative operations."""
 from math import ceil
+from typing import List
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.db.mysql import get_db
+from app.dependencies import get_admin_user
+from app.models.user import User
+from app.schemas.product import ProductListResponse, ProductResponse
 from app.schemas.user import UserResponse
-from app.schemas.product import ProductResponse, ProductListResponse
 from app.services.auth_service import AuthService
 from app.services.product_service import ProductService
-from app.db.mysql import get_db
-from app.models.user import User
-from app.dependencies import get_admin_user
 
 router = APIRouter()
 
@@ -60,7 +62,7 @@ async def get_platform_stats(
 
     total_users = db.query(User).count()
     total_products = db.query(Product).count()
-    sold_products = db.query(Product).filter(Product.is_sold == True).count()
+    sold_products = db.query(Product).filter(Product.is_sold.is_(True)).count()
     active_products = total_products - sold_products
 
     return {
