@@ -74,3 +74,8 @@ class Product(Base):
     def __repr__(self):
         return f"<Product(id={self.id}, title='{self.title}', price={self.price_amount}, seller_id={self.seller_id})>"
 
+    @property
+    def is_sold(self) -> bool:
+        """Computed property for backwards compatibility"""
+        return self.status == "sold"
+

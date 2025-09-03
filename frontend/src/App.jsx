@@ -60,10 +60,8 @@ function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<Products />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/user/:id" element={<UserProfile />} />
 
-          {/* Protected route (requires login) */}
+          {/* Protected routes (requires login) */}
           <Route
             path="/dashboard"
             element={

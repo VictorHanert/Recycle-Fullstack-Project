@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
           // Token is invalid, remove it
           localStorage.removeItem('token');
           setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);

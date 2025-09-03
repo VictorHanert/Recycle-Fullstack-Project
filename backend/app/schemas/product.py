@@ -1,16 +1,43 @@
 """Product schemas for request/response validation."""
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class SellerInfo(BaseModel):
+    """Schema for seller information in products"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    username: str
+    email: str
+
+
+class LocationInfo(BaseModel):
+    """Schema for location information in products"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    city: str
+    postcode: str
+
+
+class ProductImageInfo(BaseModel):
+    """Schema for product image information"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    url: str
+    sort_order: int
 
 
 class ProductBase(BaseModel):
     """Base product schema with common fields"""
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    price: Decimal = Field(..., gt=0, decimal_places=2)
+    price_amount: Decimal = Field(..., gt=0, decimal_places=2)
     category: str = Field(..., min_length=1, max_length=100)
 
 
@@ -23,19 +50,34 @@ class ProductUpdate(BaseModel):
     """Schema for product updates"""
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
-    price: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    price_amount: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
     category: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
-class ProductResponse(ProductBase):
+class ProductResponse(BaseModel):
     """Schema for product response"""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    title: str
+    description: Optional[str] = None
+    price_amount: Decimal
+    price_currency: Optional[str] = "USD"
+    category_id: int
+    condition: str
+    quantity: int
+    likes_count: int
+    status: str
     seller_id: int
+    location_id: Optional[int] = None
     is_sold: bool = False
     created_at: datetime
     updated_at: datetime
+    
+    # Nested relationships
+    seller: Optional[SellerInfo] = None
+    location: Optional[LocationInfo] = None
+    images: List[ProductImageInfo] = []
 
 
 class ProductWithSeller(ProductResponse):

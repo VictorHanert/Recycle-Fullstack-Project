@@ -17,6 +17,9 @@ function Navbar({ user, onLogout }) {
             
             {user ? (
               <>
+                <a href="/products" className="text-gray-700 hover:text-gray-900">
+                  Products
+                </a>
                 <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
                   Dashboard
                 </a>

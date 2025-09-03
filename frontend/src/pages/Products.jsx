@@ -5,7 +5,7 @@ import { useFetch } from "../hooks/useFetch";
 
 function Products() {
   const navigate = useNavigate();
-  const { data: products, loading, error, refetch } = useFetch('/api/products');
+  const { data: products, loading, error, refetch } = useFetch('/api/products/');
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -72,8 +72,8 @@ function Products() {
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products && products.length > 0 ? (
-          products.map((product) => (
+        {products && products.products && products.products.length > 0 ? (
+          products.products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}

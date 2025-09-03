@@ -1,5 +1,4 @@
 """Configuration settings for the application."""
-import os
 from functools import lru_cache
 from pydantic_settings import BaseSettings
 
@@ -20,7 +19,7 @@ class Settings(BaseSettings):
 
     # Environment
     environment: str = "development"
-    debug: bool = True
+    debug: bool = False
 
     # Server Configuration
     api_host: str = "0.0.0.0"

@@ -9,7 +9,7 @@ settings = get_settings()
 # Create SQLAlchemy engine
 engine = create_engine(
     settings.database_url,
-    echo=settings.debug,  # Show SQL queries in debug mode
+    echo=False,  # SQL query logging
     pool_pre_ping=True,
     pool_recycle=300
 )

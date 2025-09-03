@@ -12,6 +12,7 @@ from app.models import (
     Conversation, ConversationParticipant, Message,
     SoldItemArchive, ItemView,
 )
+from app.services.auth_service import AuthService
 
 fake = Faker()
 
@@ -37,10 +38,11 @@ def seed_users(session: Session, n=20, locations=None):
     for _ in range(n):
         u = User(
             email=fake.unique.email(),
-            hashed_password="hashedpassword",
+            hashed_password=AuthService.get_password_hash("password123"),
             username=fake.unique.user_name(),
             is_admin=random.choice([False, False, True]),
-            location=random.choice(locations),
+            is_active=True,
+            location=random.choice(locations) if locations else None,
             full_name=fake.name(),
             phone=fake.phone_number()
         )
@@ -205,6 +207,22 @@ def main():
     try:
         locations = seed_locations(db, 8)
         users = seed_users(db, 20, locations)
+        
+        # Create a specific admin user
+        admin_user = User(
+            email="admin@test.com",
+            username="admin",
+            full_name="Admin user",
+            hashed_password=AuthService.get_password_hash("admin123"),
+            is_admin=True,
+            is_active=True,
+            location=locations[0] if locations else None,
+            phone=None
+        )
+        db.add(admin_user)
+        db.commit()
+        users.append(admin_user)
+        
         categories = seed_categories(db)
         colors, materials, tags = seed_details(db)
         products = seed_products(db, users, categories, locations, colors, materials, tags, 50)
@@ -213,6 +231,7 @@ def main():
         seed_sold_archive(db, products)
         seed_views(db, users, products, 300)
         print("✅ Database seeded with test data!")
+        print("✅ Admin user created: admin@test.com / admin123")
     finally:
         db.close()
 

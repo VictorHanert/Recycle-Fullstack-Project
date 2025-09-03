@@ -4,15 +4,17 @@ import { useFetch } from "../hooks/useFetch";
 function Admin() {
   const { user, token } = useAuth();
   
-  // Fetch users data with authentication
   const { data: users, loading: usersLoading, error: usersError } = useFetch('/api/admin/users', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
   });
-
-  // Fetch products data  
-  const { data: products, loading: productsLoading, error: productsError } = useFetch('/api/products');
+  
+  const { data: products, loading: productsLoading, error: productsError } = useFetch('/api/products/', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
 
   return (
     <div className="px-4">
@@ -43,7 +45,7 @@ function Admin() {
           ) : productsError ? (
             <p className="text-sm text-red-600">Error loading</p>
           ) : (
-            <p className="text-3xl font-bold text-green-600">{products?.length || 0}</p>
+            <p className="text-3xl font-bold text-green-600">{products?.total || 0}</p>
           )}
         </div>
         

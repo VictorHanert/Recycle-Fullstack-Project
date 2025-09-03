@@ -62,7 +62,7 @@ async def get_platform_stats(
 
     total_users = db.query(User).count()
     total_products = db.query(Product).count()
-    sold_products = db.query(Product).filter(Product.is_sold.is_(True)).count()
+    sold_products = db.query(Product).filter(Product.status == "sold").count()
     active_products = total_products - sold_products
 
     return {

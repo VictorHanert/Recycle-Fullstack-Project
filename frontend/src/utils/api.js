@@ -113,9 +113,9 @@ export const authAPI = {
 
 // Products API calls
 export const productsAPI = {
-  getAll: () => apiClient.get('/api/products'),
+  getAll: () => apiClient.get('/api/products/'),
   getById: (id) => apiClient.get(`/api/products/${id}`),
-  create: (product) => apiClient.post('/api/products', product),
+  create: (product) => apiClient.post('/api/products/', product),
   update: (id, product) => apiClient.put(`/api/products/${id}`, product),
   delete: (id) => apiClient.delete(`/api/products/${id}`)
 };

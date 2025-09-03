@@ -44,7 +44,11 @@ class ProductService:
     @staticmethod
     def get_product_by_id(db: Session, product_id: int) -> Optional[Product]:
         """Get product by ID with seller information"""
-        return db.query(Product).options(joinedload(Product.seller)).filter(Product.id == product_id).first()
+        return db.query(Product).options(
+            joinedload(Product.seller),
+            joinedload(Product.location),
+            joinedload(Product.images)
+        ).filter(Product.id == product_id).first()
 
     @staticmethod
     def get_products(
@@ -54,7 +58,11 @@ class ProductService:
         filter_params: Optional[ProductFilter] = None
     ) -> tuple[List[Product], int]:
         """Get products with filtering and pagination"""
-        query = db.query(Product).options(joinedload(Product.seller))
+        query = db.query(Product).options(
+            joinedload(Product.seller),
+            joinedload(Product.location),
+            joinedload(Product.images)
+        )
 
         # Apply filters
         if filter_params:
@@ -62,13 +70,16 @@ class ProductService:
                 query = query.filter(Product.category.ilike(f"%{filter_params.category}%"))
 
             if filter_params.min_price is not None:
-                query = query.filter(Product.price >= filter_params.min_price)
+                query = query.filter(Product.price_amount >= filter_params.min_price)
 
             if filter_params.max_price is not None:
-                query = query.filter(Product.price <= filter_params.max_price)
+                query = query.filter(Product.price_amount <= filter_params.max_price)
 
             if filter_params.is_sold is not None:
-                query = query.filter(Product.is_sold == filter_params.is_sold)
+                if filter_params.is_sold:
+                    query = query.filter(Product.status == "sold")
+                else:
+                    query = query.filter(Product.status != "sold")
 
             if filter_params.search_term:
                 search = f"%{filter_params.search_term}%"
@@ -90,7 +101,11 @@ class ProductService:
     @staticmethod
     def get_products_by_seller(db: Session, seller_id: int, skip: int = 0, limit: int = 20) -> tuple[List[Product], int]:
         """Get products by seller with pagination"""
-        query = db.query(Product).filter(Product.seller_id == seller_id)
+        query = db.query(Product).filter(Product.seller_id == seller_id).options(
+            joinedload(Product.seller),
+            joinedload(Product.location),
+            joinedload(Product.images)
+        )
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
         return products, total
@@ -101,9 +116,13 @@ class ProductService:
         query = db.query(Product).filter(
             and_(
                 Product.category.ilike(f"%{category}%"),
-                Product.is_sold.is_(False)
+                Product.status != "sold"
             )
-        ).options(joinedload(Product.seller))
+        ).options(
+            joinedload(Product.seller),
+            joinedload(Product.location),
+            joinedload(Product.images)
+        )
 
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
@@ -192,7 +211,8 @@ class ProductService:
                 detail="Not authorized to modify this product"
             )
 
-        product.is_sold = True
+        product.status = "sold"
+        product.sold_at = datetime.now(timezone.utc)
         product.updated_at = datetime.now(timezone.utc)
 
         try:

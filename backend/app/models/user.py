@@ -16,8 +16,9 @@ class User(Base):
     phone = Column(String(64), nullable=True, index=True)
     hashed_password = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
-    location_id = Column(Integer, ForeignKey("locations.id"), index=True, nullable=False)
+    location_id = Column(Integer, ForeignKey("locations.id"), index=True, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
