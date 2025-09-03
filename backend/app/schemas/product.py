@@ -28,7 +28,7 @@ class ProductUpdate(BaseModel):
 class ProductResponse(ProductBase):
     """Schema for product response"""
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     seller_id: int
     is_sold: bool = False

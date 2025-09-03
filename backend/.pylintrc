@@ -1,0 +1,45 @@
+[MAIN]
+# Use multiple processes to speed up Pylint
+jobs=1
+
+# Python code to execute, usually for sys.path manipulation such as pygtk.require()
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+# Disable specific warnings that are common in FastAPI projects
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    import-error,
+    unused-import,
+    too-many-arguments,
+    too-many-positional-arguments,
+    duplicate-code,
+    unnecessary-pass,
+    import-outside-toplevel
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=120
+
+# Allow the body of an if to be on the same line as the test if there is no else
+single-line-if-stmt=no
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=8
+
+# Maximum number of attributes for a class
+max-attributes=15
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=6
+
+# Ignore comments when computing similarities
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities
+ignore-docstrings=yes

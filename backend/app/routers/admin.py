@@ -35,13 +35,13 @@ async def get_all_products_admin(
 ):
     """Get all products including sold ones (admin only)"""
     skip = (page - 1) * size
-    
+
     # Get all products for admin (including sold)
     from app.schemas.product import ProductFilter
     filter_params = ProductFilter(is_sold=None if include_sold else False)
     products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
     total_pages = ceil(total / size) if total > 0 else 1
-    
+
     return ProductListResponse(
         products=[ProductResponse.model_validate(product) for product in products],
         total=total,
@@ -57,12 +57,12 @@ async def get_platform_stats(
 ):
     """Get platform statistics (admin only)"""
     from app.models.product import Product
-    
+
     total_users = db.query(User).count()
     total_products = db.query(Product).count()
     sold_products = db.query(Product).filter(Product.is_sold == True).count()
     active_products = total_products - sold_products
-    
+
     return {
         "total_users": total_users,
         "total_products": total_products,
