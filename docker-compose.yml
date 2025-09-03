@@ -15,7 +15,8 @@ services:
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=neo4j_pass
     depends_on:
-      - mysql-db
+      mysql-db:
+        condition: service_healthy
       # - mongo-db
       # - neo4j-db
 
@@ -42,6 +43,12 @@ services:
       MYSQL_PASSWORD: pass
     ports:
       - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 20s
+      retries: 2
+      interval: 15s
+      start_period: 30s
 
   # mongo-db:
   #   image: mongo:7.0
