@@ -3,7 +3,7 @@ from .location import Location
 from .user import User
 from .category import Category
 from .product import Product
-from .details import Color, Material, Tag, ProductColor, ProductMaterial, ProductTag
+from .product_details import Color, Material, Tag, ProductColor, ProductMaterial, ProductTag
 from .media import ProductImage
 from .price_history import ProductPriceHistory
 from .favorites import Favorite
