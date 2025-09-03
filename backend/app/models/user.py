@@ -1,7 +1,10 @@
+"""User model for database operations."""
+from datetime import datetime, timezone
+
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+
 from app.db.mysql import Base
-from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "users"

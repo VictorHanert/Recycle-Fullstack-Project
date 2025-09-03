@@ -1,9 +1,9 @@
+"""User model for database operations."""
 from datetime import datetime, timezone
-from sqlalchemy import (
-    Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey,
-    CheckConstraint, Index, Enum
-)
+
+from sqlalchemy import (Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey,CheckConstraint, Index, Enum)
 from sqlalchemy.orm import relationship
+
 from app.db.mysql import Base
 
 
