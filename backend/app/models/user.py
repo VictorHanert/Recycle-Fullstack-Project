@@ -20,6 +20,10 @@ class User(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
+
+    # Relationship with products
+    products = relationship("Product", back_populates="seller", cascade="all, delete-orphan")
+
     location = relationship("Location", back_populates="users")
     products = relationship("Product", back_populates="seller")
     favorites = relationship("Favorite", back_populates="user")

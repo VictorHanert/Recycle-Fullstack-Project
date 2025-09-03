@@ -22,14 +22,14 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token"""
     # Authenticate user
     db_user = AuthService.authenticate_user(db, user.username, user.password)
-    
+
     # Create access token
     access_token_expires = timedelta(minutes=30)
     access_token = AuthService.create_access_token(
-        data={"sub": db_user.username}, 
+        data={"sub": db_user.username},
         expires_delta=access_token_expires
     )
-    
+
     return Token(
         access_token=access_token,
         token_type="bearer",

@@ -1,16 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, status, Query
-from sqlalchemy.orm import Session
-from typing import List, Optional
+"""Products router for product-related operations."""
 from math import ceil
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
+
+from app.db.mysql import get_db
+from app.dependencies import get_current_active_user
+from app.models.user import User
 from app.schemas.product import (
-    ProductResponse, ProductCreate, ProductUpdate, 
-    ProductFilter, ProductListResponse, ProductWithSeller
+    ProductCreate,
+    ProductFilter,
+    ProductListResponse,
+    ProductResponse,
+    ProductUpdate,
+    ProductWithSeller,
 )
 from app.services.product_service import ProductService
-from app.db.mysql import get_db
-from app.models.user import User
-from app.dependencies import get_current_active_user
 
 router = APIRouter()
 
@@ -27,7 +33,7 @@ async def get_all_products(
 ):
     """Get all products with filtering and pagination"""
     skip = (page - 1) * size
-    
+
     # Create filter object
     filter_params = ProductFilter(
         category=category,
@@ -36,10 +42,10 @@ async def get_all_products(
         search_term=search,
         is_sold=None if show_sold else False
     )
-    
+
     products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
     total_pages = ceil(total / size) if total > 0 else 1
-    
+
     return ProductListResponse(
         products=[ProductResponse.model_validate(product) for product in products],
         total=total,
@@ -59,7 +65,7 @@ async def get_my_products(
     skip = (page - 1) * size
     products, total = ProductService.get_products_by_seller(db, current_user.id, skip=skip, limit=size)
     total_pages = ceil(total / size) if total > 0 else 1
-    
+
     return ProductListResponse(
         products=[ProductResponse.model_validate(product) for product in products],
         total=total,
@@ -79,7 +85,7 @@ async def get_products_by_category(
     skip = (page - 1) * size
     products, total = ProductService.get_products_by_category(db, category, skip=skip, limit=size)
     total_pages = ceil(total / size) if total > 0 else 1
-    
+
     return ProductListResponse(
         products=[ProductResponse.model_validate(product) for product in products],
         total=total,
@@ -94,7 +100,7 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
     product = ProductService.get_product_by_id(db, product_id)
     if not product:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
     return ProductResponse.model_validate(product)

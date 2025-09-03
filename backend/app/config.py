@@ -1,3 +1,4 @@
+"""Configuration settings for the application."""
 import os
 from functools import lru_cache
 from pydantic_settings import BaseSettings
@@ -5,36 +6,37 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings from environment variables"""
-    
+
     # Database
     database_url: str = "mysql+pymysql://root:root@localhost:3306/marketplace"
-    
+
     # JWT
     secret_key: str = "your-secret-key-here-change-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    
+
     # CORS
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
-    
+
     # Environment
     environment: str = "development"
     debug: bool = True
-    
+
     # Server Configuration
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    
+
     # MongoDB Configuration (optional)
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_database: str = "marketplace"
-    
+
     # Neo4j Configuration (optional)
     neo4j_url: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
-    
+
     class Config:
+        """Pydantic configuration."""
         env_file = ".env"
         case_sensitive = False
 

@@ -18,7 +18,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:
     """Service class for authentication operations"""
-    
+
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
@@ -37,7 +37,7 @@ class AuthService:
             expire = datetime.now(timezone.utc) + expires_delta
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-        
+
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
         return encoded_jwt
@@ -72,7 +72,7 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already registered"
             )
-        
+
         # Check if email already exists
         existing_email = db.query(User).filter(User.email == user.email).first()
         if existing_email:
@@ -80,7 +80,7 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        
+
         try:
             # Create new user
             hashed_password = AuthService.get_password_hash(user.password)
@@ -92,12 +92,12 @@ class AuthService:
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc)
             )
-            
+
             db.add(db_user)
             db.commit()
             db.refresh(db_user)
             return db_user
-            
+
         except IntegrityError:
             db.rollback()
             raise HTTPException(
@@ -115,20 +115,20 @@ class AuthService:
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if not AuthService.verify_password(password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Inactive user account"
             )
-        
+
         return user
 
     @staticmethod
@@ -150,14 +150,14 @@ class AuthService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-        
+
         # Update only provided fields
         update_data = user_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(user, field, value)
-        
+
         user.updated_at = datetime.now(timezone.utc)
-        
+
         try:
             db.commit()
             db.refresh(user)
