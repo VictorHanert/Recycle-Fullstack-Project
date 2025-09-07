@@ -1,13 +1,166 @@
 
-function UserProfile({ user: propUser }) {
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { profileAPI } from "../utils/api";
+import { useAuth } from "../hooks/useAuth";
+
+function UserProfile() {
+  const { userId } = useParams();
+  const { user: currentUser } = useAuth();
+  const [profileData, setProfileData] = useState(null);
+  const [userProducts, setUserProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (userId) {
+      fetchPublicProfile();
+      fetchUserProducts();
+    }
+  }, [userId]);
+
+  const fetchPublicProfile = async () => {
+    try {
+      setLoading(true);
+      const profile = await profileAPI.getPublicProfile(userId);
+      setProfileData(profile);
+    } catch (err) {
+      setError('Failed to load user profile');
+      console.error('Public profile fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserProducts = async () => {
+    try {
+      const products = await profileAPI.getUserProducts(userId);
+      setUserProducts(products);
+    } catch (err) {
+      console.error('User products fetch error:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 mb-48">
+        <div className="text-center py-8">
+          <div className="text-lg">Loading profile...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 mb-48">
+        <div className="text-center py-8">
+          <div className="text-red-600 text-lg">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
 
   return (
     <div className="px-4 mb-48">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">unknown user profile</h1>
-        <p className="text-lg text-gray-600">
+      <div className="max-w-4xl mx-auto">
+        {/* Profile Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            {profileData?.username}'s Profile
+            {isOwnProfile && <span className="text-blue-600 ml-2">(You)</span>}
+          </h1>
+          {profileData && (
+            <p className="text-lg text-gray-600">
+              Member since {new Date(profileData.created_at).toLocaleDateString()}
+            </p>
+          )}
+        </div>
 
-        </p>
+        {/* Public Profile Information */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+          <div className="space-y-2">
+            <p><strong>Username:</strong> {profileData?.username}</p>
+            {profileData?.full_name && (
+              <p><strong>Name:</strong> {profileData.full_name}</p>
+            )}
+            {profileData?.location && (
+              <p><strong>Location:</strong> {profileData.location.city}, {profileData.location.postcode}</p>
+            )}
+          </div>
+        </div>
+
+        {/* User Products */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">
+            Active Products ({profileData?.product_count || userProducts.length})
+          </h2>
+          {userProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userProducts.map((product) => (
+                <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold">{product.title}</h3>
+                  <p className="text-gray-600">
+                    {Number(product.price_amount) % 1 === 0
+                      ? Number(product.price_amount)
+                      : Number(product.price_amount).toFixed(2)
+                    } kr
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Condition: {product.condition}
+                  </p>
+                  {product.location && (
+                    <p className="text-sm text-gray-500">
+                      Location: {product.location.city}, {product.location.postcode}
+                    </p>
+                  )}
+                  <div className="mt-2">
+                    <a
+                      href={`/products/${product.id}`}
+                      className="text-blue-500 hover:underline text-sm"
+                    >
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No active products found</p>
+          )}
+        </div>
+
+        {/* Contact Information (if viewing someone else's profile) */}
+        {!isOwnProfile && profileData && (
+          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+            <h2 className="text-xl font-semibold text-blue-800 mb-4">Contact Seller {profileData.full_name || profileData.username}</h2>
+            <p className="text-blue-700 mb-4">
+              Interested in {profileData.full_name || profileData.username}'s products?
+            </p>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Send Message
+            </button>
+          </div>
+        )}
+
+        {/* Link to own profile management */}
+        {isOwnProfile && (
+          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
+            <h2 className="text-xl font-semibold text-green-800 mb-4">Manage Your Profile</h2>
+            <p className="text-green-700 mb-4">
+              This is how your profile appears to other users.
+            </p>
+            <a
+              href="/profile"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 inline-block"
+            >
+              Edit Profile
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

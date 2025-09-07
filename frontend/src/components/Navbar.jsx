@@ -4,9 +4,10 @@ function Navbar({ user, onLogout }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <a href="/" className="text-xl font-bold text-gray-900">
-              <img src="/logo-shop.png" alt="MyMarketplace" className="h-8 w-8 inline-block mr-2" />
-              MyMarketplace
+            <a href="/" className="text-xl font-medium text-gray-700">
+              <img src="/logo.png" alt="ReCycle" className="h-10 w-10 inline-block" />
+              Re
+              <span className="font-bold text-gray-900">Cycle</span>
             </a>
           </div>
           
@@ -14,12 +15,12 @@ function Navbar({ user, onLogout }) {
             <a href="/" className="text-gray-700 hover:text-gray-900">
               Home
             </a>
+            <a href="/products" className="text-gray-700 hover:text-gray-900">
+              Products
+            </a>
             
             {user ? (
               <>
-                <a href="/products" className="text-gray-700 hover:text-gray-900">
-                  Products
-                </a>
                 <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
                   Dashboard
                 </a>
@@ -38,7 +39,7 @@ function Navbar({ user, onLogout }) {
                     <img
                       src="/user-avatar.png"
                       alt="User Avatar"
-                      className="h-6 w-6 rounded-full cursor-pointer"
+                      className="h-6 w-6 rounded-full cursor-pointer hover:opacity-80"
                     />
                   </a>
               </>

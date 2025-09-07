@@ -59,7 +59,8 @@ function AppRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/user/:userId" element={<UserProfile />} />
 
           {/* Protected routes (requires login) */}
           <Route
@@ -75,14 +76,6 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/user/:id"
-            element={
-              <ProtectedRoute>
-                <UserProfile />
               </ProtectedRoute>
             }
           />

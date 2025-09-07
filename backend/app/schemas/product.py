@@ -6,6 +6,31 @@ from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# --- Details schemas ---
+class ColorInfo(BaseModel):
+    """Schema for color information"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+
+class MaterialInfo(BaseModel):
+    """Schema for material information"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+
+class TagInfo(BaseModel):
+    """Schema for tag information"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+
+class ProductDetailsResponse(BaseModel):
+    colors: List[ColorInfo]
+    materials: List[MaterialInfo]
+    tags: List[TagInfo]
+
+
 class SellerInfo(BaseModel):
     """Schema for seller information in products"""
     model_config = ConfigDict(from_attributes=True)
@@ -78,6 +103,11 @@ class ProductResponse(BaseModel):
     seller: Optional[SellerInfo] = None
     location: Optional[LocationInfo] = None
     images: List[ProductImageInfo] = []
+    views_count: int = 0
+    favorites_count: int = 0
+    colors: List[ColorInfo] = []
+    materials: List[MaterialInfo] = []
+    tags: List[TagInfo] = []
 
 
 class ProductWithSeller(ProductResponse):

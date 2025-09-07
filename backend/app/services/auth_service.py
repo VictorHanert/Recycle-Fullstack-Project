@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
@@ -134,12 +134,12 @@ class AuthService:
     @staticmethod
     def get_user_by_username(db: Session, username: str) -> Optional[User]:
         """Get user by username"""
-        return db.query(User).filter(User.username == username).first()
+        return db.query(User).options(joinedload(User.location)).filter(User.username == username).first()
 
     @staticmethod
     def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
         """Get user by ID"""
-        return db.query(User).filter(User.id == user_id).first()
+        return db.query(User).options(joinedload(User.location)).filter(User.id == user_id).first()
 
     @staticmethod
     def update_user(db: Session, user_id: int, user_update: UserUpdate) -> User:

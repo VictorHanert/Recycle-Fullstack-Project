@@ -4,7 +4,7 @@
 ### Frontend
 - **React** with Vite
 - **React Router** for navigation
-- **Tailwind CSS** for styling
+- **Tailwind CSS and MUI** for styling
 - **Context API** for state management
 
 ### Backend
@@ -18,6 +18,10 @@
 - **MySQL** (primary database)
 - **MongoDB** (document store)
 - **Neo4j** (graph database)
+
+### Testing
+- **Jest** for frontend testing
+- **Pytest** for backend testing
 
 ### Development & Deployment
 - **Docker** & Docker Compose
@@ -39,6 +43,13 @@ docker-compose up frontend backend
 docker-compose down
 ```
 
+### Seed the Database
+```bash
+cd backend
+poetry install
+poetry run python seed.py
+```
+
 ## Access Points
 
 - **Frontend**: http://localhost:5173
@@ -48,9 +59,13 @@ docker-compose down
 
 ## Project Structure
 ```
-├── frontend/          # React application
+├── frontend/          # React application with Vite, Tailwind and MUI
+│   └── src/
+│
 ├── backend/           # FastAPI application
 │   ├── app/
+│   │   ├── main.py    # Application entry point
+│   │   ├── db/        # Database configuration
 │   │   ├── routers/   # API routes
 │   │   ├── models/    # Database models
 │   │   ├── schemas/   # Pydantic schemas

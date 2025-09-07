@@ -206,7 +206,7 @@ function Register() {
           <div className="text-center">
             <Link 
               to="/login"
-              className="text-indigo-600 hover:text-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 hover:text-blue-500 transition-colors"
             >
               Already have an account? Sign in here
             </Link>
@@ -216,9 +216,9 @@ function Register() {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="text-indigo-600 hover:text-indigo-500"
+              className="text-gray-600 hover:text-gray-500 text-sm"
             >
-              Back to Home
+              ← Back to Home
             </button>
           </div>
         </form>

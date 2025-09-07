@@ -17,13 +17,14 @@ from app.schemas.product import (
     ProductWithSeller,
 )
 from app.services.product_service import ProductService
+from app.schemas.product import ProductDetailsResponse
 
 router = APIRouter()
 
 @router.get("/", response_model=ProductListResponse)
 async def get_all_products(
     page: int = Query(1, ge=1, description="Page number"),
-    size: int = Query(20, ge=1, le=100, description="Items per page"),
+    size: int = Query(15, ge=1, le=100, description="Items per page"),
     category: Optional[str] = Query(None, description="Filter by category"),
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
@@ -97,13 +98,13 @@ async def get_products_by_category(
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: int, db: Session = Depends(get_db)):
     """Get a specific product by ID"""
-    product = ProductService.get_product_by_id(db, product_id)
-    if not product:
+    product_dict = ProductService.get_product_by_id(db, product_id)
+    if not product_dict:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
-    return ProductResponse.model_validate(product)
+    return ProductResponse.model_validate(product_dict)
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
@@ -145,3 +146,12 @@ async def mark_product_sold(
     """Mark a product as sold"""
     updated_product = ProductService.mark_product_sold(db, product_id, current_user.id)
     return ProductResponse.model_validate(updated_product)
+
+@router.get("/productdetails", response_model=ProductDetailsResponse)
+async def get_all_product_details(db: Session = Depends(get_db)):
+    details = ProductService.get_all_details(db)
+    return ProductDetailsResponse(
+        colors=details["colors"],
+        materials=details["materials"],
+        tags=details["tags"]
+    )

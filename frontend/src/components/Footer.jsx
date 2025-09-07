@@ -5,16 +5,14 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">
-              <img
-                src="/logo-shop.png"
-                alt="MyMarketplace"
-                className="h-6 w-6 inline-block mr-2 filter brightness-0 invert"
-              />
-              MyMarketplace
+              <a href="/" className="text-xl font-medium text-gray-100">
+                <img src="/logo.png" alt="ReCycle" className="h-10 w-10 inline-block" />
+                Re
+                <span className="font-bold text-gray-200">Cycle</span>
+              </a>
             </h3>
             <p className="text-gray-300">
-              Find your favorite products at the best prices. Discover a wide
-              range of items tailored to your needs.
+              The marketplace for pre-owned bicycles. Find your perfect ride or give your bike a new life with our cycling community.
             </p>
           </div>
 
@@ -47,15 +45,15 @@ function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact Info</h3>
             <div className="text-gray-300 space-y-2">
-              <p>📧 support@stud.ek.dk</p>
-              <p>📞 (+45) 12344567</p>
-              <p>📍 Copenhagen, Denmark</p>
+              <p>📧 support@recycle.dk</p>
+              <p>📞 (+45) 5545 6677</p>
+              <p>📍 Guldbergsgade 29n, Copenhagen, Denmark</p>
             </div>
           </div>
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-          <p className="text-gray-300">© 2025 (name). All rights reserved.</p>
+          <p className="text-gray-300">© {new Date().getFullYear()} ReCycle. All rights reserved.</p>
         </div>
       </div>
     </footer>

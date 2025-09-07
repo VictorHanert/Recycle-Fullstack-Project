@@ -13,6 +13,19 @@ from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate
 
 
 class ProductService:
+
+    @staticmethod
+    def get_all_details(db: Session):
+        """Fetch all colors, materials, and tags for product details dropdowns/filters."""
+        from app.models.product_details import Color, Material, Tag
+        colors = db.query(Color).order_by(Color.name).all()
+        materials = db.query(Material).order_by(Material.name).all()
+        tags = db.query(Tag).order_by(Tag.name).all()
+        return {
+            "colors": colors,
+            "materials": materials,
+            "tags": tags
+        }
     """Service class for product operations"""
 
     @staticmethod
@@ -42,13 +55,40 @@ class ProductService:
             )
 
     @staticmethod
-    def get_product_by_id(db: Session, product_id: int) -> Optional[Product]:
-        """Get product by ID with seller information"""
-        return db.query(Product).options(
+    def get_product_by_id(db: Session, product_id: int) -> Optional[dict]:
+        """Get product by ID with all details and counters"""
+        product = db.query(Product).options(
             joinedload(Product.seller),
             joinedload(Product.location),
-            joinedload(Product.images)
+            joinedload(Product.images),
+            joinedload(Product.colors),
+            joinedload(Product.materials),
+            joinedload(Product.tags),
+            joinedload(Product.favorites),
+            joinedload(Product.views),
         ).filter(Product.id == product_id).first()
+        if not product:
+            return None
+        # Build dict for ProductResponse
+        return ProductService._build_product_response_dict(product)
+
+    @staticmethod
+    def _build_product_response_dict(product: Product) -> dict:
+        # Use model_dump for base fields, then add details/counters
+        base = product.__dict__.copy()
+        # Remove SQLAlchemy state
+        base.pop('_sa_instance_state', None)
+        # Add nested relationships
+        base['seller'] = product.seller
+        base['location'] = product.location
+        base['images'] = product.images
+        # Add details and counters
+        base['views_count'] = len(product.views) if product.views else 0
+        base['favorites_count'] = len(product.favorites) if product.favorites else 0
+        base['colors'] = product.colors or []
+        base['materials'] = product.materials or []
+        base['tags'] = product.tags or []
+        return base
 
     @staticmethod
     def get_products(

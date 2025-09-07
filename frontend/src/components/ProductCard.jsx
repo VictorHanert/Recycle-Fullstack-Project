@@ -15,7 +15,10 @@ function ProductCard({ product, onClick }) {
                 
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xl font-bold text-blue-600">
-                        ${product.price_amount}
+                        {Number(product.price_amount) % 1 === 0
+                            ? Number(product.price_amount)
+                            : Number(product.price_amount).toFixed(2)
+                        } kr
                     </span>
                     
                     <span className={`px-2 py-1 rounded-full text-xs ${
@@ -28,9 +31,16 @@ function ProductCard({ product, onClick }) {
                 </div>
                 
                 <div className="text-gray-600 text-sm mb-3 flex-grow">
-                    <p>Owner: {product.seller?.username || 'Unknown'}</p>
-                    <p>Location: {product.location ? `${product.location.city}, ${product.location.postcode}` : 'Unknown'}</p>
-                    {product.likes_count !== undefined && <p>Likes: {product.likes_count}</p>}
+                    <p>{product.seller?.username ? (
+                        <a 
+                            href={`/user/${product.seller.id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {product.seller.username}
+                        </a>
+                    ) : 'Unknown'}</p>
+                    <p>{product.location ? `${product.location.city}, ${product.location.postcode}` : 'Unknown'}</p>
                 </div>
 
                 <div className="mt-auto">
@@ -42,7 +52,7 @@ function ProductCard({ product, onClick }) {
                         }`}
                         disabled={product.is_sold}
                     >
-                        {product.is_sold ? 'Sold' : 'Add to Cart'}
+                        {product.is_sold ? 'Sold' : 'See more'}
                     </button>
                 </div>
             </div>

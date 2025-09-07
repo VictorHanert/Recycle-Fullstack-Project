@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from app.db.mysql import get_db
 from app.models.user import User
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -43,3 +45,22 @@ async def get_admin_user(current_user: User = Depends(get_current_active_user)) 
             detail="Not enough permissions"
         )
     return current_user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """Get current user if authenticated, otherwise return None"""
+    if not credentials:
+        return None
+    
+    try:
+        username = AuthService.verify_token(credentials.credentials)
+        user = AuthService.get_user_by_username(db, username)
+        if user and user.is_active:
+            return user
+    except HTTPException:
+        pass
+    
+    return None

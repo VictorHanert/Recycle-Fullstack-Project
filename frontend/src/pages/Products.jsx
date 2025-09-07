@@ -1,17 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { useFetch } from "../hooks/useFetch";
+import { productsAPI } from "../utils/api";
 
 function Products() {
   const navigate = useNavigate();
-  const { data: products, loading, error, refetch } = useFetch('/api/products/');
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [productsData, setProductsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [page, setPage] = useState(1);
+  const [size] = useState(15); // pagination size
+
+  const [searchTerm, setSearchTerm] = useState("");   // live typing
+  const [searchQuery, setSearchQuery] = useState(""); // actual applied search
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await productsAPI.getAll({
+        page,
+        size,
+        search: searchQuery || undefined,
+        category: selectedCategory || undefined
+      });
+
+      setProductsData(data);
+    } catch (err) {
+      setError(err.message || "Error fetching products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [page, searchQuery, selectedCategory]);
 
   const handleProductClick = (product) => {
-    navigate(`/product/${product.id}`);
+    navigate(`/products/${product.id}`);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearchQuery(searchTerm);
+    setPage(1); // reset when searching
+  };
+
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
   };
 
   if (loading) {
@@ -26,10 +72,10 @@ function Products() {
     return (
       <div className="px-4">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          Error loading products: {error}
+          {error}
         </div>
         <button 
-          onClick={refetch}
+          onClick={fetchProducts}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           Try Again
@@ -48,32 +94,37 @@ function Products() {
       </div>
 
       {/* Filter/Search Bar */}
-      <div className="mb-8 flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search products..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <select className="px-1 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      <form onSubmit={handleSearchSubmit} className="mb-8 flex flex-col sm:flex-row gap-4">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Search
+        </button>
+        <select
+          value={selectedCategory}
+          onChange={handleCategoryChange}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
           <option value="">All Categories</option>
           <option value="electronics">Electronics</option>
-          <option value="accessories">Clothing</option>
-          <option value="audio">Furnitures</option>
+          <option value="accessories">Accessories</option>
+          <option value="audio">Audio</option>
+          <option value="furniture">Furniture</option>
         </select>
-        <select className="px-1 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-          <option value="">Sort by</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="name">Name A-Z</option>
-        </select>
-      </div>
+      </form>
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products && products.products && products.products.length > 0 ? (
-          products.products.map((product) => (
+        {productsData && productsData.products.length > 0 ? (
+          productsData.products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
@@ -87,12 +138,45 @@ function Products() {
         )}
       </div>
 
-      {/* Load More Button */}
-      <div className="text-center mt-12">
-        <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-          Load More Products
-        </button>
-      </div>
+      {/* Pagination */}
+      {productsData && productsData.total_pages > 1 && (
+        <div className="flex justify-center mt-8 gap-2 flex-wrap">
+          {/* Prev */}
+          {page > 1 && (
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+            >
+              Previous
+            </button>
+          )}
+
+          {/* Page numbers */}
+          {Array.from({ length: productsData.total_pages }, (_, i) => i + 1).map((pageNumber) => (
+            <button
+              key={pageNumber}
+              onClick={() => handlePageChange(pageNumber)}
+              className={`px-4 py-2 rounded ${
+                pageNumber === page
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {pageNumber}
+            </button>
+          ))}
+
+          {/* Next */}
+          {page < productsData.total_pages && (
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+            >
+              Next
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
