@@ -1,7 +1,9 @@
 FROM python:3.13-slim
 
-# Install pip and poetry
-RUN pip install --upgrade pip \
+# Install pip and poetry + fix python alias
+RUN apt-get update && apt-get install -y python3-venv \
+    && ln -s /usr/local/bin/python3 /usr/local/bin/python \
+    && pip install --upgrade pip \
     && pip install poetry
 
 # Set working directory

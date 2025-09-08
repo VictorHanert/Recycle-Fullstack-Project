@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { productsAPI } from "../utils/api";
+import { productsAPI } from "../api";
 
 function Products() {
   const navigate = useNavigate();
@@ -16,6 +16,22 @@ function Products() {
   const [searchTerm, setSearchTerm] = useState("");   // live typing
   const [searchQuery, setSearchQuery] = useState(""); // actual applied search
   const [selectedCategory, setSelectedCategory] = useState("");
+  
+  // Categories state
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const data = await productsAPI.getCategories();
+      setCategories(data);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -36,6 +52,10 @@ function Products() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -112,12 +132,16 @@ function Products() {
           value={selectedCategory}
           onChange={handleCategoryChange}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={categoriesLoading}
         >
-          <option value="">All Categories</option>
-          <option value="electronics">Electronics</option>
-          <option value="accessories">Accessories</option>
-          <option value="audio">Audio</option>
-          <option value="furniture">Furniture</option>
+          <option value="">
+            {categoriesLoading ? "Loading categories..." : "All Categories"}
+          </option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.name}>
+              {category.name}
+            </option>
+          ))}
         </select>
       </form>
 

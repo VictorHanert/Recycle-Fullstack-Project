@@ -3,14 +3,8 @@ import { useFetch } from "../hooks/useFetch";
 
 function Admin() {
   const { user, token } = useAuth();
-  
-  const { data: users, loading: usersLoading, error: usersError } = useFetch('/api/admin/users', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  const { data: products, loading: productsLoading, error: productsError } = useFetch('/api/products/', {
+
+  const { data: stats, loading: statsLoading, error: statsError } = useFetch('/api/admin/stats', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -21,43 +15,43 @@ function Admin() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Admin Panel</h1>
         <p className="text-lg text-gray-600">
-          Welcome to the admin dashboard, {user?.full_name || user?.username}!
+          Welcome to the admin dashboard, <span className="font-semibold">{user?.full_name || user?.username}</span>!
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Stats Cards */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Total Users</h3>
-          {usersLoading ? (
-            <p className="text-3xl font-bold text-gray-400">Loading...</p>
-          ) : usersError ? (
-            <p className="text-sm text-red-600">Error loading</p>
-          ) : (
-            <p className="text-3xl font-bold text-blue-600">{users?.length || 0}</p>
-          )}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8 max-w-5xl mx-auto">
+        {/* Stats Cards - compact, all blue */}
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Total Users</h3>
+          <p className="text-2xl font-bold text-blue-600">{stats?.total_users || 0}</p>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Total Products</h3>
-          {productsLoading ? (
-            <p className="text-3xl font-bold text-gray-400">Loading...</p>
-          ) : productsError ? (
-            <p className="text-sm text-red-600">Error loading</p>
-          ) : (
-            <p className="text-3xl font-bold text-green-600">{products?.total || 0}</p>
-          )}
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Total Products</h3>
+          <p className="text-2xl font-bold text-blue-600">{stats?.total_products || 0}</p>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Total Orders</h3>
-          <p className="text-3xl font-bold text-blue-600">890</p>
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Active Products</h3>
+          <p className="text-2xl font-bold text-blue-600">{stats?.active_products || 0}</p>
         </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900">Revenue</h3>
-          <p className="text-3xl font-bold text-green-600">$12,345</p>
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Sold Products</h3>
+          <p className="text-2xl font-bold text-blue-600">{stats?.sold_products || 0}</p>
         </div>
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Conversion Rate</h3>
+          <p className="text-2xl font-bold text-blue-600">{stats?.conversion_rate || 0}%</p>
+        </div>
+        <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
+          <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Revenue from Sold</h3>
+          <p className="text-lg font-bold text-blue-600 truncate ">{stats?.revenue_from_sold_products || 0} DKK</p>
+        </div>
+
+        {statsLoading && (
+          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-gray-500">Loading stats...</div>
+        )}
+        {statsError && (
+          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-red-500">Error loading stats: {statsError}</div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

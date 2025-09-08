@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.models.product import Product
 from app.models.user import User
+from app.models.price_history import ProductPriceHistory
 from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate
 
 
@@ -35,14 +36,54 @@ class ProductService:
             db_product = Product(
                 title=product.title,
                 description=product.description,
-                price=product.price,
-                category=product.category,
+                price_amount=product.price_amount,
+                price_currency="DKK",
+                category_id=product.category_id,
+                condition=product.condition or "new",
+                quantity=product.quantity or 1,
+                price_type="fixed",
+                status="active",
+                location_id=product.location_id or 1,  # Default location
+                width_cm=product.width_cm,
+                height_cm=product.height_cm,
+                depth_cm=product.depth_cm,
+                weight_kg=product.weight_kg,
                 seller_id=seller_id,
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc)
             )
 
             db.add(db_product)
+            db.commit()
+            db.refresh(db_product)
+
+            # Handle many-to-many relationships
+            if product.color_ids:
+                from app.models.product_details import Color
+                colors = db.query(Color).filter(Color.id.in_(product.color_ids)).all()
+                db_product.colors.extend(colors)
+
+            if product.material_ids:
+                from app.models.product_details import Material
+                materials = db.query(Material).filter(Material.id.in_(product.material_ids)).all()
+                db_product.materials.extend(materials)
+
+            if product.tag_ids:
+                from app.models.product_details import Tag
+                tags = db.query(Tag).filter(Tag.id.in_(product.tag_ids)).all()
+                db_product.tags.extend(tags)
+
+            # Handle images
+            if product.image_urls:
+                from app.models.media import ProductImage
+                for i, image_url in enumerate(product.image_urls):
+                    image = ProductImage(
+                        product_id=db_product.id,
+                        url=image_url,
+                        sort_order=i
+                    )
+                    db.add(image)
+
             db.commit()
             db.refresh(db_product)
             return db_product
@@ -66,6 +107,7 @@ class ProductService:
             joinedload(Product.tags),
             joinedload(Product.favorites),
             joinedload(Product.views),
+            joinedload(Product.price_changes),
         ).filter(Product.id == product_id).first()
         if not product:
             return None
@@ -88,6 +130,7 @@ class ProductService:
         base['colors'] = product.colors or []
         base['materials'] = product.materials or []
         base['tags'] = product.tags or []
+        base['price_changes'] = product.price_changes or []
         return base
 
     @staticmethod
@@ -107,7 +150,10 @@ class ProductService:
         # Apply filters
         if filter_params:
             if filter_params.category:
-                query = query.filter(Product.category.ilike(f"%{filter_params.category}%"))
+                # Filter by category name (for backward compatibility)
+                from app.models.category import Category
+                query = query.join(Category, Product.category_id == Category.id)
+                query = query.filter(Category.name.ilike(f"%{filter_params.category}%"))
 
             if filter_params.min_price is not None:
                 query = query.filter(Product.price_amount >= filter_params.min_price)
@@ -153,9 +199,10 @@ class ProductService:
     @staticmethod
     def get_products_by_category(db: Session, category: str, skip: int = 0, limit: int = 20) -> tuple[List[Product], int]:
         """Get products by category with pagination"""
-        query = db.query(Product).filter(
+        from app.models.category import Category
+        query = db.query(Product).join(Category, Product.category_id == Category.id).filter(
             and_(
-                Product.category.ilike(f"%{category}%"),
+                Category.name.ilike(f"%{category}%"),
                 Product.status != "sold"
             )
         ).options(
@@ -186,8 +233,26 @@ class ProductService:
                 detail="Not authorized to update this product"
             )
 
-        # Update only provided fields
+        # Check if price has changed and create price history entry
         update_data = product_update.model_dump(exclude_unset=True)
+        price_changed = False
+
+        if 'price_amount' in update_data or 'price_currency' in update_data:
+            # Check if price actually changed
+            new_amount = update_data.get('price_amount', product.price_amount)
+            new_currency = update_data.get('price_currency', product.price_currency)
+
+            if new_amount != product.price_amount or new_currency != product.price_currency:
+                # Create price history entry
+                price_history = ProductPriceHistory(
+                    product_id=product_id,
+                    amount=new_amount,
+                    currency=new_currency
+                )
+                db.add(price_history)
+                price_changed = True
+
+        # Update only provided fields
         for field, value in update_data.items():
             setattr(product, field, value)
 

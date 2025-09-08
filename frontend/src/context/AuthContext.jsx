@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import { authAPI } from "../utils/api";
+import { authAPI, apiClient } from "../api";
 
 const AuthContext = createContext();
 
@@ -7,6 +7,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+
+  // Update API client token when token changes
+  useEffect(() => {
+    apiClient.setToken(token);
+  }, [token]);
 
   // Check for existing token on mount
   useEffect(() => {

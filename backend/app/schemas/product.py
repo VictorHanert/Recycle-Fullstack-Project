@@ -25,11 +25,6 @@ class TagInfo(BaseModel):
     id: int
     name: str
 
-class ProductDetailsResponse(BaseModel):
-    colors: List[ColorInfo]
-    materials: List[MaterialInfo]
-    tags: List[TagInfo]
-
 
 class SellerInfo(BaseModel):
     """Schema for seller information in products"""
@@ -49,6 +44,13 @@ class LocationInfo(BaseModel):
     postcode: str
 
 
+class ProductDetailsResponse(BaseModel):
+    colors: List[ColorInfo]
+    materials: List[MaterialInfo]
+    tags: List[TagInfo]
+    locations: List[LocationInfo] = Field(default_factory=list)
+
+
 class ProductImageInfo(BaseModel):
     """Schema for product image information"""
     model_config = ConfigDict(from_attributes=True)
@@ -63,12 +65,27 @@ class ProductBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     price_amount: Decimal = Field(..., gt=0, decimal_places=2)
-    category: str = Field(..., min_length=1, max_length=100)
 
 
-class ProductCreate(ProductBase):
+class ProductCreate(BaseModel):
     """Schema for product creation"""
-    pass
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1, max_length=1000)
+    price_amount: Decimal = Field(..., gt=0, decimal_places=2)
+    category_id: int = Field(..., gt=0)
+
+    # Optional fields
+    condition: Optional[str] = Field(None, pattern="^(new|like_new|good|fair|needs_repair)$")
+    quantity: Optional[int] = Field(1, ge=1)
+    location_id: Optional[int] = Field(None, gt=0)
+    width_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    height_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    depth_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    weight_kg: Optional[Decimal] = Field(None, gt=0, decimal_places=3)
+    color_ids: Optional[List[int]] = Field(None)
+    material_ids: Optional[List[int]] = Field(None)
+    tag_ids: Optional[List[int]] = Field(None)
+    image_urls: Optional[List[str]] = Field(None)
 
 
 class ProductUpdate(BaseModel):
@@ -76,7 +93,27 @@ class ProductUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     price_amount: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
-    category: Optional[str] = Field(None, min_length=1, max_length=100)
+    category_id: Optional[int] = Field(None, gt=0)
+
+    # Status and condition updates
+    status: Optional[str] = Field(None, pattern="^(active|sold|paused|draft)$")
+    condition: Optional[str] = Field(None, pattern="^(new|like_new|good|fair|needs_repair)$")
+
+    # Location and dimensions
+    location_id: Optional[int] = Field(None, gt=0)
+    width_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    height_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    depth_cm: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    weight_kg: Optional[Decimal] = Field(None, gt=0, decimal_places=3)
+
+    # Quantity and details
+    quantity: Optional[int] = Field(None, ge=1)
+
+    # Related entities
+    color_ids: Optional[List[int]] = Field(None)
+    material_ids: Optional[List[int]] = Field(None)
+    tag_ids: Optional[List[int]] = Field(None)
+    image_urls: Optional[List[str]] = Field(None)
 
 
 class ProductResponse(BaseModel):
@@ -108,6 +145,7 @@ class ProductResponse(BaseModel):
     colors: List[ColorInfo] = []
     materials: List[MaterialInfo] = []
     tags: List[TagInfo] = []
+    price_changes: List["PriceHistoryInfo"] = []
 
 
 class ProductWithSeller(ProductResponse):
@@ -117,6 +155,12 @@ class ProductWithSeller(ProductResponse):
 
 
 # Search and filter schemas
+class CategoryInfo(BaseModel):
+    """Schema for category information"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+
 class ProductFilter(BaseModel):
     """Schema for product filtering"""
     category: Optional[str] = None
@@ -133,3 +177,12 @@ class ProductListResponse(BaseModel):
     page: int
     size: int
     total_pages: int
+
+
+class PriceHistoryInfo(BaseModel):
+    """Schema for price history information"""
+    model_config = ConfigDict(from_attributes=True)
+
+    changed_at: datetime
+    amount: Decimal
+    currency: str

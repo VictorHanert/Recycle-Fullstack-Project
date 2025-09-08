@@ -11,17 +11,22 @@ function Navbar({ user, onLogout }) {
             </a>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <a href="/" className="text-gray-700 hover:text-gray-900">
+          <div className="flex items-center space-x-4 font-medium">
+            <a href="/" className="text-blue-600 hover:text-blue-800">
               Home
             </a>
-            <a href="/products" className="text-gray-700 hover:text-gray-900">
+            <a href="/products" className="text-blue-600 hover:text-blue-800">
               Products
             </a>
+            {user && (
+              <a href="/create-product" className="text-blue-600 hover:text-blue-800">
+                Sell
+              </a>
+            )}
             
             {user ? (
               <>
-                <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
+                <a href="/dashboard" className="text-blue-600 hover:text-blue-800">
                   Dashboard
                 </a>
                 {user.is_admin && (

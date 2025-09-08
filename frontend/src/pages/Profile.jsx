@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { profileAPI } from "../utils/api";
+import { profileAPI } from "../api";
+import { productsAPI } from "../api";
 
-function Profile({ user: propUser }) {
+function Profile() {
   const { user, token } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -20,16 +21,15 @@ function Profile({ user: propUser }) {
     postcode: ''
   });
 
-  // Use auth context user or prop user for flexibility
-  const currentUser = user || propUser;
-  const isOwnProfile = !propUser; // If no propUser, it's own profile
+  // Use auth context user for own profile
+  const currentUser = user;
 
   useEffect(() => {
-    if (currentUser && token && isOwnProfile) {
+    if (user && token) {
       fetchProfile();
       fetchUserProducts();
     }
-  }, [currentUser, token, isOwnProfile]);
+  }, [user, token]);
 
   const fetchProfile = async () => {
     try {
@@ -116,6 +116,18 @@ function Profile({ user: propUser }) {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        await productsAPI.delete(id);
+        navigate('/products');
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product. Please try again.');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="px-4 mb-48">
@@ -142,7 +154,7 @@ function Profile({ user: propUser }) {
         {/* Profile Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {isOwnProfile ? 'My Profile' : `${profileData?.username}'s Profile`}
+            My Profile
           </h1>
           {profileData && (
             <p className="text-lg text-gray-600">
@@ -155,7 +167,7 @@ function Profile({ user: propUser }) {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Personal Information</h2>
-            {isOwnProfile && !isEditing && (
+            {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -165,7 +177,7 @@ function Profile({ user: propUser }) {
             )}
           </div>
 
-          {isEditing && isOwnProfile ? (
+          {isEditing ? (
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -221,19 +233,18 @@ function Profile({ user: propUser }) {
         </div>
 
         {/* Location Information */}
-        {isOwnProfile && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Location</h2>
-              {!isEditingLocation && (
-                <button
-                  onClick={() => setIsEditingLocation(true)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  {profileData?.location ? 'Edit' : 'Add Location'}
-                </button>
-              )}
-            </div>
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Location</h2>
+            {!isEditingLocation && (
+              <button
+                onClick={() => setIsEditingLocation(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                {profileData?.location ? 'Edit' : 'Add Location'}
+              </button>
+            )}
+          </div>
 
             {isEditingLocation ? (
               <form onSubmit={handleUpdateLocation} className="space-y-4">
@@ -292,12 +303,12 @@ function Profile({ user: propUser }) {
               </div>
             )}
           </div>
-        )}
+        
 
         {/* User Products */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            {isOwnProfile ? 'My Products' : 'Products'} ({userProducts.length})
+            My Products ({userProducts.length})
           </h2>
           {userProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -306,16 +317,14 @@ function Profile({ user: propUser }) {
                   <h3 className="font-semibold">{product.title}</h3>
                   <p className="text-gray-600">${product.price_amount}</p>
                   <p className="text-sm text-gray-500">Status: {product.status}</p>
-                  {isOwnProfile && (
-                    <div className="mt-2">
-                      <button className="text-blue-500 hover:underline text-sm mr-2">
-                        Edit
-                      </button>
-                      <button className="text-red-500 hover:underline text-sm">
-                        Delete
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-2">
+                    <a href={`/products/${product.id}/edit`} className="text-blue-500 hover:underline text-sm mr-2">
+                      Edit
+                    </a>
+                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:underline text-sm">
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -324,21 +333,19 @@ function Profile({ user: propUser }) {
           )}
         </div>
 
-        {/* Danger Zone - Only for own profile */}
-        {isOwnProfile && (
-          <div className="bg-red-50 rounded-lg p-6 border border-red-200">
-            <h2 className="text-xl font-semibold text-red-800 mb-4">Danger Zone</h2>
-            <p className="text-red-700 mb-4">
-              Once you delete your account, there is no going back. Please be certain.
-            </p>
-            <button
-              onClick={handleDeleteAccount}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Delete Account
-            </button>
-          </div>
-        )}
+        {/* Danger Zone */}
+        <div className="bg-red-50 rounded-lg p-6 border border-red-200">
+          <h2 className="text-xl font-semibold text-red-800 mb-4">Danger Zone</h2>
+          <p className="text-red-700 mb-4">
+            Once you delete your account, there is no going back. Please be certain.
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Delete Account
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,17 +1,49 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { profileAPI } from "../api";
+import { productsAPI } from "../api";
 
-function Dashboard({ user: propUser }) {
+function Dashboard() {
   const { user } = useAuth();
+  const [userProducts, setUserProducts] = useState([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProducts();
+    }
+  }, [user]);
   
-  // Use auth context user or prop user for flexibility
-  const currentUser = user || propUser;
+  const fetchUserProducts = async () => {
+    try {
+      const products = await profileAPI.getUserProducts(user.id);
+      setUserProducts(products);
+    } catch (err) {
+      console.error('User products fetch error:', err);
+    }
+  };
+
+  const handleDeleteProduct = async (e, productId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        await productsAPI.delete(productId);
+        // Refresh the products list after deletion
+        fetchUserProducts();
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product. Please try again.');
+      }
+    }
+  };
 
   return (
-    <div className="px-4 mb-48">
+    <div className="px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
         <p className="text-lg text-gray-600">
-          Welcome back, <span className="font-semibold">{currentUser?.full_name || currentUser?.username}</span>!
+          Welcome back, <span className="font-semibold">{user?.full_name || user?.username}</span>!
         </p>
       </div>
       
@@ -54,6 +86,34 @@ function Dashboard({ user: propUser }) {
         </>
         )}
       </div>
+
+      {/* User Products */}
+        <div className="bg-white rounded-lg shadow p-6 my-10">
+          <h2 className="text-xl font-semibold mb-4">
+            My Products ({userProducts.length})
+          </h2>
+          {userProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userProducts.map((product) => (
+                <a href={`/products/${product.id}`} key={product.id} className="border rounded-lg p-4">
+                  <h3 className="font-semibold">{product.title}</h3>
+                  <p className="text-gray-600">${product.price_amount}</p>
+                  <p className="text-sm text-gray-500">Status: {product.status}</p>
+                    <div className="mt-2">
+                        <a href={`/products/${product.id}/edit`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline text-sm mr-2">
+                        Edit
+                      </a>
+                      <button onClick={(e) => handleDeleteProduct(e, product.id)} className="text-red-500 hover:underline text-sm">
+                        Delete
+                      </button>
+                    </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No products found</p>
+          )}
+        </div>
     </div>
   );
 }

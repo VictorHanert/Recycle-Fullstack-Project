@@ -1,9 +1,51 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
+import { useAuth } from "../hooks/useAuth";
+import { productsAPI } from "../api";
+import { formatRelativeTime, formatCondition } from "../utils/dateUtils";
+import ImageSlider from "../components/ImageSlider";
 
 function ProductDetail() {
   const { id } = useParams();
-  const { data: product, loading, error } = useFetch(`/api/products/${id}`);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: product, loading, error, refetch } = useFetch(`/api/products/${id}`);
+
+  const isOwner = user && product && user.id === product.seller?.id;
+
+  const handleEdit = () => {
+    navigate(`/products/${id}/edit`);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        await productsAPI.delete(id);
+        navigate('/products');
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product. Please try again.');
+      }
+    }
+  };
+
+  const handleMarkAsSold = async () => {
+    try {
+      await productsAPI.update(id, { is_sold: true });
+      refetch(); // Refresh the product data
+    } catch (err) {
+      console.error('Error marking product as sold:', err);
+      alert('Failed to mark product as sold. Please try again.');
+    }
+  };
+
+  const handleContactSeller = () => {
+    alert('Contact seller functionality would be implemented here');
+  };
+
+  const handleLike = () => {
+    alert('Like functionality would be implemented here');
+  };
 
   if (loading) {
     return (
@@ -45,10 +87,9 @@ function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div>
-            <img
-              src={product.images?.[0]?.url || "https://placehold.co/600x400.png"}
+            <ImageSlider
+              images={product.images}
               alt={product.title}
-              className="w-full h-96 object-cover rounded-lg shadow-lg"
             />
           </div>
 
@@ -72,6 +113,15 @@ function ProductDetail() {
               </span>
             </div>
 
+            {/* Created/Updated time display */}
+            <div className="mb-4 text-sm text-gray-500">
+              {product.created_at && product.updated_at && product.created_at !== product.updated_at ? (
+                `${formatRelativeTime(product.created_at)} (edited ${formatRelativeTime(product.updated_at)})`
+              ) : (
+                product.created_at ? formatRelativeTime(product.created_at) : ''
+              )}
+            </div>
+
             {/* Views and Favorites */}
             <div className="flex items-center gap-6 mb-4">
               <span className="text-gray-600"><b>Views:</b> {product.views_count ?? null}</span>
@@ -93,7 +143,7 @@ function ProductDetail() {
                 <span className="font-medium">Location:</span> {product.location ? `${product.location.city}, ${product.location.postcode}` : 'Unknown'}
               </p>
               <p className="text-gray-600">
-                <span className="font-medium">Condition:</span> {product.condition}
+                <span className="font-medium">Condition:</span> {formatCondition(product.condition)}
               </p>
             </div>
 
@@ -123,21 +173,66 @@ function ProductDetail() {
 
             <p className="text-gray-700 mb-6">{product.description}</p>
 
-            <div className="flex gap-2">
-              <button 
-                disabled={product.is_sold}
-                className={`flex-1 py-3 px-6 rounded-lg font-semibold ${
-                  product.is_sold
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {product.is_sold ? 'Sold' : 'Contact Seller'}
-              </button>
+            {/* Action Buttons - Different for owners vs visitors */}
+            <div className="space-y-3">
+              {isOwner ? (
+                // Owner actions
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={handleEdit}
+                    className="py-1 px-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    Edit Product
+                  </button>
 
-              <button className="flex-1 py-3 px-6 rounded-lg font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50">
-                Like ({product.likes_count})
-              </button>
+                  {!product.is_sold && (
+                    <button
+                      onClick={handleMarkAsSold}
+                      className="py-1 px-2 rounded-lg font-semibold bg-white-600 text-blue-600 hover:bg-green-70 border border-blue-600"
+                    >
+                      Mark as Sold
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleDelete}
+                    className="py-1 px-2 rounded-lg font-semibold bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete Product
+                  </button>
+                </div>
+              ) : (
+                // Visitor actions
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={handleContactSeller}
+                    disabled={product.is_sold}
+                    className={`py-3 px-6 rounded-lg font-semibold ${
+                      product.is_sold
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {product.is_sold ? 'Sold' : 'Contact Seller'}
+                  </button>
+
+                  <button
+                    onClick={handleLike}
+                    className="py-3 px-6 rounded-lg font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Like ({product.likes_count || 0})
+                  </button>
+                </div>
+              )}
+
+              {/* Status indicator for sold products */}
+              {product.is_sold && (
+                <div className="text-center">
+                  <span className="inline-block px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                    This product has been sold
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { profileAPI } from "../utils/api";
+import { profileAPI } from "../api";
 import { useAuth } from "../hooks/useAuth";
 
 function UserProfile() {

@@ -2,8 +2,9 @@
 from math import ceil
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.db.mysql import get_db
 from app.dependencies import get_admin_user
@@ -64,11 +65,13 @@ async def get_platform_stats(
     total_products = db.query(Product).count()
     sold_products = db.query(Product).filter(Product.status == "sold").count()
     active_products = total_products - sold_products
+    revenue_from_sold_products = db.query(func.sum(Product.price_amount)).filter(Product.status == "sold").scalar() or 0
 
     return {
         "total_users": total_users,
         "total_products": total_products,
         "sold_products": sold_products,
         "active_products": active_products,
-        "conversion_rate": round((sold_products / total_products * 100) if total_products > 0 else 0, 2)
+        "conversion_rate": round((sold_products / total_products * 100) if total_products > 0 else 0, 2),
+        "revenue_from_sold_products": revenue_from_sold_products
     }

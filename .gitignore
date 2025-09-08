@@ -49,6 +49,9 @@ backend/*.egg-info/
 backend/.installed.cfg
 backend/*.egg
 
+# Images:
+backend/uploads/
+
 # Database
 *.db
 *.sqlite
