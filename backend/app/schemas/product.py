@@ -166,6 +166,9 @@ class ProductFilter(BaseModel):
     category: Optional[str] = None
     min_price: Optional[Decimal] = Field(None, ge=0)
     max_price: Optional[Decimal] = Field(None, ge=0)
+    location_id: Optional[int] = None
+    condition: Optional[str] = None
+    sort_by: Optional[str] = "newest"
     is_sold: Optional[bool] = None
     search_term: Optional[str] = Field(None, max_length=100)
 

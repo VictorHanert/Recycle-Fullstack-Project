@@ -11,7 +11,6 @@ from app.models.location import Location
 from app.schemas.user import ProfileUpdate, UserProfileResponse, PublicUserProfile
 from app.schemas.location import LocationCreate
 from app.services.location_service import LocationService
-from app.services.auth_service import AuthService
 
 
 class ProfileService:

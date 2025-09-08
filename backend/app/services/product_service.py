@@ -141,6 +141,9 @@ class ProductService:
         filter_params: Optional[ProductFilter] = None
     ) -> tuple[List[Product], int]:
         """Get products with filtering and pagination"""
+        from sqlalchemy import desc, asc
+        from app.models.location import Location
+        
         query = db.query(Product).options(
             joinedload(Product.seller),
             joinedload(Product.location),
@@ -161,6 +164,12 @@ class ProductService:
             if filter_params.max_price is not None:
                 query = query.filter(Product.price_amount <= filter_params.max_price)
 
+            if filter_params.location_id is not None:
+                query = query.filter(Product.location_id == filter_params.location_id)
+
+            if filter_params.condition:
+                query = query.filter(Product.condition.ilike(f"%{filter_params.condition}%"))
+
             if filter_params.is_sold is not None:
                 if filter_params.is_sold:
                     query = query.filter(Product.status == "sold")
@@ -176,11 +185,29 @@ class ProductService:
                     )
                 )
 
+        # Apply sorting
+        if filter_params and filter_params.sort_by:
+            if filter_params.sort_by == "newest":
+                query = query.order_by(desc(Product.created_at))
+            elif filter_params.sort_by == "oldest":
+                query = query.order_by(asc(Product.created_at))
+            elif filter_params.sort_by == "price_low":
+                query = query.order_by(asc(Product.price_amount))
+            elif filter_params.sort_by == "price_high":
+                query = query.order_by(desc(Product.price_amount))
+            elif filter_params.sort_by == "title":
+                query = query.order_by(asc(Product.title))
+            else:
+                query = query.order_by(desc(Product.created_at))
+        else:
+            # Default sorting
+            query = query.order_by(desc(Product.created_at))
+
         # Get total count for pagination
         total = query.count()
 
-        # Apply pagination and ordering
-        products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
+        # Apply pagination
+        products = query.offset(skip).limit(limit).all()
 
         return products, total
 

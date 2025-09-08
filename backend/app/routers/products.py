@@ -36,6 +36,9 @@ async def get_all_products(
     category: Optional[str] = Query(None, description="Filter by category"),
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
+    location_id: Optional[int] = Query(None, description="Filter by location ID"),
+    condition: Optional[str] = Query(None, description="Filter by condition"),
+    sort: Optional[str] = Query("newest", description="Sort by: newest, oldest, price_low, price_high, title"),
     search: Optional[str] = Query(None, description="Search in title and description"),
     show_sold: bool = Query(False, description="Include sold products"),
     db: Session = Depends(get_db)
@@ -48,6 +51,9 @@ async def get_all_products(
         category=category,
         min_price=min_price,
         max_price=max_price,
+        location_id=location_id,
+        condition=condition,
+        sort_by=sort,
         search_term=search,
         is_sold=None if show_sold else False
     )
