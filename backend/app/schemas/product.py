@@ -136,6 +136,12 @@ class ProductResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
+    # Dimensions and weight
+    width_cm: Optional[Decimal] = None
+    height_cm: Optional[Decimal] = None
+    depth_cm: Optional[Decimal] = None
+    weight_kg: Optional[Decimal] = None
+    
     # Nested relationships
     seller: Optional[SellerInfo] = None
     location: Optional[LocationInfo] = None

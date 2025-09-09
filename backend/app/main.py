@@ -15,6 +15,9 @@ from app.middleware import (
 
 settings = get_settings()
 
+# Create database tables on startup
+create_tables()
+
 app = FastAPI(
     title="Marketplace API",
     description="A modern marketplace platform where users can list and sell products",
@@ -22,11 +25,6 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
-
-# Create database tables on startup
-@app.on_event("startup")
-async def startup_event():
-    create_tables()
 
 # Add exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)

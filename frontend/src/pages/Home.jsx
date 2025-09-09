@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import Button from "@mui/material/Button";
 import { useAuth } from "../hooks/useAuth";
 
 function Home() {
@@ -13,38 +12,23 @@ function Home() {
           The marketplace for pre-owned bicycles. Find your perfect ride or give your bike a new life with our cycling community.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            variant="contained" 
-            color="primary" 
-            size="large"
-            component={Link}
-            to="/products"
-            sx={{ px: 6, py: 2, fontSize: '1.1rem' }}
-          >
-            Browse Bikes
-          </Button>
+          <Link to="/products">
+            <button className="bg-blue-600 text-white px-6 py-2 text-lg font-medium rounded hover:bg-blue-700 transition">
+              Browse Bikes
+            </button>
+          </Link>
           {!isAuthenticated ? (
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              size="large"
-              component={Link}
-              to="/register"
-              sx={{ px: 6, py: 2, fontSize: '1.1rem' }}
-            >
-              Join ReCycle
-            </Button>
+            <Link to="/register">
+              <button className="border border-blue-600 text-blue-600 px-6 py-2 text-lg font-medium rounded hover:bg-blue-600 hover:text-white transition">
+                Join ReCycle
+              </button>
+            </Link>
           ) : (
-            <Button 
-              variant="outlined" 
-              color="primary" 
-              size="large"
-              component={Link}
-              to="/dashboard"
-              sx={{ px: 6, py: 2, fontSize: '1.1rem' }}
-            >
-              My Dashboard
-            </Button>
+            <Link to="/dashboard">
+              <button className="border border-blue-600 text-blue-600 px-6 py-2 text-lg font-medium rounded hover:bg-blue-600 hover:text-white transition">
+                My Dashboard
+              </button>
+            </Link>
           )}
         </div>
       </div>
@@ -86,39 +70,17 @@ function Home() {
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            variant="contained"
-            size="large"
-            component={Link}
-            to="/products"
-            sx={{ 
-              px: 6, 
-              py: 2, 
-              fontSize: '1.1rem',
-              bgcolor: 'white', 
-              color: 'primary.main',
-              '&:hover': { bgcolor: 'grey.100' } 
-            }}
-          >
-            Browse Bikes →
-          </Button>
+          <Link to="/products">
+            <button className="bg-white text-blue-600 px-6 py-2 text-lg font-medium rounded hover:bg-gray-100 transition">
+              Browse Bikes →
+            </button>
+          </Link>
           {isAuthenticated && (
-            <Button
-              variant="outlined"
-              size="large"
-              component={Link}
-              to="/dashboard"
-              sx={{ 
-                px: 6, 
-                py: 2, 
-                fontSize: '1.1rem',
-                color: 'white', 
-                borderColor: 'white', 
-                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } 
-              }}
-            >
-              List Your Bike
-            </Button>
+            <Link to="/dashboard">
+              <button className="border border-white text-white px-6 py-2 text-lg font-medium rounded hover:bg-white hover:bg-opacity-10 transition">
+                List Your Bike
+              </button>
+            </Link>
           )}
         </div>
       </div>

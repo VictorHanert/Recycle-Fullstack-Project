@@ -1,44 +1,21 @@
-import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { profileAPI } from "../api";
+import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 
 function UserProfile() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
-  const [profileData, setProfileData] = useState(null);
-  const [userProducts, setUserProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  const { data: profileData, loading: profileLoading, error: profileError } = useFetch(
+    userId ? `/api/profile/${userId}` : null
+  );
+  
+  const { data: userProducts, loading: productsLoading, error: productsError } = useFetch(
+    userId ? `/api/profile/${userId}/products` : null
+  );
 
-  useEffect(() => {
-    if (userId) {
-      fetchPublicProfile();
-      fetchUserProducts();
-    }
-  }, [userId]);
-
-  const fetchPublicProfile = async () => {
-    try {
-      setLoading(true);
-      const profile = await profileAPI.getPublicProfile(userId);
-      setProfileData(profile);
-    } catch (err) {
-      setError('Failed to load user profile');
-      console.error('Public profile fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUserProducts = async () => {
-    try {
-      const products = await profileAPI.getUserProducts(userId);
-      setUserProducts(products);
-    } catch (err) {
-      console.error('User products fetch error:', err);
-    }
-  };
+  const loading = profileLoading || productsLoading;
+  const error = profileError || productsError;
 
   if (loading) {
     return (
@@ -68,7 +45,7 @@ function UserProfile() {
         {/* Profile Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {profileData?.username}'s Profile
+            {profileData?.username || 'User'}'s Profile
             {isOwnProfile && <span className="text-blue-600 ml-2">(You)</span>}
           </h1>
           {profileData && (
@@ -82,7 +59,7 @@ function UserProfile() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
           <div className="space-y-2">
-            <p><strong>Username:</strong> {profileData?.username}</p>
+            <p><strong>Username:</strong> {profileData?.username || 'Loading...'}</p>
             {profileData?.full_name && (
               <p><strong>Name:</strong> {profileData.full_name}</p>
             )}
@@ -95,9 +72,9 @@ function UserProfile() {
         {/* User Products */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            Active Products ({profileData?.product_count || userProducts.length})
+            Active Products ({profileData?.product_count || userProducts?.length || 0})
           </h2>
-          {userProducts.length > 0 ? (
+          {userProducts && userProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userProducts.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">

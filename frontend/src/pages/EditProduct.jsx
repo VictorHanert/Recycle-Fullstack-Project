@@ -79,10 +79,10 @@ function EditProduct() {
           condition: productData.condition || "",
           quantity: productData.quantity?.toString() || "",
           location_id: productData.location_id?.toString() || "",
-          width_cm: productData.width_cm?.toString() || "",
-          height_cm: productData.height_cm?.toString() || "",
-          depth_cm: productData.depth_cm?.toString() || "",
-          weight_kg: productData.weight_kg?.toString() || "",
+          width_cm: productData.width_cm ? productData.width_cm.toString() : "",
+          height_cm: productData.height_cm ? productData.height_cm.toString() : "",
+          depth_cm: productData.depth_cm ? productData.depth_cm.toString() : "",
+          weight_kg: productData.weight_kg ? productData.weight_kg.toString() : "",
           color_ids: productData.colors?.map(c => c.id) || [],
           material_ids: productData.materials?.map(m => m.id) || [],
           tag_ids: productData.tags?.map(t => t.id) || []
@@ -236,19 +236,19 @@ function EditProduct() {
       errors.quantity = "Quantity must be between 1 and 999";
     }
 
-    if (formData.width_cm && (parseFloat(formData.width_cm) <= 0 || parseFloat(formData.width_cm) > 1000)) {
+    if (formData.width_cm !== "" && (parseFloat(formData.width_cm) <= 0 || parseFloat(formData.width_cm) > 1000)) {
       errors.width_cm = "Width must be between 0.1 and 1000 cm";
     }
 
-    if (formData.height_cm && (parseFloat(formData.height_cm) <= 0 || parseFloat(formData.height_cm) > 1000)) {
+    if (formData.height_cm !== "" && (parseFloat(formData.height_cm) <= 0 || parseFloat(formData.height_cm) > 1000)) {
       errors.height_cm = "Height must be between 0.1 and 1000 cm";
     }
 
-    if (formData.depth_cm && (parseFloat(formData.depth_cm) <= 0 || parseFloat(formData.depth_cm) > 1000)) {
+    if (formData.depth_cm !== "" && (parseFloat(formData.depth_cm) <= 0 || parseFloat(formData.depth_cm) > 1000)) {
       errors.depth_cm = "Depth must be between 0.1 and 1000 cm";
     }
 
-    if (formData.weight_kg && (parseFloat(formData.weight_kg) <= 0 || parseFloat(formData.weight_kg) > 1000)) {
+    if (formData.weight_kg !== "" && (parseFloat(formData.weight_kg) <= 0 || parseFloat(formData.weight_kg) > 1000)) {
       errors.weight_kg = "Weight must be between 0.1 and 1000 kg";
     }
 
@@ -278,17 +278,15 @@ function EditProduct() {
         ...(formData.condition && { condition: formData.condition }),
         ...(formData.quantity && { quantity: parseInt(formData.quantity) }),
         ...(formData.location_id && { location_id: parseInt(formData.location_id) }),
-        ...(formData.width_cm && { width_cm: parseFloat(formData.width_cm) }),
-        ...(formData.height_cm && { height_cm: parseFloat(formData.height_cm) }),
-        ...(formData.depth_cm && { depth_cm: parseFloat(formData.depth_cm) }),
-        ...(formData.weight_kg && { weight_kg: parseFloat(formData.weight_kg) }),
-        ...(formData.color_ids.length > 0 && { color_ids: formData.color_ids }),
-        ...(formData.material_ids.length > 0 && { material_ids: formData.material_ids }),
-        ...(formData.tag_ids.length > 0 && { tag_ids: formData.tag_ids }),
-        // Include new images only (not existing ones)
-        ...(images.some(img => !img.existing) && {
-          image_urls: images.filter(img => !img.existing).map(img => img.url)
-        })
+        ...(formData.width_cm !== "" && { width_cm: parseFloat(formData.width_cm) }),
+        ...(formData.height_cm !== "" && { height_cm: parseFloat(formData.height_cm) }),
+        ...(formData.depth_cm !== "" && { depth_cm: parseFloat(formData.depth_cm) }),
+        ...(formData.weight_kg !== "" && { weight_kg: parseFloat(formData.weight_kg) }),
+        color_ids: formData.color_ids,
+        material_ids: formData.material_ids,
+        tag_ids: formData.tag_ids,
+        // Include all current images (existing + new)
+        image_urls: images.map(img => img.url)
       };
 
       await productsAPI.update(id, productData);

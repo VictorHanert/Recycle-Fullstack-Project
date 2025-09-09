@@ -3,13 +3,15 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import and_, desc, or_
+from sqlalchemy import and_, desc, asc, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.product import Product
 from app.models.user import User
 from app.models.price_history import ProductPriceHistory
+from app.models.product_details import Color, Material, Tag
+from app.models.media import ProductImage
 from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate
 
 
@@ -141,9 +143,6 @@ class ProductService:
         filter_params: Optional[ProductFilter] = None
     ) -> tuple[List[Product], int]:
         """Get products with filtering and pagination"""
-        from sqlalchemy import desc, asc
-        from app.models.location import Location
-        
         query = db.query(Product).options(
             joinedload(Product.seller),
             joinedload(Product.location),
@@ -278,6 +277,47 @@ class ProductService:
                 )
                 db.add(price_history)
                 price_changed = True
+
+        # Handle many-to-many relationships
+        if 'color_ids' in update_data:
+            # Clear existing colors and add new ones
+            product.colors.clear()
+            if update_data['color_ids']:
+                colors = db.query(Color).filter(Color.id.in_(update_data['color_ids'])).all()
+                product.colors.extend(colors)
+            update_data.pop('color_ids')
+
+        if 'material_ids' in update_data:
+            # Clear existing materials and add new ones
+            product.materials.clear()
+            if update_data['material_ids']:
+                materials = db.query(Material).filter(Material.id.in_(update_data['material_ids'])).all()
+                product.materials.extend(materials)
+            update_data.pop('material_ids')
+
+        if 'tag_ids' in update_data:
+            # Clear existing tags and add new ones
+            product.tags.clear()
+            if update_data['tag_ids']:
+                tags = db.query(Tag).filter(Tag.id.in_(update_data['tag_ids'])).all()
+                product.tags.extend(tags)
+            update_data.pop('tag_ids')
+
+        if 'image_urls' in update_data:
+            # Replace all images with the new list
+            # First, delete all existing images
+            db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+            
+            # Then add the new images
+            if update_data['image_urls']:
+                for i, image_url in enumerate(update_data['image_urls']):
+                    new_image = ProductImage(
+                        product_id=product_id,
+                        url=image_url,
+                        sort_order=i + 1
+                    )
+                    db.add(new_image)
+            update_data.pop('image_urls')
 
         # Update only provided fields
         for field, value in update_data.items():

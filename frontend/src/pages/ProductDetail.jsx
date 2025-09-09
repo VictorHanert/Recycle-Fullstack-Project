@@ -79,7 +79,9 @@ function ProductDetail() {
   const hasColors = Array.isArray(product.colors) && product.colors.length > 0;
   const hasMaterials = Array.isArray(product.materials) && product.materials.length > 0;
   const hasTags = Array.isArray(product.tags) && product.tags.length > 0;
-  const showDetails = hasColors || hasMaterials || hasTags;
+  const hasDimensions = product.width_cm || product.height_cm || product.depth_cm;
+  const hasWeight = product.weight_kg;
+  const showDetails = hasColors || hasMaterials || hasTags || hasDimensions || hasWeight;
 
   return (
     <div className="px-4">
@@ -165,6 +167,20 @@ function ProductDetail() {
                   {hasTags && (
                     <div>
                       <span className="font-medium">Tags:</span> {product.tags.map((tag) => tag.name).join(', ')}
+                    </div>
+                  )}
+                  {hasDimensions && (
+                    <div>
+                      <span className="font-medium">Dimensions:</span> {[
+                        product.width_cm && `${product.width_cm}cm W`,
+                        product.height_cm && `${product.height_cm}cm H`,
+                        product.depth_cm && `${product.depth_cm}cm D`
+                      ].filter(Boolean).join(' × ')}
+                    </div>
+                  )}
+                  {hasWeight && (
+                    <div>
+                      <span className="font-medium">Weight:</span> {product.weight_kg}kg
                     </div>
                   )}
                 </div>
