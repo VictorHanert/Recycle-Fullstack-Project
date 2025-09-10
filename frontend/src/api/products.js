@@ -13,6 +13,7 @@ export const productsAPI = {
   getById: (id) => apiClient.get(`/api/products/${id}`),
   getCategories: () => apiClient.get('/api/products/categories'),
   getLocations: () => apiClient.get('/api/products/locations'),
+  getCurrencies: () => apiClient.get('/api/products/currencies'),
   getProductDetails: () => apiClient.get('/api/products/productdetails'),
   create: (product) => apiClient.post('/api/products/', product),
   update: (id, product) => apiClient.put(`/api/products/${id}`, product),

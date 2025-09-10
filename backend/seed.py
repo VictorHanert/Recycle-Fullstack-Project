@@ -182,7 +182,7 @@ def seed_products(session: Session, users, categories, locations, colors, materi
             hist = ProductPriceHistory(
                 product=p,
                 amount=round(random.uniform(50, float(p.price_amount)), 2),  # cast to float
-                currency="USD",
+                currency="DKK",
                 changed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
             )
             session.add(hist)

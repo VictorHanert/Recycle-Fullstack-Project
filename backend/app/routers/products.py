@@ -95,6 +95,19 @@ async def get_all_locations(db: Session = Depends(get_db)):
     locations = db.query(Location).order_by(Location.city, Location.postcode).all()
     return [LocationInfo.model_validate(loc) for loc in locations]
 
+@router.get("/currencies")
+async def get_supported_currencies():
+    """Get list of supported currencies"""
+    currencies = [
+        {"code": "DKK", "name": "Danish Krone", "symbol": "kr"},
+        {"code": "EUR", "name": "Euro", "symbol": "€"},
+        {"code": "USD", "name": "US Dollar", "symbol": "$"},
+        {"code": "GBP", "name": "British Pound", "symbol": "£"},
+        {"code": "SEK", "name": "Swedish Krona", "symbol": "kr"},
+        {"code": "NOK", "name": "Norwegian Krone", "symbol": "kr"}
+    ]
+    return currencies
+
 @router.get("/categories", response_model=List[CategoryInfo])
 async def get_all_categories(db: Session = Depends(get_db)):
     """Get all product categories"""

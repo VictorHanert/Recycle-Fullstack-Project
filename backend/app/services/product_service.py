@@ -39,7 +39,7 @@ class ProductService:
                 title=product.title,
                 description=product.description,
                 price_amount=product.price_amount,
-                price_currency="DKK",
+                price_currency=product.price_currency,
                 category_id=product.category_id,
                 condition=product.condition or "new",
                 quantity=product.quantity or 1,

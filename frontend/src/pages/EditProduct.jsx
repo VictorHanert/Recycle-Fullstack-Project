@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
+import { currencyUtils } from "../utils/currencyUtils";
 
 function EditProduct() {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ function EditProduct() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [colors, setColors] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [tags, setTags] = useState([]);
@@ -48,10 +50,11 @@ function EditProduct() {
     const fetchData = async () => {
       try {
         setDataLoading(true);
-        const [productData, categoriesData, locationsData, productDetailsData] = await Promise.all([
+        const [productData, categoriesData, locationsData, currenciesData, productDetailsData] = await Promise.all([
           productsAPI.getById(id),
           productsAPI.getCategories(),
           productsAPI.getLocations(),
+          productsAPI.getCurrencies(),
           productsAPI.getProductDetails()
         ]);
 
@@ -64,6 +67,7 @@ function EditProduct() {
         setOriginalProduct(productData);
         setCategories(categoriesData);
         setLocations(locationsData);
+        setCurrencies(currenciesData);
         setColors(productDetailsData.colors || []);
         setMaterials(productDetailsData.materials || []);
         setTags(productDetailsData.tags || []);
@@ -345,7 +349,7 @@ function EditProduct() {
               {priceHistory.map((entry, index) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span>{new Date(entry.changed_at).toLocaleDateString()}</span>
-                  <span className="font-medium">{entry.amount} {entry.currency}</span>
+                  <span className="font-medium">{entry.amount} {currencyUtils.getCurrencySymbol(entry.currency)}</span>
                 </div>
               ))}
             </div>
@@ -411,7 +415,7 @@ function EditProduct() {
 
               <div>
                 <label htmlFor="price_amount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Price ({formData.price_currency}) *
+                  Price ({currencyUtils.getCurrencySymbol(formData.price_currency)}) *
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -433,9 +437,11 @@ function EditProduct() {
                     onChange={handleInputChange}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="DKK">DKK</option>
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
+                    {currencies.map((currency) => (
+                      <option key={currency.code} value={currency.code}>
+                        {currencyUtils.getCurrencyDisplayName(currency.code)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {validationErrors.price_amount && (
@@ -507,25 +513,23 @@ function EditProduct() {
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
                 </label>
-                <input
-                  type="number"
-                  id="quantity"
-                  name="quantity"
-                  value={formData.quantity}
+                <select
+                  id="location_id"
+                  name="location_id"
+                  value={formData.location_id}
                   onChange={handleInputChange}
-                  min="1"
-                  max="999"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.quantity ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="1"
-                />
-                {validationErrors.quantity && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.quantity}</p>
-                )}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select location</option>
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.city}, {location.postcode}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -621,23 +625,25 @@ function EditProduct() {
                 {/* Left Column */}
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
+                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantity
                     </label>
-                    <select
-                      id="location_id"
-                      name="location_id"
-                      value={formData.location_id}
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      value={formData.quantity}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select location</option>
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.city}, {location.postcode}
-                        </option>
-                      ))}
-                    </select>
+                      min="1"
+                      max="999"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        validationErrors.quantity ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="1"
+                    />
+                    {validationErrors.quantity && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.quantity}</p>
+                    )}
                   </div>
 
                   {/* Dimensions */}

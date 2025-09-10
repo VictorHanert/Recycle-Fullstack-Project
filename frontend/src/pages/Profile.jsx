@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { profileAPI } from "../api";
 import { productsAPI } from "../api";
+import { currencyUtils } from "../utils/currencyUtils";
 
 function Profile() {
   const { user, token } = useAuth();
@@ -315,7 +316,7 @@ function Profile() {
               {userProducts.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4">
                   <h3 className="font-semibold">{product.title}</h3>
-                  <p className="text-gray-600">${product.price_amount}</p>
+                  <p className="text-gray-600">{product.price_amount} {currencyUtils.getCurrencySymbol(product.price_currency)}</p>
                   <p className="text-sm text-gray-500">Status: {product.status}</p>
                   <div className="mt-2">
                     <a href={`/products/${product.id}/edit`} className="text-blue-500 hover:underline text-sm mr-2">

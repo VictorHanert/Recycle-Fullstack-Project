@@ -72,6 +72,7 @@ class ProductCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1, max_length=1000)
     price_amount: Decimal = Field(..., gt=0, decimal_places=2)
+    price_currency: str = Field("DKK", pattern="^[A-Z]{3}$", description="Currency code (e.g., DKK, EUR, USD)")
     category_id: int = Field(..., gt=0)
 
     # Optional fields
@@ -93,6 +94,7 @@ class ProductUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
     price_amount: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    price_currency: Optional[str] = Field(None, pattern="^[A-Z]{3}$", description="Currency code (e.g., DKK, EUR, USD)")
     category_id: Optional[int] = Field(None, gt=0)
 
     # Status and condition updates
@@ -124,7 +126,7 @@ class ProductResponse(BaseModel):
     title: str
     description: Optional[str] = None
     price_amount: Decimal
-    price_currency: Optional[str] = "USD"
+    price_currency: Optional[str] = "DKK"
     category_id: int
     condition: str
     quantity: int

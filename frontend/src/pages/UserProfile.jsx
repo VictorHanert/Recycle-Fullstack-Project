@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
+import { currencyUtils } from "../utils/currencyUtils";
 
 function UserProfile() {
   const { userId } = useParams();
@@ -83,7 +84,7 @@ function UserProfile() {
                     {Number(product.price_amount) % 1 === 0
                       ? Number(product.price_amount)
                       : Number(product.price_amount).toFixed(2)
-                    } kr
+                    } {currencyUtils.getCurrencySymbol(product.price_currency)}
                   </p>
                   <p className="text-sm text-gray-500 mb-2">
                     Condition: {product.condition}

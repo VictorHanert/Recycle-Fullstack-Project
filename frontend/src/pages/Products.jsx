@@ -17,6 +17,7 @@ function Products() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,6 +37,19 @@ function Products() {
   const [locations, setLocations] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [locationsLoading, setLocationsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 700) {
+        setShowBackToTop(true);
+      } else {
+        setShowBackToTop(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Sync temp prices
   useEffect(() => {
@@ -185,7 +199,7 @@ function Products() {
   ].filter(Boolean).length;
 
   return (
-    <div className="px-4">
+    <div className="relative px-4">
       {/* Header */}
       <div className="">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Our Products</h1>
@@ -261,6 +275,20 @@ function Products() {
         currentPage={page}
         onPageChange={setPage}
       />
+
+      {/* Back to top button */}
+      {showBackToTop && (
+        <button
+          id="back-to-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-4 right-2 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 border-2 border-gray-50"
+          title="Back to top"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

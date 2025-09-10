@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
+import { currencyUtils } from "../utils/currencyUtils";
 
 function CreateProduct() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function CreateProduct() {
     title: "",
     description: "",
     price_amount: "",
+    price_currency: "DKK",
     category_id: "",
     // Optional fields
     condition: "",
@@ -28,6 +30,7 @@ function CreateProduct() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [colors, setColors] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [tags, setTags] = useState([]);
@@ -108,14 +111,16 @@ function CreateProduct() {
     const fetchData = async () => {
       try {
         setDataLoading(true);
-        const [categoriesData, locationsData, productDetailsData] = await Promise.all([
+        const [categoriesData, locationsData, currenciesData, productDetailsData] = await Promise.all([
           productsAPI.getCategories(),
           productsAPI.getLocations(),
+          productsAPI.getCurrencies(),
           productsAPI.getProductDetails()
         ]);
 
         setCategories(categoriesData);
         setLocations(locationsData);
+        setCurrencies(currenciesData);
         setColors(productDetailsData.colors || []);
         setMaterials(productDetailsData.materials || []);
         setTags(productDetailsData.tags || []);
@@ -222,6 +227,7 @@ function CreateProduct() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price_amount: parseFloat(formData.price_amount),
+        price_currency: formData.price_currency,
         category_id: parseInt(formData.category_id),
         // Optional fields - only include if they have values
         ...(formData.condition && { condition: formData.condition }),
@@ -332,21 +338,35 @@ function CreateProduct() {
 
               <div>
                 <label htmlFor="price_amount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Price (DKK) *
+                  Price ({currencyUtils.getCurrencySymbol(formData.price_currency)}) *
                 </label>
-                <input
-                  type="number"
-                  id="price_amount"
-                  name="price_amount"
-                  value={formData.price_amount}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  min="0"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.price_amount ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="0.00"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    id="price_amount"
+                    name="price_amount"
+                    value={formData.price_amount}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    min="0"
+                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      validationErrors.price_amount ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="0.00"
+                  />
+                  <select
+                    name="price_currency"
+                    value={formData.price_currency}
+                    onChange={handleInputChange}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {currencies.map((currency) => (
+                      <option key={currency.code} value={currency.code}>
+                        {currencyUtils.getCurrencyDisplayName(currency.code)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {validationErrors.price_amount && (
                   <p className="mt-1 text-sm text-red-600">{validationErrors.price_amount}</p>
                 )}
@@ -398,25 +418,23 @@ function CreateProduct() {
               </div>
 
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
                 </label>
-                <input
-                  type="number"
-                  id="quantity"
-                  name="quantity"
-                  value={formData.quantity}
+                <select
+                  id="location_id"
+                  name="location_id"
+                  value={formData.location_id}
                   onChange={handleInputChange}
-                  min="1"
-                  max="999"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.quantity ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="1"
-                />
-                {validationErrors.quantity && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.quantity}</p>
-                )}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select location</option>
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.city}, {location.postcode}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -506,24 +524,27 @@ function CreateProduct() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column */}
                 <div className="space-y-6">
+                  {/* Quantity */}
                   <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
+                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantity
                     </label>
-                    <select
-                      id="location_id"
-                      name="location_id"
-                      value={formData.location_id}
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      value={formData.quantity}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Select location</option>
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.city}, {location.postcode}
-                        </option>
-                      ))}
-                    </select>
+                      min="1"
+                      max="999"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        validationErrors.quantity ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="1"
+                    />
+                    {validationErrors.quantity && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.quantity}</p>
+                    )}
                   </div>
 
                   {/* Dimensions */}

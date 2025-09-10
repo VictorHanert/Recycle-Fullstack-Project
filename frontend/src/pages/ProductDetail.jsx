@@ -3,6 +3,7 @@ import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/dateUtils";
+import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/ImageSlider";
 
 function ProductDetail() {
@@ -104,7 +105,7 @@ function ProductDetail() {
                   {Number(product.price_amount) % 1 === 0
                     ? Number(product.price_amount)
                     : Number(product.price_amount).toFixed(2)
-                  } kr
+                  } {currencyUtils.getCurrencySymbol(product.price_currency)}
               </span>
               <span className={`ml-4 px-3 py-1 rounded-full text-sm ${
                 product.is_sold

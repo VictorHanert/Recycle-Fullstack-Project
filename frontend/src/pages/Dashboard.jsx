@@ -1,6 +1,7 @@
 import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { productsAPI } from "../api";
+import { currencyUtils } from "../utils/currencyUtils";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ function Dashboard() {
               {userProducts.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4">
                   <a href={`/products/${product.id}`} className="font-semibold hover:underline">{product.title}</a>
-                  <p className="text-gray-600">${product.price_amount}</p>
+                  <p className="text-gray-600">{product.price_amount} {currencyUtils.getCurrencySymbol(product.price_currency)}</p>
                   <p className="text-sm text-gray-500">Status: {product.status}</p>
                     <div className="mt-2">
                         <a href={`/products/${product.id}/edit`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline text-sm mr-2">
