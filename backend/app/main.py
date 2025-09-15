@@ -26,11 +26,6 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add exception handlers
-app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
-
 # Configure CORS
 cors_origins = settings.cors_origins.split(",")
 app.add_middleware(
@@ -40,6 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 

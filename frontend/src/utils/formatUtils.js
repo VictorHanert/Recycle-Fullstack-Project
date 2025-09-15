@@ -2,48 +2,39 @@
 export const formatRelativeTime = (dateString) => {
   if (!dateString) return '';
 
-  // Ensure UTC dates are parsed correctly - add Z if missing timezone info
   let date;
+  // Ensure UTC dates are parsed correctly - add Z if missing timezone info
   if (dateString.includes('T') && !dateString.includes('+') && !dateString.endsWith('Z')) {
-    // ISO format without timezone - assume UTC and add Z
     date = new Date(dateString + 'Z');
   } else {
-    // Already has timezone info or is already properly formatted
     date = new Date(dateString);
   }
 
   const now = new Date();
   const diffInMs = now - date;
-  const diffInHours = diffInMs / (1000 * 60 * 60);
-  const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
-  const diffInWeeks = diffInDays / 7;
-  const diffInMonths = diffInDays / 30;
-  const diffInYears = diffInDays / 365;
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  const diffInMonths = Math.floor(diffInDays / 30);
+  const diffInYears = Math.floor(diffInDays / 365);
 
-  // Handle very recent times more accurately
-  if (diffInHours < 1) {
-    const minutes = Math.floor(diffInMs / (1000 * 60));
-    if (minutes < 1) {
-      return 'Just now';
-    }
-    return minutes === 1 ? '1 minute ago' : `${minutes} minutes ago`;
-  }
-
-  if (diffInHours < 24) {
-    const hours = Math.floor(diffInHours);
-    return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  } else if (diffInMinutes < 60) {
+    return diffInMinutes === 1 ? '1 minute ago' : `${diffInMinutes} minutes ago`;
+  } else if (diffInHours < 24) {
+    return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
   } else if (diffInDays < 7) {
-    const days = Math.floor(diffInDays);
-    return days === 1 ? '1 day ago' : `${days} days ago`;
-  } else if (diffInWeeks < 4) {
-    const weeks = Math.floor(diffInWeeks);
-    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
-  } else if (diffInMonths < 12) {
-    const months = Math.floor(diffInMonths);
-    return months === 1 ? '1 month ago' : `${months} months ago`;
+    return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
+  } else if (diffInYears >= 1) {
+    return diffInYears === 1 ? '1 year ago' : `${diffInYears} years ago`;
+  } else if (diffInMonths >= 1) {
+    return diffInMonths === 1 ? '1 month ago' : `${diffInMonths} months ago`;
+  } else if (diffInWeeks >= 1) {
+    return diffInWeeks === 1 ? '1 week ago' : `${diffInWeeks} weeks ago`;
   } else {
-    const years = Math.floor(diffInYears);
-    return years === 1 ? '1 year ago' : `${years} years ago`;
+    return 'Just now'; // Fallback
   }
 };
 

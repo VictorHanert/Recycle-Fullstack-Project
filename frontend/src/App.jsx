@@ -61,7 +61,6 @@ function AppRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/user/:userId" element={<UserProfile />} />
 
           {/* Protected routes (requires login) */}
@@ -88,6 +87,14 @@ function AppRoutes() {
                 <Profile />
               </ProtectedRoute>
             }
+          />
+          <Route 
+            path="/products/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            } 
           />
           <Route
             path="/products/:id/edit"

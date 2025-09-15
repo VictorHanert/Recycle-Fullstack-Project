@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile
 from sqlalchemy.orm import Session
 
 from app.db.mysql import get_db
-from app.dependencies import get_current_active_user
+from app.dependencies import get_current_active_user, get_current_user_optional
 from app.models.user import User
 from app.models.category import Category
 from app.models.location import Location
@@ -191,9 +191,14 @@ async def get_products_by_category(
     )
 
 @router.get("/{product_id}", response_model=ProductResponse)
-async def get_product(product_id: int, db: Session = Depends(get_db)):
+async def get_product(
+    product_id: int, 
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
     """Get a specific product by ID"""
-    product_dict = ProductService.get_product_by_id(db, product_id)
+    current_user_id = current_user.id if current_user else None
+    product_dict = ProductService.get_product_by_id(db, product_id, current_user_id)
     if not product_dict:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
