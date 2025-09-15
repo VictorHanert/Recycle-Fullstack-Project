@@ -5,12 +5,15 @@ import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/dateUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/ImageSlider";
+import Alert from "../components/Alert";
+import { useAlert } from "../hooks/useAlert";
 
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: product, loading, error, refetch } = useFetch(`/api/products/${id}`);
+  const { alertState, showConfirm, showError, showInfo, closeAlert } = useAlert();
 
   const isOwner = user && product && user.id === product.seller?.id;
 
@@ -19,15 +22,19 @@ function ProductDetail() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      try {
-        await productsAPI.delete(id);
-        navigate('/products');
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        alert('Failed to delete product. Please try again.');
+    showConfirm(
+      'Delete Product',
+      'Are you sure you want to delete this product? This action cannot be undone.',
+      async () => {
+        try {
+          await productsAPI.delete(id);
+          navigate('/products');
+        } catch (err) {
+          console.error('Error deleting product:', err);
+          showError('Error', 'Failed to delete product. Please try again.');
+        }
       }
-    }
+    );
   };
 
   const handleMarkAsSold = async () => {
@@ -36,16 +43,16 @@ function ProductDetail() {
       refetch(); // Refresh the product data
     } catch (err) {
       console.error('Error marking product as sold:', err);
-      alert('Failed to mark product as sold. Please try again.');
+      showError('Error', 'Failed to mark product as sold. Please try again.');
     }
   };
 
   const handleContactSeller = () => {
-    alert('Contact seller functionality would be implemented here');
+    showInfo('Contact Seller', 'Contact seller functionality would be implemented here');
   };
 
   const handleLike = () => {
-    alert('Like functionality would be implemented here');
+    showInfo('Like Product', 'Like functionality would be implemented here');
   };
 
   if (loading) {
@@ -85,9 +92,10 @@ function ProductDetail() {
   const showDetails = hasColors || hasMaterials || hasTags || hasDimensions || hasWeight;
 
   return (
-    <div className="px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <>
+      <div className="px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div>
             <ImageSlider
@@ -255,6 +263,18 @@ function ProductDetail() {
         </div>
       </div>
     </div>
+
+    <Alert
+      isOpen={alertState.isOpen}
+      onClose={closeAlert}
+      onConfirm={alertState.onConfirm}
+      title={alertState.title}
+      message={alertState.message}
+      type={alertState.type}
+      confirmText={alertState.type === 'error' ? 'OK' : 'Confirm'}
+      showCancel={alertState.type !== 'error' && alertState.type !== 'info'}
+    />
+    </>
   );
 }
 

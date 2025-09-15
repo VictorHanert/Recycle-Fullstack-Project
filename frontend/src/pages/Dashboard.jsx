@@ -2,37 +2,43 @@ import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
+import Alert from "../components/Alert";
+import { useAlert } from "../hooks/useAlert";
 
 function Dashboard() {
   const { user } = useAuth();
   const { data: userProducts, loading, error, refetch } = useFetch(
     user ? `/api/profile/${user.id}/products` : null
   );
+  const { alertState, showConfirm, showError, closeAlert } = useAlert();
 
   const handleDeleteProduct = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      try {
-        await productsAPI.delete(productId);
-        // Refresh the products list after deletion
-        refetch();
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        alert('Failed to delete product. Please try again.');
+    showConfirm(
+      'Delete Product',
+      'Are you sure you want to delete this product? This action cannot be undone.',
+      async () => {
+        try {
+          await productsAPI.delete(productId);
+          // Refresh the products list after deletion
+          refetch();
+        } catch (err) {
+          console.error('Error deleting product:', err);
+          showError('Error', 'Failed to delete product. Please try again.');
+        }
       }
-    }
-  };
-
-  return (
-    <div className="px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
-        <p className="text-lg text-gray-600">
-          Welcome back, <span className="font-semibold">{user?.full_name || user?.username}</span>!
-        </p>
-      </div>
+    );
+  };  return (
+    <>
+      <div className="px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
+          <p className="text-lg text-gray-600">
+            Welcome back, <span className="font-semibold">{user?.full_name || user?.username}</span>!
+          </p>
+        </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 md:gap-3 lg:gap-6">
         {user.is_admin ? (
@@ -117,6 +123,18 @@ function Dashboard() {
           )}
         </div>
     </div>
+
+    <Alert
+      isOpen={alertState.isOpen}
+      onClose={closeAlert}
+      onConfirm={alertState.onConfirm}
+      title={alertState.title}
+      message={alertState.message}
+      type={alertState.type}
+      confirmText={alertState.type === 'error' ? 'OK' : 'Delete'}
+      showCancel={alertState.type !== 'error'}
+    />
+    </>
   );
 }
 

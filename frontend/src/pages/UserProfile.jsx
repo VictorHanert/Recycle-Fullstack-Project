@@ -2,6 +2,8 @@ import { useParams } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { currencyUtils } from "../utils/currencyUtils";
+import Alert from "../components/Alert";
+import { useAlert } from "../hooks/useAlert";
 
 function UserProfile() {
   const { userId } = useParams();
@@ -14,6 +16,8 @@ function UserProfile() {
   const { data: userProducts, loading: productsLoading, error: productsError } = useFetch(
     userId ? `/api/profile/${userId}/products` : null
   );
+
+  const { alertState, showInfo, closeAlert } = useAlert();
 
   const loading = profileLoading || productsLoading;
   const error = profileError || productsError;
@@ -40,9 +44,14 @@ function UserProfile() {
 
   const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
 
+  const handleSendMessage = () => {
+    showInfo('Send Message', 'Message functionality would be implemented here. You would be able to send a message to the seller.');
+  };
+
   return (
-    <div className="px-4 mb-48">
-      <div className="max-w-4xl mx-auto">
+    <>
+      <div className="px-4 mb-48">
+        <div className="max-w-4xl mx-auto">
         {/* Profile Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -117,7 +126,10 @@ function UserProfile() {
             <p className="text-blue-700 mb-4">
               Interested in {profileData.full_name || profileData.username}'s products?
             </p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <button 
+              onClick={handleSendMessage}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
               Send Message
             </button>
           </div>
@@ -140,6 +152,18 @@ function UserProfile() {
         )}
       </div>
     </div>
+
+    <Alert
+      isOpen={alertState.isOpen}
+      onClose={closeAlert}
+      onConfirm={alertState.onConfirm}
+      title={alertState.title}
+      message={alertState.message}
+      type={alertState.type}
+      confirmText={alertState.type === 'error' ? 'OK' : 'Confirm'}
+      showCancel={alertState.type !== 'error' && alertState.type !== 'info'}
+    />
+    </>
   );
 }
 

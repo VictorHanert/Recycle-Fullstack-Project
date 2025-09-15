@@ -3,6 +3,8 @@ import { useAuth } from "../hooks/useAuth";
 import { profileAPI } from "../api";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
+import Alert from "../components/Alert";
+import { useAlert } from "../hooks/useAlert";
 
 function Profile() {
   const { user, token } = useAuth();
@@ -21,6 +23,8 @@ function Profile() {
     city: '',
     postcode: ''
   });
+
+  const { alertState, showConfirm, showError, closeAlert } = useAlert();
 
   // Use auth context user for own profile
   const currentUser = user;
@@ -105,28 +109,38 @@ function Profile() {
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      try {
-        await profileAPI.deleteMyAccount(token);
-        // Redirect to home or logout
-        window.location.href = '/';
-      } catch (err) {
-        setError('Failed to delete account');
-        console.error('Account delete error:', err);
+    showConfirm(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone.',
+      async () => {
+        try {
+          await profileAPI.deleteMyAccount(token);
+          // Redirect to home or logout
+          window.location.href = '/';
+        } catch (err) {
+          setError('Failed to delete account');
+          console.error('Account delete error:', err);
+          showError('Error', 'Failed to delete account. Please try again.');
+        }
       }
-    }
+    );
   };
 
-  const handleDeleteProduct = async () => {
-    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      try {
-        await productsAPI.delete(id);
-        navigate('/products');
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        alert('Failed to delete product. Please try again.');
+  const handleDeleteProduct = async (productId) => {
+    showConfirm(
+      'Delete Product',
+      'Are you sure you want to delete this product? This action cannot be undone.',
+      async () => {
+        try {
+          await productsAPI.delete(productId);
+          // Refresh the products list
+          fetchUserProducts();
+        } catch (err) {
+          console.error('Error deleting product:', err);
+          showError('Error', 'Failed to delete product. Please try again.');
+        }
       }
-    }
+    );
   };
 
   if (loading) {
@@ -150,21 +164,15 @@ function Profile() {
   }
 
   return (
-    <div className="px-4 mb-48">
-      <div className="max-w-4xl mx-auto">
-        {/* Profile Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            My Profile
-          </h1>
-          {profileData && (
+    <>
+      <div className="px-4 mb-48">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Profile</h1>
             <p className="text-lg text-gray-600">
-              Member since {new Date(profileData.created_at).toLocaleDateString()}
+              Manage your account settings and personal information.
             </p>
-          )}
-        </div>
-
-        {/* Profile Information */}
+          </div>        {/* Profile Information */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Personal Information</h2>
@@ -349,6 +357,18 @@ function Profile() {
         </div>
       </div>
     </div>
+
+    <Alert
+      isOpen={alertState.isOpen}
+      onClose={closeAlert}
+      onConfirm={alertState.onConfirm}
+      title={alertState.title}
+      message={alertState.message}
+      type={alertState.type}
+      confirmText={alertState.type === 'error' ? 'OK' : 'Delete'}
+      showCancel={alertState.type !== 'error'}
+    />
+    </>
   );
 }
 
