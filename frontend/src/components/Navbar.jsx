@@ -34,19 +34,37 @@ function Navbar({ user, onLogout }) {
                     Admin
                   </a>
                 )}
-                  <button
-                    onClick={onLogout}
-                    className="text-gray-700 hover:text-gray-900"
-                  >
-                    Logout
-                  </button>
-                  <a href="/profile">
+                <div className="relative group flex items-center">
+                  <div className="flex items-center cursor-pointer">
                     <img
                       src="/user-avatar.png"
                       alt="User Avatar"
-                      className="h-6 w-6 rounded-full cursor-pointer hover:opacity-80"
+                      className="h-6 w-6 rounded-full hover:opacity-80"
                     />
-                  </a>
+                    <svg className="w-4 h-4 ml-1 text-gray-500 group-hover:text-gray-700 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <div className="absolute right-0 top-6 w-32 bg-white rounded-md shadow-lg py-1 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200">
+                    <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      Profile
+                    </a>
+                    <a href="/messages" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      Messages
+                    </a>
+                    <a href="/favorites" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      Favorites
+                    </a>
+                    <div className="border-t border-gray-200 mt-1">
+                      <button
+                        onClick={onLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : (
               <>

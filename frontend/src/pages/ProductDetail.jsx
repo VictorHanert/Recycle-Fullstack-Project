@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
-import { formatRelativeTime, formatCondition } from "../utils/dateUtils";
+import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/ImageSlider";
 import Alert from "../components/Alert";

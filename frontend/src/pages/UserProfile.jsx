@@ -2,12 +2,13 @@ import { useParams } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { currencyUtils } from "../utils/currencyUtils";
+import { formatCondition } from "../utils/formatUtils";
 import Alert from "../components/Alert";
 import { useAlert } from "../hooks/useAlert";
 
 function UserProfile() {
   const { userId } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user } = useAuth();
   
   const { data: profileData, loading: profileLoading, error: profileError } = useFetch(
     userId ? `/api/profile/${userId}` : null
@@ -21,28 +22,21 @@ function UserProfile() {
 
   const loading = profileLoading || productsLoading;
   const error = profileError || productsError;
+  const isOwnProfile = user && user.id === parseInt(userId || 0);
 
-  if (loading) {
+  if (loading || error) {
     return (
       <div className="px-4 mb-48">
         <div className="text-center py-8">
-          <div className="text-lg">Loading profile...</div>
+          {loading ? (
+            <div className="text-lg">Loading profile...</div>
+          ) : (
+            <div className="text-red-600 text-lg">{error}</div>
+          )}
         </div>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="px-4 mb-48">
-        <div className="text-center py-8">
-          <div className="text-red-600 text-lg">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
 
   const handleSendMessage = () => {
     showInfo('Send Message', 'Message functionality would be implemented here. You would be able to send a message to the seller.');
@@ -82,9 +76,9 @@ function UserProfile() {
         {/* User Products */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
-            Active Products ({profileData?.product_count || userProducts?.length || 0})
+            Active Products ({userProducts?.length || 0})
           </h2>
-          {userProducts && userProducts.length > 0 ? (
+          {userProducts?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userProducts.map((product) => (
                 <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -96,7 +90,7 @@ function UserProfile() {
                     } {currencyUtils.getCurrencySymbol(product.price_currency)}
                   </p>
                   <p className="text-sm text-gray-500 mb-2">
-                    Condition: {product.condition}
+                    Condition: {formatCondition(product.condition)}
                   </p>
                   {product.location && (
                     <p className="text-sm text-gray-500">
@@ -120,7 +114,7 @@ function UserProfile() {
         </div>
 
         {/* Contact Information (if viewing someone else's profile) */}
-        {!isOwnProfile && profileData && (
+        {!isOwnProfile && (
           <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
             <h2 className="text-xl font-semibold text-blue-800 mb-4">Contact Seller {profileData.full_name || profileData.username}</h2>
             <p className="text-blue-700 mb-4">

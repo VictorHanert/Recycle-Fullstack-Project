@@ -1,4 +1,4 @@
-import { formatRelativeTime } from '../utils/dateUtils';
+import { formatRelativeTime, formatCondition } from '../utils/formatUtils';
 import { currencyUtils } from '../utils/currencyUtils';
 
 function ProductCard({ product, onClick }) {
@@ -20,7 +20,7 @@ function ProductCard({ product, onClick }) {
                 className="w-full h-48 object-cover"
             />
             <div className="p-4 flex flex-col flex-grow">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1">
                     <span className="text-xl font-bold text-blue-600">
                         {Number(product.price_amount) % 1 === 0
                             ? Number(product.price_amount)
@@ -28,7 +28,12 @@ function ProductCard({ product, onClick }) {
                         } {currencyUtils.getCurrencySymbol(product.price_currency)}
                     </span>
                 </div>
-                <h3 className="text-md font-semibold text-gray-900 mb-2">{product.title}</h3>
+                <h3 className="text-md font-semibold text-gray-900 mb-1">
+                    {product.title}
+                    </h3>
+                    <span className="text-sm text-gray-500 mb-1">
+                        Condition: {formatCondition(product.condition)}
+                    </span>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
                 
                 
