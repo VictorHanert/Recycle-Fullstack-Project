@@ -8,9 +8,11 @@ from app.routers import auth, products, admin, profile
 from app.db.mysql import create_tables
 from app.config import get_settings
 from app.middleware import (
-    http_exception_handler,
-    validation_exception_handler,
-    general_exception_handler
+    create_error_response,
+    log_http_exception,
+    log_validation_exception,
+    log_general_exception,
+    format_validation_errors
 )
 
 settings = get_settings()
@@ -36,10 +38,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Exception handlers
-app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
+# Custom exception handlers with logging
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request, exc):
+    """Handle HTTP exceptions with logging"""
+    log_http_exception(exc, str(request.url.path))
+    return create_error_response(exc.status_code, exc.detail, str(request.url.path))
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request, exc):
+    """Handle validation errors with logging"""
+    log_validation_exception(exc, str(request.url.path))
+    errors = format_validation_errors(exc)
+    return create_error_response(422, "Validation error", str(request.url.path), errors)
+
+@app.exception_handler(Exception)
+async def custom_general_exception_handler(request, exc):
+    """Handle unexpected exceptions with logging"""
+    log_general_exception(exc, str(request.url.path))
+    return create_error_response(500, "Internal server error", str(request.url.path))
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 

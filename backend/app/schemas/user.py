@@ -9,7 +9,7 @@ from .location import LocationResponse
 class UserBase(BaseModel):
     """Base user schema with common fields"""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]+$")
+    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
     full_name: Optional[str] = Field(None, max_length=100)
 
 
@@ -21,10 +21,13 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """Schema for user updates"""
     email: Optional[EmailStr] = None
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
     full_name: Optional[str] = Field(None, max_length=100)
     phone: Optional[str] = Field(None, max_length=64)
     location_id: Optional[int] = None
     is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=100)
 
 
 class UserLogin(BaseModel):
@@ -93,3 +96,12 @@ class PublicUserProfile(BaseModel):
     location: Optional[LocationResponse] = None
     created_at: datetime
     product_count: Optional[int] = None
+
+
+class UserListResponse(BaseModel):
+    """Schema for paginated user list response"""
+    users: List[UserResponse]
+    total: int
+    page: int
+    size: int
+    total_pages: int

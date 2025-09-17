@@ -21,6 +21,9 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
     CategoryInfo,
+    ColorInfo,
+    MaterialInfo,
+    TagInfo,
     LocationInfo,
 )
 from app.services.product_service import ProductService
@@ -120,11 +123,12 @@ async def get_all_product_details(db: Session = Depends(get_db)):
     locations = db.query(Location).order_by(Location.city, Location.postcode).all()
 
     return ProductDetailsResponse(
-        colors=[{"id": color.id, "name": color.name} for color in details["colors"]],
-        materials=[{"id": material.id, "name": material.name} for material in details["materials"]],
-        tags=[{"id": tag.id, "name": tag.name} for tag in details["tags"]],
+        colors=[ColorInfo.model_validate(color) for color in details['colors']],
+        materials=[MaterialInfo.model_validate(mat) for mat in details['materials']],
+        tags=[TagInfo.model_validate(tag) for tag in details['tags']],
         locations=[LocationInfo.model_validate(loc) for loc in locations]
     )
+
 @router.post("/upload-image", response_model=dict)
 async def upload_product_image(
     file: UploadFile = File(...),
@@ -156,6 +160,11 @@ async def upload_product_image(
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate unique filename
+    if file.filename is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Filename is required"
+        )
     file_extension = Path(file.filename).suffix.lower()
     unique_filename = f"{uuid4()}{file_extension}"
     file_path = upload_dir / unique_filename

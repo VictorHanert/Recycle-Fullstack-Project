@@ -2,7 +2,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
-import Alert from "../components/Alert";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
 function Dashboard() {

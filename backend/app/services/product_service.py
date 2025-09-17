@@ -239,7 +239,6 @@ class ProductService:
     @staticmethod
     def get_products_by_category(db: Session, category: str, skip: int = 0, limit: int = 20) -> tuple[List[Product], int]:
         """Get products by category with pagination"""
-        from app.models.category import Category
         query = db.query(Product).join(Category, Product.category_id == Category.id).filter(
             and_(
                 Category.name.ilike(f"%{category}%"),

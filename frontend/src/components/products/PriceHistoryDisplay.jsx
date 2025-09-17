@@ -1,4 +1,4 @@
-import { currencyUtils } from "../utils/currencyUtils";
+import { currencyUtils } from "../../utils/currencyUtils";
 
 function PriceHistoryDisplay({ 
   product, 

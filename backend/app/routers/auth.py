@@ -24,7 +24,7 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     db_user = AuthService.authenticate_user(db, user.username, user.password)
 
     # Create access token
-    access_token_expires = timedelta(minutes=30)
+    access_token_expires = timedelta(minutes=30000)
     access_token = AuthService.create_access_token(
         data={"sub": db_user.username},
         expires_delta=access_token_expires
@@ -33,7 +33,7 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     return Token(
         access_token=access_token,
         token_type="bearer",
-        expires_in=30 * 60,  # 30 minutes in seconds
+        expires_in=30000 * 60,  # 30 minutes in seconds
         user=UserResponse.model_validate(db_user)
     )
 

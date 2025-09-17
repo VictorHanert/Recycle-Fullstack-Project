@@ -9,13 +9,20 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
+
+// Import admin components
+import AdminLayout from "./layouts/AdminLayout";
+import AdminOverview from "./components/admin/AdminOverview";
+import UsersManagement from "./components/admin/UsersManagement";
+import ProductsManagement from "./components/admin/ProductsManagement";
+import Stats from "./components/admin/Stats";
+import RecentActivity from "./components/admin/RecentActivity";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
@@ -106,15 +113,21 @@ function AppRoutes() {
             }
           />
 
-          {/* Admin-only route */}
+          {/* Admin routes */}
           <Route
             path="/admin"
             element={
               <AdminRoute>
-                <Admin />
+                <AdminLayout />
               </AdminRoute>
             }
-          />
+          >
+            <Route index element={<AdminOverview />} />
+            <Route path="users" element={<UsersManagement />} />
+            <Route path="products" element={<ProductsManagement />} />
+            <Route path="stats" element={<Stats />} />
+            <Route path="activity" element={<RecentActivity />} />
+          </Route>
         </Routes>
       </MainLayout>
     </Router>
@@ -125,7 +138,7 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
-      <Analytics />
+      {/*<Analytics /> {/* Vercel Analytics component */}
     </AuthProvider>
   );
 }

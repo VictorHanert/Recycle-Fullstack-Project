@@ -172,8 +172,8 @@ class CategoryInfo(BaseModel):
 class ProductFilter(BaseModel):
     """Schema for product filtering"""
     category: Optional[str] = None
-    min_price: Optional[Decimal] = Field(None, ge=0)
-    max_price: Optional[Decimal] = Field(None, ge=0)
+    min_price: Optional[float] = Field(None, ge=0)
+    max_price: Optional[float] = Field(None, ge=0)
     location_id: Optional[int] = None
     condition: Optional[str] = None
     sort_by: Optional[str] = "newest"

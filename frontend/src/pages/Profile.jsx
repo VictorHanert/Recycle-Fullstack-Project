@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { profileAPI } from "../api";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
-import Alert from "../components/Alert";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
 function Profile() {

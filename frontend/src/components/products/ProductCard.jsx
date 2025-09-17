@@ -1,5 +1,5 @@
-import { formatRelativeTime, formatCondition } from '../utils/formatUtils';
-import { currencyUtils } from '../utils/currencyUtils';
+import { formatRelativeTime, formatCondition } from '../../utils/formatUtils';
+import { currencyUtils } from '../../utils/currencyUtils';
 import PriceHistoryDisplay from './PriceHistoryDisplay';
 
 function ProductCard({ product, onClick }) {

@@ -4,9 +4,9 @@ import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
-import ImageSlider from "../components/ImageSlider";
-import PriceHistoryDisplay from "../components/PriceHistoryDisplay";
-import Alert from "../components/Alert";
+import ImageSlider from "../components/products/ImageSlider";
+import PriceHistoryDisplay from "../components/products/PriceHistoryDisplay";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
 function ProductDetail() {
