@@ -1,5 +1,6 @@
 import { formatRelativeTime, formatCondition } from '../utils/formatUtils';
 import { currencyUtils } from '../utils/currencyUtils';
+import PriceHistoryDisplay from './PriceHistoryDisplay';
 
 function ProductCard({ product, onClick }) {
     return (
@@ -28,6 +29,11 @@ function ProductCard({ product, onClick }) {
                         } {currencyUtils.getCurrencySymbol(product.price_currency)}
                     </span>
                 </div>
+                <PriceHistoryDisplay 
+                    product={product} 
+                    oldPriceClassName="text-sm line-through text-gray-500"
+                    discountClassName="text-green-600 text-xs font-medium"
+                />
                 <h3 className="text-md font-semibold text-gray-900 mb-1">
                     {product.title}
                     </h3>

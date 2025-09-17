@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
+import { Analytics } from '@vercel/analytics/react';
 
 // Import pages
 import Home from "./pages/Home";
@@ -124,6 +125,7 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <Analytics />
     </AuthProvider>
   );
 }

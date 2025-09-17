@@ -1,8 +1,6 @@
 """Products router for product-related operations."""
 from math import ceil
 from typing import List, Optional
-import os
-import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,6 +13,7 @@ from app.models.user import User
 from app.models.category import Category
 from app.models.location import Location
 from app.models.media import ProductImage
+from app.models.product import Product
 from app.schemas.product import (
     ProductCreate,
     ProductFilter,
@@ -55,7 +54,7 @@ async def get_all_products(
         condition=condition,
         sort_by=sort,
         search_term=search,
-        is_sold=None if show_sold else False
+        status=None if show_sold else "active"
     )
 
     products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)

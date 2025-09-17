@@ -5,14 +5,35 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy import and_, desc, asc, or_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.product import Product
 from app.models.user import User
 from app.models.price_history import ProductPriceHistory
 from app.models.product_details import Color, Material, Tag
 from app.models.media import ProductImage
-from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate
+from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate, ProductResponse
+from app.models.item_views import ItemView
+from app.models.category import Category
+
+# Common loading options for different query types
+PRODUCT_LIST_LOAD_OPTIONS = [
+    joinedload(Product.seller),
+    joinedload(Product.location),
+    selectinload(Product.images)
+]
+
+PRODUCT_DETAIL_LOAD_OPTIONS = [
+    joinedload(Product.seller),
+    joinedload(Product.location),
+    selectinload(Product.images),
+    selectinload(Product.colors),
+    selectinload(Product.materials),
+    selectinload(Product.tags),
+    selectinload(Product.favorites),
+    selectinload(Product.views),
+    selectinload(Product.price_changes),
+]
 
 
 class ProductService:
@@ -20,7 +41,6 @@ class ProductService:
     @staticmethod
     def get_all_details(db: Session):
         """Fetch all colors, materials, and tags for product details dropdowns/filters."""
-        from app.models.product_details import Color, Material, Tag
         colors = db.query(Color).order_by(Color.name).all()
         materials = db.query(Material).order_by(Material.name).all()
         tags = db.query(Tag).order_by(Tag.name).all()
@@ -29,7 +49,6 @@ class ProductService:
             "materials": materials,
             "tags": tags
         }
-    """Service class for product operations"""
 
     @staticmethod
     def create_product(db: Session, product: ProductCreate, seller_id: int) -> Product:
@@ -59,25 +78,30 @@ class ProductService:
             db.commit()
             db.refresh(db_product)
 
+            # Create initial price history entry
+            if product.price_amount is not None:
+                initial_price_history = ProductPriceHistory(
+                    product_id=db_product.id,
+                    amount=product.price_amount,
+                    currency=product.price_currency
+                )
+                db.add(initial_price_history)
+
             # Handle many-to-many relationships
             if product.color_ids:
-                from app.models.product_details import Color
                 colors = db.query(Color).filter(Color.id.in_(product.color_ids)).all()
                 db_product.colors.extend(colors)
 
             if product.material_ids:
-                from app.models.product_details import Material
                 materials = db.query(Material).filter(Material.id.in_(product.material_ids)).all()
                 db_product.materials.extend(materials)
 
             if product.tag_ids:
-                from app.models.product_details import Tag
                 tags = db.query(Tag).filter(Tag.id.in_(product.tag_ids)).all()
                 db_product.tags.extend(tags)
 
             # Handle images
             if product.image_urls:
-                from app.models.media import ProductImage
                 for i, image_url in enumerate(product.image_urls):
                     image = ProductImage(
                         product_id=db_product.id,
@@ -98,26 +122,20 @@ class ProductService:
             )
 
     @staticmethod
-    def get_product_by_id(db: Session, product_id: int, current_user_id: Optional[int] = None) -> Optional[dict]:
+    def get_product_by_id(db: Session, product_id: int, current_user_id: Optional[int] = None) -> Optional[ProductResponse]:
         """Get product by ID with all details and counters"""
-        product = db.query(Product).options(
-            joinedload(Product.seller),
-            joinedload(Product.location),
-            joinedload(Product.images),
-            joinedload(Product.colors),
-            joinedload(Product.materials),
-            joinedload(Product.tags),
-            joinedload(Product.favorites),
-            joinedload(Product.views),
-            joinedload(Product.price_changes),
-        ).filter(Product.id == product_id).first()
+        product = db.query(Product).options(*PRODUCT_DETAIL_LOAD_OPTIONS).filter(Product.id == product_id).first()
         
         if not product:
             return None
         
+        # Check if user can access this product
+        if current_user_id != product.seller_id:  # Not the owner
+            if product.status not in ['active', 'sold']:
+                return None  # Deny access to paused/draft products
+        
         # Record view for authenticated users (not the seller)
         if current_user_id and current_user_id != product.seller_id:
-            from app.models.item_views import ItemView
             
             # Check if user already viewed this product
             existing_view = db.query(ItemView).filter(
@@ -134,19 +152,11 @@ class ProductService:
                 db.add(new_view)
                 db.commit()
                 
-                # Re-query to get updated view count
-                product = db.query(Product).options(
-                    joinedload(Product.views)
-                ).filter(Product.id == product_id).first()
+                # Re-query with all relationships to ensure we have updated data
+                product = db.query(Product).options(*PRODUCT_DETAIL_LOAD_OPTIONS).filter(Product.id == product_id).first()
         
-        # Simple response building
-        product_dict = product.__dict__.copy()
-        product_dict.pop('_sa_instance_state', None)
-        
-        # Add view count
-        product_dict['views_count'] = len(product.views) if product.views else 0
-        
-        return product_dict
+        # Use Pydantic schema for response
+        return ProductResponse.model_validate(product)
 
     @staticmethod
     def get_products(
@@ -156,17 +166,12 @@ class ProductService:
         filter_params: Optional[ProductFilter] = None
     ) -> tuple[List[Product], int]:
         """Get products with filtering and pagination"""
-        query = db.query(Product).options(
-            joinedload(Product.seller),
-            joinedload(Product.location),
-            joinedload(Product.images)
-        )
+        query = db.query(Product).options(*PRODUCT_LIST_LOAD_OPTIONS)
 
         # Apply filters
         if filter_params:
             if filter_params.category:
                 # Filter by category name (for backward compatibility)
-                from app.models.category import Category
                 query = query.join(Category, Product.category_id == Category.id)
                 query = query.filter(Category.name.ilike(f"%{filter_params.category}%"))
 
@@ -182,11 +187,14 @@ class ProductService:
             if filter_params.condition:
                 query = query.filter(Product.condition.ilike(f"%{filter_params.condition}%"))
 
-            if filter_params.is_sold is not None:
-                if filter_params.is_sold:
+            if filter_params.status is not None:
+                if filter_params.status == "sold":
                     query = query.filter(Product.status == "sold")
+                elif filter_params.status == "active":
+                    query = query.filter(Product.status == "active")
                 else:
-                    query = query.filter(Product.status != "sold")
+                    # For other status values, filter exactly
+                    query = query.filter(Product.status == filter_params.status)
 
             if filter_params.search_term:
                 search = f"%{filter_params.search_term}%"
@@ -198,19 +206,16 @@ class ProductService:
                 )
 
         # Apply sorting
+        sort_options = {
+            "newest": desc(Product.created_at),
+            "oldest": asc(Product.created_at),
+            "price_low": asc(Product.price_amount),
+            "price_high": desc(Product.price_amount),
+            "title": asc(Product.title)
+        }
+        
         if filter_params and filter_params.sort_by:
-            if filter_params.sort_by == "newest":
-                query = query.order_by(desc(Product.created_at))
-            elif filter_params.sort_by == "oldest":
-                query = query.order_by(asc(Product.created_at))
-            elif filter_params.sort_by == "price_low":
-                query = query.order_by(asc(Product.price_amount))
-            elif filter_params.sort_by == "price_high":
-                query = query.order_by(desc(Product.price_amount))
-            elif filter_params.sort_by == "title":
-                query = query.order_by(asc(Product.title))
-            else:
-                query = query.order_by(desc(Product.created_at))
+            query = query.order_by(sort_options.get(filter_params.sort_by, desc(Product.created_at)))
         else:
             # Default sorting
             query = query.order_by(desc(Product.created_at))
@@ -226,11 +231,7 @@ class ProductService:
     @staticmethod
     def get_products_by_seller(db: Session, seller_id: int, skip: int = 0, limit: int = 20) -> tuple[List[Product], int]:
         """Get products by seller with pagination"""
-        query = db.query(Product).filter(Product.seller_id == seller_id).options(
-            joinedload(Product.seller),
-            joinedload(Product.location),
-            joinedload(Product.images)
-        )
+        query = db.query(Product).filter(Product.seller_id == seller_id).options(*PRODUCT_LIST_LOAD_OPTIONS)
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
         return products, total
@@ -242,13 +243,9 @@ class ProductService:
         query = db.query(Product).join(Category, Product.category_id == Category.id).filter(
             and_(
                 Category.name.ilike(f"%{category}%"),
-                Product.status != "sold"
+                Product.status == "active"
             )
-        ).options(
-            joinedload(Product.seller),
-            joinedload(Product.location),
-            joinedload(Product.images)
-        )
+        ).options(*PRODUCT_LIST_LOAD_OPTIONS)
 
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
@@ -331,6 +328,15 @@ class ProductService:
                     )
                     db.add(new_image)
             update_data.pop('image_urls')
+
+        # Handle status changes
+        if 'status' in update_data:
+            new_status = update_data['status']
+            if new_status == 'sold':
+                product.sold_at = datetime.now(timezone.utc)
+            elif product.status == 'sold' and new_status != 'sold':
+                # Clear sold_at when changing from sold to something else
+                product.sold_at = None
 
         # Update only provided fields
         for field, value in update_data.items():

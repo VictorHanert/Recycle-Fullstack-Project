@@ -178,14 +178,24 @@ def seed_products(session: Session, users, categories, locations, colors, materi
                 sort_order=i
             )
             session.add(img)
-        for j in range(random.randint(1, 4)):
-            hist = ProductPriceHistory(
-                product=p,
-                amount=round(random.uniform(50, float(p.price_amount)), 2),  # cast to float
-                currency="DKK",
-                changed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
-            )
-            session.add(hist)
+        for j in range(random.randint(0, 3)):  # Reduced to 0-3 to avoid too many entries
+            # Create some higher prices and some lower prices for realistic history
+            if random.choice([True, False]):
+                # Higher price (for showing discounts) - ensure it's different from current
+                hist_amount = round(random.uniform(float(p.price_amount) * 1.1, float(p.price_amount) * 2.0), 2)
+            else:
+                # Lower price (for showing price increases) - ensure it's different from current
+                hist_amount = round(random.uniform(50, max(51, float(p.price_amount) * 0.9)), 2)
+            
+            # Only add if it's different from current price
+            if hist_amount != float(p.price_amount):
+                hist = ProductPriceHistory(
+                    product=p,
+                    amount=hist_amount,
+                    currency="DKK",
+                    changed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
+                )
+                session.add(hist)
     session.commit()
     return products
 

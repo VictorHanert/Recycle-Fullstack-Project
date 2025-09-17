@@ -39,9 +39,9 @@ async def get_all_products_admin(
     """Get all products including sold ones (admin only)"""
     skip = (page - 1) * size
 
-    # Get all products for admin (including sold)
+    # Get all products for admin (including sold, paused, draft)
     from app.schemas.product import ProductFilter
-    filter_params = ProductFilter(is_sold=None if include_sold else False)
+    filter_params = ProductFilter(status=None)  # Admin sees all products
     products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
     total_pages = ceil(total / size) if total > 0 else 1
 

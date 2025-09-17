@@ -5,6 +5,7 @@ import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/ImageSlider";
+import PriceHistoryDisplay from "../components/PriceHistoryDisplay";
 import Alert from "../components/Alert";
 import { useAlert } from "../hooks/useAlert";
 
@@ -17,9 +18,8 @@ function ProductDetail() {
 
   const isOwner = user && product && user.id === product.seller?.id;
 
-  const handleEdit = () => {
-    navigate(`/products/${id}/edit`);
-  };
+  // Action handlers
+  const handleEdit = () => navigate(`/products/${id}/edit`);
 
   const handleDelete = async () => {
     showConfirm(
@@ -37,13 +37,18 @@ function ProductDetail() {
     );
   };
 
-  const handleMarkAsSold = async () => {
+  const handleProductStatus = async (newStatus) => {
+    const statusMessages = {
+      sold: 'mark product as sold',
+      active: 'mark product as available'
+    };
+
     try {
-      await productsAPI.update(id, { is_sold: true });
-      refetch(); // Refresh the product data
+      await productsAPI.update(id, { status: newStatus });
+      refetch();
     } catch (err) {
-      console.error('Error marking product as sold:', err);
-      showError('Error', 'Failed to mark product as sold. Please try again.');
+      console.error(`Error ${statusMessages[newStatus]}:`, err);
+      showError('Error', `Failed to ${statusMessages[newStatus]}. Please try again.`);
     }
   };
 
@@ -55,35 +60,26 @@ function ProductDetail() {
     showInfo('Like Product', 'Like functionality would be implemented here');
   };
 
-  if (loading) {
-    return (
-      <div className="px-4 flex justify-center items-center min-h-64">
-        <div className="text-lg text-gray-600">Loading product...</div>
-      </div>
-    );
-  }
+  // Compact loading/error states
+  const renderLoadingState = (message) => (
+    <div className="px-4 flex justify-center items-center min-h-64">
+      <div className="text-lg text-gray-600">{message}</div>
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="px-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          Error loading product: {error}
-        </div>
+  const renderErrorState = (message) => (
+    <div className="px-4">
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {message}
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (!product) {
-    return (
-      <div className="px-4">
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">Product not found.</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return renderLoadingState("Loading product...");
+  if (error) return renderErrorState(`Error loading product: ${error}`);
+  if (!product) return renderLoadingState("Product not found.");
 
-  // Check if any details exist
+  // Check if any details exist that should be displayed
   const hasColors = Array.isArray(product.colors) && product.colors.length > 0;
   const hasMaterials = Array.isArray(product.materials) && product.materials.length > 0;
   const hasTags = Array.isArray(product.tags) && product.tags.length > 0;
@@ -109,19 +105,22 @@ function ProductDetail() {
             <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.title}</h1>
 
             <div className="flex items-center mb-4">
-              <span className="text-3xl font-bold text-blue-600">
-                  {Number(product.price_amount) % 1 === 0
-                    ? Number(product.price_amount)
-                    : Number(product.price_amount).toFixed(2)
-                  } {currencyUtils.getCurrencySymbol(product.price_currency)}
-              </span>
-              <span className={`ml-4 px-3 py-1 rounded-full text-sm ${
-                product.is_sold
-                  ? 'bg-red-100 text-red-800'
-                  : ''
-              }`}>
-                {product.is_sold ? 'Sold' : ''}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl font-bold text-blue-600">
+                    {Number(product.price_amount) % 1 === 0
+                      ? Number(product.price_amount)
+                      : Number(product.price_amount).toFixed(2)
+                    } {currencyUtils.getCurrencySymbol(product.price_currency)}
+                </span>
+                
+                <PriceHistoryDisplay product={product} />
+              </div>
+              
+              {product.status === 'sold' && (
+                <span className="ml-4 px-3 py-1 rounded-full text-lg font-bold bg-red-100 text-red-800">
+                  Sold
+                </span>
+              )}
             </div>
 
             {/* Created/Updated time display */}
@@ -181,9 +180,9 @@ function ProductDetail() {
                   {hasDimensions && (
                     <div>
                       <span className="font-medium">Dimensions:</span> {[
-                        product.width_cm && `${product.width_cm}cm W`,
-                        product.height_cm && `${product.height_cm}cm H`,
-                        product.depth_cm && `${product.depth_cm}cm D`
+                        product.width_cm && `(Width) ${product.width_cm}cm`,
+                        product.height_cm && `(Height) ${product.height_cm}cm`,
+                        product.depth_cm && `(Depth) ${product.depth_cm}cm`
                       ].filter(Boolean).join(' × ')}
                     </div>
                   )}
@@ -210,14 +209,12 @@ function ProductDetail() {
                     Edit Product
                   </button>
 
-                  {!product.is_sold && (
-                    <button
-                      onClick={handleMarkAsSold}
-                      className="py-1 px-2 rounded-lg font-semibold bg-white-600 text-blue-600 hover:bg-green-70 border border-blue-600"
-                    >
-                      Mark as Sold
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleProductStatus(product.status === 'sold' ? 'active' : 'sold')}
+                    className="py-1 px-2 rounded-lg font-semibold bg-white-600 text-blue-600 hover:bg-green-70 border border-blue-600"
+                  >
+                    {product.status === 'sold' ? 'Mark as Available' : 'Mark as Sold'}
+                  </button>
 
                   <button
                     onClick={handleDelete}
@@ -231,14 +228,14 @@ function ProductDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={handleContactSeller}
-                    disabled={product.is_sold}
+                    disabled={product.status === 'sold'}
                     className={`py-3 px-6 rounded-lg font-semibold ${
-                      product.is_sold
+                      product.status === 'sold'
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
-                    {product.is_sold ? 'Sold' : 'Contact Seller'}
+                    {product.status === 'sold' ? 'Sold' : 'Contact Seller'}
                   </button>
 
                   <button
@@ -251,7 +248,7 @@ function ProductDetail() {
               )}
 
               {/* Status indicator for sold products */}
-              {product.is_sold && (
+              {product.status === 'sold' && (
                 <div className="text-center">
                   <span className="inline-block px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-medium">
                     This product has been sold

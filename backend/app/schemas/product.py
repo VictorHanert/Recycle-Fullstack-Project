@@ -134,7 +134,7 @@ class ProductResponse(BaseModel):
     status: str
     seller_id: int
     location_id: Optional[int] = None
-    is_sold: bool = False
+    sold_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     
@@ -177,7 +177,7 @@ class ProductFilter(BaseModel):
     location_id: Optional[int] = None
     condition: Optional[str] = None
     sort_by: Optional[str] = "newest"
-    is_sold: Optional[bool] = None
+    status: Optional[str] = None
     search_term: Optional[str] = Field(None, max_length=100)
 
 
