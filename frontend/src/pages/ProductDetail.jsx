@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate} from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
@@ -7,6 +7,7 @@ import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/ImageSlider";
 import Alert from "../components/Alert";
 import { useAlert } from "../hooks/useAlert";
+
 
 function ProductDetail() {
   const { id } = useParams();
@@ -48,7 +49,11 @@ function ProductDetail() {
   };
 
   const handleContactSeller = () => {
-    showInfo('Contact Seller', 'Contact seller functionality would be implemented here');
+    if (product?.seller?.id) {
+      navigate(`/messages/${product.seller.id}?productId=${product.id}`);
+    } else {
+      showError('Error', 'Seller information not available.');
+    }
   };
 
   const handleLike = () => {

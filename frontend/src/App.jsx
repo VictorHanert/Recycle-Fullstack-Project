@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
+import Messages from "./pages/Messages";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
@@ -94,6 +95,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <EditProduct />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages/:userId"
+            element={
+              <ProtectedRoute>
+                <Messages />
               </ProtectedRoute>
             }
           />
