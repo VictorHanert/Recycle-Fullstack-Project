@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
-import { Analytics } from '@vercel/analytics/react';
 
 // Import pages
 import Home from "./pages/Home";
@@ -19,8 +18,8 @@ import EditProduct from "./pages/EditProduct";
 // Import admin components
 import AdminLayout from "./layouts/AdminLayout";
 import AdminOverview from "./components/admin/AdminOverview";
-import UsersManagement from "./components/admin/UsersManagement";
-import ProductsManagement from "./components/admin/ProductsManagement";
+import UsersManagement from "./components/admin/users/UsersManagement";
+import ProductsManagement from "./components/admin/products/ProductsManagement";
 import Stats from "./components/admin/Stats";
 import RecentActivity from "./components/admin/RecentActivity";
 
@@ -138,7 +137,6 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
-      {/*<Analytics /> {/* Vercel Analytics component */}
     </AuthProvider>
   );
 }

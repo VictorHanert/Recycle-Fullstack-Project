@@ -1,5 +1,6 @@
 import { useAuth } from "../../hooks/useAuth";
 import { useFetch } from "../../hooks/useFetch";
+import { Link } from "react-router-dom";
 
 function AdminOverview() {
   const { user, token } = useAuth();
@@ -59,18 +60,18 @@ function AdminOverview() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
-              + Add New Product
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
+            <Link to="/admin/users" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               👥 Manage Users
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
+            </Link>
+            <Link to="/admin/products" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
+              📦 Manage Products
+            </Link>
+            <Link to="/admin" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               📊 View Reports
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
+            </Link>
+            <Link to="/admin" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               ⚙️ System Settings
-            </button>
+            </Link>
           </div>
         </div>
         

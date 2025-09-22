@@ -14,6 +14,7 @@ from app.models.product_details import Color, Material, Tag
 from app.models.media import ProductImage
 from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate, ProductResponse
 from app.models.item_views import ItemView
+from app.models.favorites import Favorite
 from app.models.category import Category
 
 # Common loading options for different query types
@@ -251,7 +252,7 @@ class ProductService:
         return products, total
 
     @staticmethod
-    def update_product(db: Session, product_id: int, product_update: ProductUpdate, user_id: int) -> Product:
+    def update_product(db: Session, product_id: int, product_update: ProductUpdate, user_id: int, is_admin: bool = False) -> Product:
         """Update an existing product"""
         product = db.query(Product).filter(Product.id == product_id).first()
 
@@ -261,8 +262,8 @@ class ProductService:
                 detail="Product not found"
             )
 
-        # Check if user owns the product
-        if product.seller_id != user_id:
+        # Check if user owns the product (skip for admin)
+        if not is_admin and product.seller_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to update this product"
@@ -373,6 +374,12 @@ class ProductService:
             )
 
         try:
+            # Delete related records first to avoid foreign key constraints
+            db.query(Favorite).filter(Favorite.product_id == product_id).delete()
+            db.query(ItemView).filter(ItemView.product_id == product_id).delete()
+            db.query(ProductPriceHistory).filter(ProductPriceHistory.product_id == product_id).delete()
+            db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+            
             db.delete(product)
             db.commit()
             return True

@@ -8,6 +8,11 @@ from fastapi import HTTPException, status
 from app.models.user import User
 from app.models.product import Product
 from app.models.location import Location
+from app.models.favorites import Favorite
+from app.models.item_views import ItemView
+from app.models.price_history import ProductPriceHistory
+from app.models.media import ProductImage
+from app.models.messages import Message
 from app.schemas.user import ProfileUpdate, UserProfileResponse, PublicUserProfile
 from app.schemas.location import LocationCreate
 from app.services.location_service import LocationService
@@ -167,8 +172,7 @@ class ProfileService:
 
     @staticmethod
     def delete_user_account(db: Session, user_id: int) -> bool:
-        """Soft delete user account and handle related data"""
-        from datetime import datetime, timezone
+        """Hard delete user account and all related data"""
         
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -178,17 +182,27 @@ class ProfileService:
             )
 
         try:
-            # Soft delete all user's products
-            db.query(Product).filter(Product.seller_id == user_id).update({
-                "deleted_at": datetime.now(timezone.utc),
-                "status": "draft"
-            })
+            # Delete messages sent by the user first (to avoid foreign key constraint issues)
+            db.query(Message).filter(Message.sender_id == user_id).delete()
 
-            # Soft delete the user (deactivate instead of actual deletion)
-            user.is_active = False
-            user.email = f"deleted_{user.id}_{user.email}"  # Prevent email conflicts
-            user.username = f"deleted_{user.id}_{user.username}"  # Prevent username conflicts
-            
+            # Get all user's products first
+            user_products = db.query(Product).filter(Product.seller_id == user_id).all()
+            product_ids = [p.id for p in user_products]
+
+            # Delete all related data for user's products
+            if product_ids:
+                db.query(Favorite).filter(Favorite.product_id.in_(product_ids)).delete()
+                db.query(ItemView).filter(ItemView.product_id.in_(product_ids)).delete()
+                db.query(ProductPriceHistory).filter(ProductPriceHistory.product_id.in_(product_ids)).delete()
+                db.query(ProductImage).filter(ProductImage.product_id.in_(product_ids)).delete()
+
+            # Delete all other user-related data
+            db.query(Product).filter(Product.seller_id == user_id).delete()
+            db.query(Favorite).filter(Favorite.user_id == user_id).delete()
+            db.query(ItemView).filter(ItemView.viewer_user_id == user_id).delete()
+
+            # Finally delete the user
+            db.delete(user)
             db.commit()
             return True
         except Exception as e:

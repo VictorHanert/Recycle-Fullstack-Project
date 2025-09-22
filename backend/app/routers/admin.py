@@ -10,8 +10,13 @@ from app.db.mysql import get_db
 from app.dependencies import get_admin_user
 from app.models.user import User
 from app.models.product import Product
+from app.models.favorites import Favorite
+from app.models.item_views import ItemView
+from app.models.price_history import ProductPriceHistory
+from app.models.media import ProductImage
 from app.services.auth_service import AuthService
 from app.services.product_service import ProductService
+from app.services.profile_service import ProfileService
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse
 from app.schemas.product import ProductListResponse, ProductFilter, ProductCreate, ProductUpdate, ProductResponse
 
@@ -119,24 +124,10 @@ async def delete_user_admin(
     _admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Soft-delete / deactivate a user account (admin only)."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    # Soft delete: deactivate and anonymize email/username to avoid conflicts
-    from datetime import datetime, timezone
-    try:
-        user.is_active = False
-        user.email = f"deleted_{user.id}_{user.email}"
-        user.username = f"deleted_{user.id}_{user.username}"
-        user.updated_at = datetime.now(timezone.utc)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to delete user: {e}")
-
-    return {"message": "User deactivated"}
+    """Hard delete a user account and all related data (admin only)."""
+    # Use ProfileService to handle the deletion logic
+    ProfileService.delete_user_account(db, user_id)
+    return {"message": "User and all related data deleted permanently"}
 
 
 # -- Admin product management (CRUD)
@@ -144,6 +135,7 @@ async def delete_user_admin(
 async def get_all_products_admin(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search term for product title or description"),
     include_sold: bool = Query(True, description="Include sold products"),
     _admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
@@ -152,7 +144,7 @@ async def get_all_products_admin(
     skip = (page - 1) * size
 
     # Get all products for admin (including sold, paused, draft)
-    filter_params = ProductFilter(status=None, min_price=None, max_price=None, search_term=None)  # Admin sees all products
+    filter_params = ProductFilter(status=None, min_price=None, max_price=None, search_term=search)  # Admin sees all products
     products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
     total_pages = ceil(total / size) if total > 0 else 1
 
@@ -194,7 +186,6 @@ async def update_product_admin(
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    # Bypass seller ownership check by using ProductService.update_product directly with admin privileges
     updated = ProductService.update_product(db, product_id, product_update, admin_user.id)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or update failed")
@@ -213,6 +204,12 @@ async def delete_product_admin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     try:
+        # Delete related records first to avoid foreign key constraints
+        db.query(Favorite).filter(Favorite.product_id == product_id).delete()
+        db.query(ItemView).filter(ItemView.product_id == product_id).delete()
+        db.query(ProductPriceHistory).filter(ProductPriceHistory.product_id == product_id).delete()
+        db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+        
         db.delete(product)
         db.commit()
     except Exception as e:
@@ -221,6 +218,7 @@ async def delete_product_admin(
 
     return {"message": "Product deleted"}
 
+# -- Other Admin routes
 @router.get("/stats")
 async def get_platform_stats(
     _admin_user: User = Depends(get_admin_user),
@@ -241,3 +239,12 @@ async def get_platform_stats(
         "conversion_rate": round((sold_products / total_products * 100) if total_products > 0 else 0, 2),
         "revenue_from_sold_products": revenue_from_sold_products
     }
+
+@router.get("/recent-activities")
+async def get_recent_activities(
+    _admin_user: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get recent activities (admin only)"""
+    recent_activities = []
+    return {"recent_activities": recent_activities}
