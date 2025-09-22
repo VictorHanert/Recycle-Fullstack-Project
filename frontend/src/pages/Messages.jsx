@@ -22,7 +22,7 @@ import { useAlert } from "../hooks/useAlert";
 
 function Messages() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { userId: routeUserId } = useParams(); // optional – e.g. /messages/:userId (from ProductDetail "Contact Seller")
   const location = useLocation();
   const { alertState, showError, showInfo, closeAlert } = useAlert();
