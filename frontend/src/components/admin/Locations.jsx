@@ -103,56 +103,103 @@ function Locations() {
           <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Create</button>
         </form>
       </div>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <table className="w-full table-auto">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="text-left p-2">City</th>
-              <th className="text-left p-2">Postcode</th>
-              <th className="text-left p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {locations.map((location) => (
-              <tr key={location.id} className="border-t">
-                {editing === location.id ? (
-                  <>
-                    <td className="px-2 py-1">
-                      <input
-                        type="text"
-                        value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className="border p-1 rounded"
-                      />
-                    </td>
-                    <td className="px-2 py-1">
-                      <input
-                        type="text"
-                        value={formData.postcode}
-                        onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
-                        className="border p-1 rounded"
-                      />
-                    </td>
-                    <td className="px-2 py-1 flex gap-2">
-                      <button onClick={() => handleUpdate(location.id)} className="bg-blue-500 text-white w-20 px-2 py-1 rounded">Save</button>
-                      <button onClick={cancelEdit} className="bg-gray-500 text-white w-20 px-2 py-1 rounded">Cancel</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-2 py-1">{location.city}</td>
-                    <td className="px-2 py-1">{location.postcode}</td>
-                    <td className="px-2 py-1 flex gap-2">
-                      <button onClick={() => startEdit(location)} className="border border-blue-500 text-blue-500 w-20 px-2 py-1 rounded">Edit</button>
-                      <button onClick={() => handleDelete(location.id)} className="border border-red-500 text-red-500 w-20 px-2 py-1 rounded">Delete</button>
-                    </td>
-                  </>
-                )}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="table-fixed min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3 min-w-[150px]">
+                  City
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3 min-w-[120px]">
+                  Postcode
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 w-1/3 min-w-[140px]">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
+                    Loading locations...
+                  </td>
+                </tr>
+              ) : locations.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
+                    No locations found
+                  </td>
+                </tr>
+              ) : (
+                locations.map((location) => (
+                  <tr key={location.id} className="hover:bg-gray-50">
+                    {editing === location.id ? (
+                      <>
+                        <td className="px-6 py-2 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={formData.city}
+                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                            className="border p-1 rounded w-full text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-2 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={formData.postcode}
+                            onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+                            className="border p-1 rounded w-full text-sm"
+                          />
+                        </td>
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium sticky right-0 bg-white">
+                          <button
+                            onClick={() => handleUpdate(location.id)}
+                            className="text-blue-600 hover:text-blue-900 mr-4 text-sm"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="text-gray-600 hover:text-gray-900 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-2 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{location.city}</div>
+                        </td>
+                        <td className="px-6 py-2 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{location.postcode}</div>
+                        </td>
+                        <td className="px-6 py-2 whitespace-nowrap text-sm font-medium sticky right-0 bg-white">
+                          <button
+                            onClick={() => startEdit(location)}
+                            className="text-blue-600 hover:text-blue-900 mr-4 text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(location.id)}
+                            className="text-red-600 hover:text-red-900 text-sm"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
 
       {/* Alert Component */}
       <Alert

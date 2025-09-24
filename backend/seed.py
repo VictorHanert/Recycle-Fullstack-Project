@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 from faker import Faker
 import requests
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 
 from app.db.mysql import SessionLocal, create_tables, drop_tables
 from app.models import (
@@ -15,7 +14,7 @@ from app.models import (
 )
 from app.services.auth_service import AuthService
 
-fake = Faker()
+fake = Faker("en_US")
 
 # -----------------
 # DB Reset
@@ -39,6 +38,16 @@ def seed_locations(session: Session):
         ("Horsens", "8700"),
         ("Vejle", "7100"),
         ("Roskilde", "4000"),
+        ("Herning", "7400"),
+        ("Silkeborg", "8600"),
+        ("Helsingør", "3000"),
+        ("Næstved", "4700"),
+        ("Fredericia", "7000"),
+        ("Viborg", "8800"),
+        ("Holstebro", "7500"),
+        ("Slagelse", "4200"),
+        ("Hjørring", "9800"),
+        ("Sønderborg", "6400"),
     ]
     locations = []
     for city, postcode in dk_cities:
@@ -49,22 +58,16 @@ def seed_locations(session: Session):
     return locations
 
 
-def seed_users(session: Session, n=20, locations=None):
+def seed_users(session: Session, n=150, locations=None):
     users = []
     for _ in range(n):
         first = fake.first_name()
         last = fake.last_name()
         full_name = f"{first} {last}"
 
-        # email & username loosely aligned
         base = f"{first.lower()}.{last.lower()}"
-        email = f"{base}@example.com"
-        username = random.choice([
-            base,
-            first.lower() + str(random.randint(1, 99)),
-            last.lower() + str(random.randint(1, 99)),
-            base.replace(".", "_")
-        ])
+        email = f"{base}{random.randint(1,999)}@example.com"
+        username = base.replace(".", "_") + str(random.randint(1, 99))
 
         u = User(
             email=email,
@@ -74,7 +77,7 @@ def seed_users(session: Session, n=20, locations=None):
             is_active=True,
             location=random.choice(locations) if locations else None,
             full_name=full_name,
-            phone="".join([str(random.randint(0, 9)) for _ in range(8)]),
+            phone=f"+45{random.randint(10000000, 99999999)}",
         )
         session.add(u)
         users.append(u)
@@ -87,7 +90,7 @@ def seed_categories(session: Session):
     categories = [
         Category(name="Road Bikes", parent=root),
         Category(name="Mountain Bikes", parent=root),
-        Category(name="Hybrid Bikes", parent=root),
+        Category(name="Gravel Bikes", parent=root),
         Category(name="BMX", parent=root),
         Category(name="Electric Bikes", parent=root),
         Category(name="Folding Bikes", parent=root),
@@ -110,7 +113,7 @@ def seed_details(session: Session):
     return colors, materials, tags
 
 
-def seed_products(session: Session, users, categories, locations, colors, materials, tags, n=80):
+def seed_products(session: Session, users, categories, locations, colors, materials, tags):
     brands = [
         "Trek", "Giant", "Specialized", "Cannondale", "Scott",
         "Canyon", "Bianchi", "Santa Cruz", "Merida", "Cube"
@@ -118,28 +121,57 @@ def seed_products(session: Session, users, categories, locations, colors, materi
     conditions = ["new", "like_new", "good", "fair", "needs_repair"]
 
     products = []
-    for _ in range(n):
+
+    # 100 total products: 80 active, 20 sold
+    for i in range(100):
         seller = random.choice(users)
-        category = random.choice(categories[1:])  # skip root "Bicycles"
+        category = random.choice(categories)
         loc = random.choice(locations)
 
         brand = random.choice(brands)
         bike_type = category.name
-        title = f"{brand} {bike_type}"
+        model = fake.word().capitalize()
+        title = f"{brand} {model} {bike_type[:-1]}"
+
+        # Price ranges tuned per category (raw int, then rounded)
+        if bike_type == "Road Bikes":
+            price = random.randint(5000, 50000)
+        elif bike_type == "Mountain Bikes":
+            price = random.randint(4000, 40000)
+        elif bike_type == "Gravel Bikes":
+            price = random.randint(6000, 35000)
+        elif bike_type == "BMX":
+            price = random.randint(1500, 8000)
+        elif bike_type == "Electric Bikes":
+            price = random.randint(8000, 60000)
+        elif bike_type == "Folding Bikes":
+            price = random.randint(2000, 12000)
+        else:
+            price = random.randint(1000, 7000)
+
+        price = int(round(float(price) / 10.0) * 10)
+
+        description = (
+            f"This {bike_type.lower()} from {brand} is built for {random.choice(['speed', 'comfort', 'off-road adventures', 'daily commuting'])}. "
+            f"Model {model} features a {random.choice(['durable', 'lightweight', 'race-ready'])} frame and {random.choice(['smooth shifting', 'powerful disc brakes', 'a comfortable geometry'])}. "
+            f"{fake.paragraph(nb_sentences=2)}"
+        )
+
+        status = "active" if i < 80 else "sold"
 
         prod = Product(
             seller=seller,
             title=title,
-            description=f"A {bike_type.lower()} from {brand}. {fake.paragraph(nb_sentences=2)}",
+            description=description,
             category=category,
             condition=random.choice(conditions),
             quantity=1,
-            price_amount=random.randint(250, 25000),
+            price_amount=price,
             price_currency="DKK",
             price_type=random.choice(["fixed", "negotiable"]),
-            status=random.choice(["active", "sold", "paused"]),
+            status=status,
             location=loc,
-            created_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
+            created_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc),
         )
 
         prod.colors = random.sample(colors, k=random.randint(1, 2))
@@ -148,7 +180,6 @@ def seed_products(session: Session, users, categories, locations, colors, materi
         session.add(prod)
         products.append(prod)
     session.commit()
-
 
     # fetch Unsplash image
     def fetch_unsplash_bike_image(query="used_bicycle"):
@@ -159,98 +190,42 @@ def seed_products(session: Session, users, categories, locations, colors, materi
             if resp.status_code == 200:
                 data = resp.json()
                 if data["results"]:
-                    return random.choice(data["results"])['urls']['regular']
-        except Exception as e:
-            print(f"Unsplash API error: {e}")
-        # fallback to Unsplash source if API fails
-        return f"https://source.unsplash.com/640x480/?bicycle"
+                    return random.choice(data["results"])["urls"]["regular"]
+        except Exception:
+            pass
+        return "fullstack_project/frontend/public/city-bike.jpg"  # fallback local
 
-    # images & price history
+    # add images + price history
     for p in products:
         for i in range(random.randint(1, 3)):
-            # Use category and brand for more relevant images
             keywords = f"bicycle,{p.category.name},{p.title.split()[0]}"
-            image_url = fetch_unsplash_bike_image(keywords)
             img = ProductImage(
                 product=p,
-                url=image_url,
+                url=fetch_unsplash_bike_image(keywords),
                 alt_text=f"{p.title} photo",
-                sort_order=i
+                sort_order=i,
             )
             session.add(img)
-        for j in range(random.randint(0, 3)):  # Reduced to 0-3 to avoid too many entries
-            # Create some higher prices and some lower prices for realistic history
-            if random.choice([True, False]):
-                # Higher price (for showing discounts) - ensure it's different from current
-                hist_amount = round(random.uniform(float(p.price_amount) * 1.1, float(p.price_amount) * 2.0), 2)
-            else:
-                # Lower price (for showing price increases) - ensure it's different from current
-                hist_amount = round(random.uniform(50, max(51, float(p.price_amount) * 0.9)), 2)
-            
-            # Only add if it's different from current price
-            if hist_amount != float(p.price_amount):
+
+        for j in range(random.randint(0, 3)):
+            hist_amount_raw = random.uniform(float(p.price_amount) * 0.7, float(p.price_amount) * 1.3)
+            hist_amount = int(round(float(hist_amount_raw) / 10.0) * 10)
+            if hist_amount != int(p.price_amount):
                 hist = ProductPriceHistory(
                     product=p,
                     amount=hist_amount,
                     currency="DKK",
-                    changed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
+                    changed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc),
                 )
                 session.add(hist)
+
     session.commit()
     return products
 
 
-def seed_favorites(session, users, products, n=50):
-    user_ids = [u.id for u in users]
-    product_ids = [p.id for p in products]
-    max_possible = len(user_ids) * len(product_ids)
-
-    target = min(n, max_possible)
-    pairs = set()
-
-    while len(pairs) < target:
-        pairs.add((random.choice(user_ids), random.choice(product_ids)))
-
-    existing = set(
-        session.execute(
-            text("SELECT user_id, product_id FROM favorites")
-        ).fetchall()
-    )
-    to_insert = [Favorite(user_id=u, product_id=p,
-                          created_at=fake.date_time_between(start_date="-1y", end_date="now", tzinfo=timezone.utc))
-                 for (u, p) in pairs - existing]
-
-    session.add_all(to_insert)
-    session.commit()
-
-
-def seed_conversations(session, users, products, n=20):
-    for _ in range(n):
-        prod = random.choice(products)
-        conv = Conversation(product_id=prod.id)
-        session.add(conv)
-        session.flush()
-
-        buyer, seller = random.sample(users, 2)
-        session.add_all([
-            ConversationParticipant(conversation_id=conv.id, user_id=buyer.id),
-            ConversationParticipant(conversation_id=conv.id, user_id=seller.id),
-        ])
-
-        for _ in range(random.randint(2, 6)):
-            session.add(
-                Message(
-                    conversation_id=conv.id,
-                    sender_id=random.choice([buyer.id, seller.id]),
-                    body=fake.sentence(),
-                    created_at=fake.date_time_between(start_date="-6mo", end_date="now", tzinfo=timezone.utc),
-                )
-            )
-    session.commit()
-
-
 def seed_sold_archive(session: Session, products):
-    for p in random.sample(products, k=len(products)//5):
+    sold = [p for p in products if p.status == "sold"]
+    for p in sold:
         archive = SoldItemArchive(
             product_id=p.id,
             title=p.title,
@@ -258,24 +233,57 @@ def seed_sold_archive(session: Session, products):
             location_id=p.location_id,
             price_amount=p.price_amount,
             price_currency=p.price_currency,
-            sold_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 365))
+            sold_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 365)),
         )
         session.add(archive)
     session.commit()
 
 
-def seed_views(session: Session, users, products, n=200):
-    for _ in range(n):
-        view = ItemView(
-            product=random.choice(products),
-            viewer=random.choice(users) if random.random() < 0.7 else None,
-            session_id=fake.uuid4(),
-            user_agent=fake.user_agent(),
-            referer=fake.url(),
-            viewed_at=fake.date_time_between(start_date="-1y", end_date="now", tzinfo=timezone.utc)
-        )
-        session.add(view)
+def seed_favorites(session: Session, users, products):
+    for u in users:
+        favs = random.sample(products, k=random.randint(0, 5))
+        for p in favs:
+            fav = Favorite(user=u, product=p, created_at=datetime.now(timezone.utc))
+            session.add(fav)
     session.commit()
+
+
+def seed_views(session: Session, users, products):
+    for p in products:
+        for _ in range(random.randint(0, 10)):
+            viewer = random.choice(users)
+            view = ItemView(
+                product=p,
+                viewer_user_id=viewer.id,
+                viewed_at=fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc),
+            )
+            session.add(view)
+    session.commit()
+
+
+def seed_conversations(session: Session, users, products):
+    for p in random.sample(products, k=10):  # conversations on ~10 products
+        buyer = random.choice([u for u in users if u != p.seller])
+        convo = Conversation(product_id=p.id, created_at=datetime.now(timezone.utc))
+        session.add(convo)
+        session.flush()  # get convo id
+
+        participants = [p.seller, buyer]
+        for u in participants:
+            session.add(ConversationParticipant(conversation=convo, user=u))
+
+        # add a few messages
+        for _ in range(random.randint(2, 6)):
+            sender = random.choice(participants)
+            msg = Message(
+                conversation_id=convo.id,
+                sender_id=sender.id,
+                body=fake.sentence(),
+                created_at=fake.date_time_between(start_date="-1y", end_date="now", tzinfo=timezone.utc),
+            )
+            session.add(msg)
+    session.commit()
+
 
 # -----------------
 # MAIN
@@ -285,9 +293,8 @@ def main():
     db = SessionLocal()
     try:
         locations = seed_locations(db)
-        users = seed_users(db, 20, locations)
+        users = seed_users(db, 150, locations)
 
-        # fixed admin
         admin_user = User(
             email="admin@test.com",
             username="admin",
@@ -295,8 +302,8 @@ def main():
             hashed_password=AuthService.get_password_hash("admin123"),
             is_admin=True,
             is_active=True,
-            location=locations[0] if locations else None,
-            phone="12345678"
+            location=locations[0],
+            phone="+4512345678",
         )
         db.add(admin_user)
         db.commit()
@@ -304,13 +311,13 @@ def main():
 
         categories = seed_categories(db)
         colors, materials, tags = seed_details(db)
-        products = seed_products(db, users, categories, locations, colors, materials, tags, 50)
-        seed_favorites(db, users, products, 80)
-        seed_conversations(db, users, products, 15)
+        products = seed_products(db, users, categories, locations, colors, materials, tags)
         seed_sold_archive(db, products)
-        seed_views(db, users, products, 300)
+        seed_favorites(db, users, products)
+        seed_views(db, users, products)
+        seed_conversations(db, users, products)
 
-        print("✅ Database seeded with Danish bicycle marketplace data!")
+        print("✅ Users: 150 and Products: 100 (80 active, 20 sold)")
         print("✅ Admin user: admin@test.com / admin123")
     finally:
         db.close()
