@@ -11,15 +11,11 @@ export const profileAPI = {
     const queryParams = new URLSearchParams(params).toString();
     return apiClient.get(`/api/profile/me/products?${queryParams}`);
   },
+
+  // Public profile
   getPublicProfile: (userId) => apiClient.get(`/api/profile/${userId}`),
   getUserProducts: (userId, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return apiClient.get(`/api/profile/${userId}/products?${queryParams}`);
-  },
-  searchLocations: (query) => apiClient.get(`/api/profile/locations/search?q=${encodeURIComponent(query)}`),
-  getLocations: (params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/profile/locations?${queryParams}`);
-  },
-  createLocation: (locationData) => apiClient.post('/api/profile/locations', locationData)
+  }
 };

@@ -36,20 +36,3 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
         expires_in=30000 * 60,  # 30 minutes in seconds
         user=UserResponse.model_validate(db_user)
     )
-
-# User profile endpoints
-@router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    """Get current user info"""
-    return current_user
-
-@router.put("/me", response_model=UserResponse)
-async def update_user_me(
-    user_update: UserUpdate,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Update current user info"""
-    updated_user = AuthService.update_user(db, current_user.id, user_update)
-    return updated_user
-

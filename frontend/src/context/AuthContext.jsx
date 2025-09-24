@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-import { authAPI, apiClient } from "../api";
+import { authAPI, profileAPI, apiClient } from "../api";
 
 const AuthContext = createContext();
 
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const userData = await authAPI.getProfile(storedToken);
+          const userData = await profileAPI.getMyProfile(storedToken);
           setUser(userData);
           setToken(storedToken);
         } catch (error) {

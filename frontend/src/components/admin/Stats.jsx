@@ -5,11 +5,8 @@ function Stats() {
       <div className="bg-white p-6 rounded-lg shadow">
         <p className="text-gray-600">Detailed statistics and reports will be implemented here.</p>
         <div className="mt-4 space-y-2">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Generate Report
-          </button>
-          <button className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 ml-2">
-            Export Data
+          <button className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-700">
+            Export Data to Excel 📊
           </button>
         </div>
       </div>

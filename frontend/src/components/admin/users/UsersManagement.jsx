@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { usersAPI } from '../../../api/admin';
+import { adminAPI } from '../../../api/admin';
 import { useAlert } from '../../../hooks/useAlert';
 import Alert from '../../shared/Alert';
 import UsersTable from './UsersTable';
@@ -36,7 +36,7 @@ function UsersManagement() {
       const params = { page, size: 15 };
       if (search) params.search = search;
 
-      const response = await usersAPI.getAllUsers(params);
+      const response = await adminAPI.getAllUsers(params);
       setUsers(response.users);
       setTotalPages(response.total_pages);
       setCurrentPage(response.page);
@@ -68,7 +68,7 @@ function UsersManagement() {
     e.preventDefault();
     try {
       setFormLoading(true);
-      await usersAPI.create(formData);
+      await adminAPI.createUser(formData);
       setShowCreateModal(false);
       setFormData({ username: '', email: '', full_name: '', phone: '', password: '', is_active: true, is_admin: false });
       fetchUsers(currentPage);
@@ -92,7 +92,7 @@ function UsersManagement() {
         delete updateData.password;
       }
       
-      await usersAPI.update(selectedUser.id, updateData);
+      await adminAPI.updateUser(selectedUser.id, updateData);
       setShowEditModal(false);
       setSelectedUser(null);
       setFormData({ username: '', email: '', full_name: '', phone: '', password: '', is_active: true, is_admin: false });
@@ -109,7 +109,7 @@ function UsersManagement() {
   const handleDeleteUser = async (userId) => {
     const performDelete = async () => {
       try {
-        await usersAPI.delete(userId);
+        await adminAPI.deleteUser(userId);
         fetchUsers(currentPage);
       } catch (err) {
         console.error('Failed to delete user:', err);

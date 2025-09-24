@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { productsAPI } from '../../../api/admin';
-import { productsAPI as publicProductsAPI } from '../../../api/products';
+import { adminAPI, productsAPI } from '../../../api';
 import { useAlert } from '../../../hooks/useAlert';
 import Alert from '../../shared/Alert';
 import ProductFormModal from './ProductFormModal';
@@ -41,7 +40,7 @@ function ProductsManagement() {
   });
   const [formLoading, setFormLoading] = useState(false);
 
-  const { alertState, showAlert, showConfirm, closeAlert } = useAlert();
+  const { alertState, showConfirm, closeAlert } = useAlert();
 
   // Fetch products
   const fetchProducts = async (page = 1, search = '') => {
@@ -51,7 +50,7 @@ function ProductsManagement() {
       const params = { page, size: 15 };
       if (search) params.search = search;
 
-      const response = await productsAPI.getAllProducts(params);
+      const response = await adminAPI.getAllProducts(params);
       setProducts(response.products);
       setTotalPages(response.total_pages);
       setCurrentPage(response.page);
@@ -67,9 +66,9 @@ function ProductsManagement() {
   const fetchCategoriesAndLocations = async () => {
     try {
       const [categoriesRes, locationsRes, detailsRes] = await Promise.all([
-        publicProductsAPI.getCategories(),
-        publicProductsAPI.getLocations(),
-        publicProductsAPI.getProductDetails()
+        productsAPI.getCategories(),
+        productsAPI.getLocations(),
+        productsAPI.getProductDetails()
       ]);
       setCategories(categoriesRes);
       setLocations(locationsRes);
@@ -101,7 +100,7 @@ function ProductsManagement() {
   const handleCreateProduct = async (productData) => {
     try {
       setFormLoading(true);
-      await productsAPI.create(productData);
+      await adminAPI.createProduct(productData);
       setShowCreateModal(false);
       resetForm();
       fetchProducts(currentPage);
@@ -117,7 +116,7 @@ function ProductsManagement() {
   const handleEditProduct = async (productData) => {
     try {
       setFormLoading(true);
-      await productsAPI.update(selectedProduct.id, productData);
+      await adminAPI.updateProduct(selectedProduct.id, productData);
       setShowEditModal(false);
       setSelectedProduct(null);
       resetForm();
@@ -134,7 +133,7 @@ function ProductsManagement() {
   const handleDeleteProduct = async (productId) => {
     const performDelete = async () => {
       try {
-        await productsAPI.delete(productId);
+        await adminAPI.deleteProduct(productId);
         fetchProducts(currentPage);
       } catch (err) {
         console.error('Failed to delete product:', err);

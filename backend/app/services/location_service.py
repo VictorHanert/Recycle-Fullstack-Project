@@ -45,7 +45,7 @@ class LocationService:
         return db.query(Location).filter(Location.id == location_id).first()
 
     @staticmethod
-    def get_locations(db: Session, skip: int = 0, limit: int = 100) -> List[Location]:
+    def get_all_locations(db: Session, skip: int = 0, limit: int = 100) -> List[Location]:
         """Get all locations with pagination"""
         return db.query(Location).offset(skip).limit(limit).all()
 

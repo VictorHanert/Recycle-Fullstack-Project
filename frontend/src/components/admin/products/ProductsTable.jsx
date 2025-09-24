@@ -111,8 +111,8 @@ function ProductsTable({
                       <tr key={product.id} className='hover:bg-gray-50'>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{product.title}</div>
-                            <div className="text-sm text-gray-500">{product.description?.substring(0, 30)}...</div>
+                            <div className="text-sm font-medium text-gray-900">{product.title?.substring(0, 20)}{product.title?.length > 20 ? '...' : ''}</div>
+                            <div className="text-sm text-gray-500">{product.description?.substring(0, 30)}{product.description?.length > 30 ? '...' : ''}</div>
                           </div>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">

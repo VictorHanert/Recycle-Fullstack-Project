@@ -157,7 +157,10 @@ class ProductService:
                 product = db.query(Product).options(*PRODUCT_DETAIL_LOAD_OPTIONS).filter(Product.id == product_id).first()
         
         # Use Pydantic schema for response
-        return ProductResponse.model_validate(product)
+        product_response = ProductResponse.model_validate(product)
+        product_response.views_count = len(product.views)
+        product_response.favorites_count = len(product.favorites)
+        return product_response
 
     @staticmethod
     def get_products(
@@ -227,6 +230,11 @@ class ProductService:
         # Apply pagination
         products = query.offset(skip).limit(limit).all()
 
+        # Set computed counts
+        for p in products:
+            p.views_count = len(p.views)
+            p.favorites_count = len(p.favorites)
+
         return products, total
 
     @staticmethod
@@ -235,6 +243,10 @@ class ProductService:
         query = db.query(Product).filter(Product.seller_id == seller_id).options(*PRODUCT_LIST_LOAD_OPTIONS)
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
+        # Set computed counts
+        for p in products:
+            p.views_count = len(p.views)
+            p.favorites_count = len(p.favorites)
         return products, total
 
     @staticmethod
@@ -249,6 +261,10 @@ class ProductService:
 
         total = query.count()
         products = query.order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
+        # Set computed counts
+        for p in products:
+            p.views_count = len(p.views)
+            p.favorites_count = len(p.favorites)
         return products, total
 
     @staticmethod

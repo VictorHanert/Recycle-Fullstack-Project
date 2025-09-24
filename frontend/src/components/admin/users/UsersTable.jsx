@@ -95,12 +95,12 @@ function UsersTable({
                 <tr key={user.id} className='hover:bg-gray-50'>
                   <td className="px-6 py-2 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                      <div className="text-sm text-gray-500">{user.full_name}</div>
+                      <div className="text-sm font-medium text-gray-900">{user.username?.substring(0, 20)}{user.username?.length > 20 ? '...' : ''}</div>
+                      <div className="text-sm text-gray-500">{user.full_name?.substring(0, 20)}{user.full_name?.length > 20 ? '...' : ''}</div>
                     </div>
                   </td>
                   <td className="px-6 py-2 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{user.email}</div>
+                    <div className="text-sm text-gray-900">{user.email?.substring(0, 30)}{user.email?.length > 30 ? '...' : ''}</div>
                     {user.phone && <div className="text-sm text-gray-500">{user.phone}</div>}
                   </td>
                   <td className="px-6 py-2 whitespace-nowrap">

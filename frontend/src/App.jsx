@@ -22,6 +22,7 @@ import UsersManagement from "./components/admin/users/UsersManagement";
 import ProductsManagement from "./components/admin/products/ProductsManagement";
 import Stats from "./components/admin/Stats";
 import RecentActivity from "./components/admin/RecentActivity";
+import Locations from "./components/admin/Locations";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
@@ -126,6 +127,7 @@ function AppRoutes() {
             <Route path="products" element={<ProductsManagement />} />
             <Route path="stats" element={<Stats />} />
             <Route path="activity" element={<RecentActivity />} />
+            <Route path="locations" element={<Locations />} />
           </Route>
         </Routes>
       </MainLayout>

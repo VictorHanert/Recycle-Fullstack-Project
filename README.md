@@ -55,7 +55,7 @@ poetry run python seed.py
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs (Swagger UI)
-- **API Documentation**: http://localhost:8000/redocs (ReDoc)
+- **API Documentation**: http://localhost:8000/redoc (ReDoc)
 
 ## Project Structure
 ```

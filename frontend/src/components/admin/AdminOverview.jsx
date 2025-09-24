@@ -66,11 +66,11 @@ function AdminOverview() {
             <Link to="/admin/products" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               📦 Manage Products
             </Link>
-            <Link to="/admin" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              📊 View Reports
+            <Link to="/admin/locations" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
+              📍 Manage Locations
             </Link>
-            <Link to="/admin" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              ⚙️ System Settings
+            <Link to="/admin/stats" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
+              📊 View Reports
             </Link>
           </div>
         </div>

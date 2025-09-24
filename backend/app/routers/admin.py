@@ -186,7 +186,7 @@ async def update_product_admin(
     admin_user: User = Depends(get_admin_user),
     db: Session = Depends(get_db)
 ):
-    updated = ProductService.update_product(db, product_id, product_update, admin_user.id)
+    updated = ProductService.update_product(db, product_id, product_update, admin_user.id, is_admin=True)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or update failed")
     return ProductResponse.model_validate(updated)

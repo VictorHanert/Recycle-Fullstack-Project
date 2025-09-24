@@ -7,6 +7,7 @@ function AdminNavbar() {
     { path: '/admin', label: 'Overview' },
     { path: '/admin/users', label: 'Manage Users' },
     { path: '/admin/products', label: 'Manage Products' },
+    { path: '/admin/locations', label: 'Manage Locations' },
     { path: '/admin/stats', label: 'Stats' },
     { path: '/admin/activity', label: 'Recent Activity' }
   ];
