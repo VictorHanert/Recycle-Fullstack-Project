@@ -4,6 +4,7 @@ import { useAlert } from '../../../hooks/useAlert';
 import Alert from '../../shared/Alert';
 import ProductFormModal from './ProductFormModal';
 import ProductsTable from './ProductsTable';
+import { notify } from '../../../utils/notifications';
 
 function ProductsManagement() {
   const [products, setProducts] = useState([]);
@@ -101,12 +102,15 @@ function ProductsManagement() {
     try {
       setFormLoading(true);
       await adminAPI.createProduct(productData);
+      notify.success('Product created successfully!');
       setShowCreateModal(false);
       resetForm();
       fetchProducts(currentPage);
     } catch (err) {
       console.error('Failed to create product:', err);
-      setError(err.message || 'Failed to create product');
+      const errorMessage = err.message || 'Failed to create product';
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -117,13 +121,16 @@ function ProductsManagement() {
     try {
       setFormLoading(true);
       await adminAPI.updateProduct(selectedProduct.id, productData);
+      notify.success('Product updated successfully!');
       setShowEditModal(false);
       setSelectedProduct(null);
       resetForm();
       fetchProducts(currentPage);
     } catch (err) {
       console.error('Failed to update product:', err);
-      setError(err.message || 'Failed to update product');
+      const errorMessage = err.message || 'Failed to update product';
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -134,10 +141,13 @@ function ProductsManagement() {
     const performDelete = async () => {
       try {
         await adminAPI.deleteProduct(productId);
+        notify.success('Product deleted successfully!');
         fetchProducts(currentPage);
       } catch (err) {
         console.error('Failed to delete product:', err);
-        setError(err.message || 'Failed to delete product');
+        const errorMessage = err.message || 'Failed to delete product';
+        setError(errorMessage);
+        notify.error(errorMessage);
       }
     };
     showConfirm('Confirm Delete', 'Are you sure you want to delete this product?', performDelete);

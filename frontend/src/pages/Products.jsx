@@ -5,9 +5,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/products/ProductCard";
 import ProductFilters from "../components/products/ProductFilters";
 import Pagination from "../components/shared/Pagination";
+import { PageLoader, InlineLoader } from "../components/shared/LoadingSpinners";
 
 // API
 import { productsAPI } from "../api";
+import { notify } from "../utils/notifications";
 
 function Products() {
   const navigate = useNavigate();
@@ -97,6 +99,7 @@ function Products() {
         setCategories(data);
       } catch (err) {
         console.error("Error fetching categories:", err);
+        notify.error("Failed to load categories");
       } finally {
         setCategoriesLoading(false);
       }
@@ -109,6 +112,7 @@ function Products() {
         setLocations(data);
       } catch (err) {
         console.error("Error fetching locations:", err);
+        notify.error("Failed to load locations");
       } finally {
         setLocationsLoading(false);
       }
@@ -139,7 +143,9 @@ function Products() {
 
         setProductsData(data);
       } catch (err) {
-        setError(err.message || "Error fetching products");
+        const errorMessage = err.message || "Error fetching products";
+        setError(errorMessage);
+        notify.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -248,8 +254,8 @@ function Products() {
 
       {/* Products Grid */}
       {loading ? (
-        <div className="px-4 flex justify-center items-center min-h-64">
-          <div className="text-lg text-gray-600">Loading products...</div>
+        <div className="px-4">
+          <PageLoader message="Loading products..." />
         </div>
       ) : error ? (
         <div className="px-4">

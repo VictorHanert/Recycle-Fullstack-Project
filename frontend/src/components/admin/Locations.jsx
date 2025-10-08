@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { adminAPI } from '../../api';
 import { useAlert } from '../../hooks/useAlert';
 import Alert from '../shared/Alert';
+import { InlineLoader } from '../shared/LoadingSpinners';
+import { notify } from '../../utils/notifications';
 
 function Locations() {
   const [locations, setLocations] = useState([]);
@@ -31,23 +33,29 @@ function Locations() {
     e.preventDefault();
     try {
       await adminAPI.createLocation(formData);
+      notify.success('Location created successfully!');
       setFormData({ city: '', postcode: '' });
       fetchLocations();
     } catch (err) {
       console.error(err);
-      setError(err.message);
+      const errorMessage = err.message;
+      setError(errorMessage);
+      notify.error(errorMessage);
     }
   };
 
   const handleUpdate = async (id) => {
     try {
       await adminAPI.updateLocation(id, formData);
+      notify.success('Location updated successfully!');
       setEditing(null);
       setFormData({ city: '', postcode: '' });
       fetchLocations();
     } catch (err) {
       console.error(err);
-      setError(err.message);
+      const errorMessage = err.message;
+      setError(errorMessage);
+      notify.error(errorMessage);
     }
   };
 
@@ -55,10 +63,13 @@ function Locations() {
     const performDelete = async () => {
       try {
         await adminAPI.deleteLocation(id);
+        notify.success('Location deleted successfully!');
         fetchLocations();
       } catch (err) {
         console.error('Failed to delete location:', err);
-        setError(err.message || 'Failed to delete location');
+        const errorMessage = err.message || 'Failed to delete location';
+        setError(errorMessage);
+        notify.error(errorMessage);
       }
     };
     showConfirm('Confirm Delete', 'Are you sure you want to delete this location?', performDelete);
@@ -74,7 +85,11 @@ function Locations() {
     setFormData({ city: '', postcode: '' });
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="px-4">
+      <InlineLoader message="Loading locations..." />
+    </div>
+  );
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -123,7 +138,7 @@ function Locations() {
               {loading ? (
                 <tr>
                   <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
-                    Loading locations...
+                    <InlineLoader message="Loading locations..." />
                   </td>
                 </tr>
               ) : locations.length === 0 ? (

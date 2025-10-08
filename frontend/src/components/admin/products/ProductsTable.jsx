@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Pagination from '../../shared/Pagination';
+import { InlineLoader } from '../../shared/LoadingSpinners';
 
 function ProductsTable({
   products,
@@ -97,7 +98,7 @@ function ProductsTable({
                   {loading ? (
                     <tr>
                       <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
-                        Loading products...
+                        <InlineLoader message="Loading products..." />
                       </td>
                     </tr>
                   ) : sortedProducts.length === 0 ? (

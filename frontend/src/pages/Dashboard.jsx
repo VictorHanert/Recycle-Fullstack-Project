@@ -4,6 +4,8 @@ import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { notify } from "../utils/notifications";
+import { CardLoader } from "../components/shared/LoadingSpinners";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -22,10 +24,12 @@ function Dashboard() {
       async () => {
         try {
           await productsAPI.delete(productId);
+          notify.success("Product deleted successfully");
           // Refresh the products list after deletion
           refetch();
         } catch (err) {
           console.error('Error deleting product:', err);
+          notify.error("Failed to delete product. Please try again.");
           showError('Error', 'Failed to delete product. Please try again.');
         }
       }
@@ -87,9 +91,7 @@ function Dashboard() {
           </h2>
           
           {loading ? (
-            <div className="text-center py-8">
-              <div className="text-lg text-gray-600">Loading your products...</div>
-            </div>
+            <CardLoader message="Loading your products..." />
           ) : error ? (
             <div className="text-center py-8">
               <div className="text-red-600 mb-4">Error loading products: {error}</div>

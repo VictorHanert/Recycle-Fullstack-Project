@@ -4,6 +4,7 @@ import { useAlert } from '../../../hooks/useAlert';
 import Alert from '../../shared/Alert';
 import UsersTable from './UsersTable';
 import UserFormModal from './UserFormModal';
+import { notify } from '../../../utils/notifications';
 
 function UsersManagement() {
   const [users, setUsers] = useState([]);
@@ -69,12 +70,15 @@ function UsersManagement() {
     try {
       setFormLoading(true);
       await adminAPI.createUser(formData);
+      notify.success('User created successfully!');
       setShowCreateModal(false);
       setFormData({ username: '', email: '', full_name: '', phone: '', password: '', is_active: true, is_admin: false });
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Failed to create user:', err);
-      setError(err.message || 'Failed to create user');
+      const errorMessage = err.message || 'Failed to create user';
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -93,13 +97,16 @@ function UsersManagement() {
       }
       
       await adminAPI.updateUser(selectedUser.id, updateData);
+      notify.success('User updated successfully!');
       setShowEditModal(false);
       setSelectedUser(null);
       setFormData({ username: '', email: '', full_name: '', phone: '', password: '', is_active: true, is_admin: false });
       fetchUsers(currentPage);
     } catch (err) {
       console.error('Failed to update user:', err);
-      setError(err.message || 'Failed to update user');
+      const errorMessage = err.message || 'Failed to update user';
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -110,10 +117,13 @@ function UsersManagement() {
     const performDelete = async () => {
       try {
         await adminAPI.deleteUser(userId);
+        notify.success('User deleted successfully!');
         fetchUsers(currentPage);
       } catch (err) {
         console.error('Failed to delete user:', err);
-        setError(err.message || 'Failed to delete user');
+        const errorMessage = err.message || 'Failed to delete user';
+        setError(errorMessage);
+        notify.error(errorMessage);
       }
     };
     showConfirm('Confirm Delete', 'Are you sure you want to permanently delete this user? This action cannot be undone and will remove all user data including their products.', performDelete);

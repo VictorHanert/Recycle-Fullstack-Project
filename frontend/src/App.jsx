@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
@@ -14,6 +16,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
+import { PageLoader } from "./components/shared/LoadingSpinners";
 
 // Import admin components
 import AdminLayout from "./layouts/AdminLayout";
@@ -29,9 +32,11 @@ function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen">
+        <PageLoader size={60} message="Authenticating..." />
+      </div>
+    );
   }
   
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -42,9 +47,11 @@ function AdminRoute({ children }) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen">
+        <PageLoader size={60} message="Verifying admin access..." />
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
@@ -139,6 +146,18 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </AuthProvider>
   );
 }

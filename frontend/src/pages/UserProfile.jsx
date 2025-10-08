@@ -5,6 +5,7 @@ import { currencyUtils } from "../utils/currencyUtils";
 import { formatCondition } from "../utils/formatUtils";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { PageLoader } from "../components/shared/LoadingSpinners";
 
 function UserProfile() {
   const { userId } = useParams();
@@ -27,13 +28,13 @@ function UserProfile() {
   if (loading || error) {
     return (
       <div className="px-4 mb-48">
-        <div className="text-center py-8">
-          {loading ? (
-            <div className="text-lg">Loading profile...</div>
-          ) : (
+        {loading ? (
+          <PageLoader message="Loading profile..." />
+        ) : (
+          <div className="text-center py-8">
             <div className="text-red-600 text-lg">{error}</div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }

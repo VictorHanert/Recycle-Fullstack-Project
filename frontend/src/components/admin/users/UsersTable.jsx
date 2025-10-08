@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Pagination from '../../shared/Pagination';
+import { InlineLoader } from '../../shared/LoadingSpinners';
 
 function UsersTable({
   users,
@@ -81,7 +82,7 @@ function UsersTable({
             {loading ? (
               <tr>
                 <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                  Loading users...
+                  <InlineLoader message="Loading users..." />
                 </td>
               </tr>
             ) : sortedUsers.length === 0 ? (

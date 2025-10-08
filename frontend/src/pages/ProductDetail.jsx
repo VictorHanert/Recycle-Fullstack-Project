@@ -8,6 +8,8 @@ import ImageSlider from "../components/products/ImageSlider";
 import PriceHistoryDisplay from "../components/products/PriceHistoryDisplay";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { PageLoader } from "../components/shared/LoadingSpinners";
+import { notify } from "../utils/notifications";
 
 function ProductDetail() {
   const { id } = useParams();
@@ -28,9 +30,11 @@ function ProductDetail() {
       async () => {
         try {
           await productsAPI.delete(id);
+          notify.success('Product deleted successfully');
           navigate('/products');
         } catch (err) {
           console.error('Error deleting product:', err);
+          notify.error('Failed to delete product. Please try again.');
           showError('Error', 'Failed to delete product. Please try again.');
         }
       }
@@ -45,9 +49,11 @@ function ProductDetail() {
 
     try {
       await productsAPI.update(id, { status: newStatus });
+      notify.success(`Product ${statusMessages[newStatus]} successfully`);
       refetch();
     } catch (err) {
       console.error(`Error ${statusMessages[newStatus]}:`, err);
+      notify.error(`Failed to ${statusMessages[newStatus]}. Please try again.`);
       showError('Error', `Failed to ${statusMessages[newStatus]}. Please try again.`);
     }
   };
@@ -62,8 +68,8 @@ function ProductDetail() {
 
   // Compact loading/error states
   const renderLoadingState = (message) => (
-    <div className="px-4 flex justify-center items-center min-h-64">
-      <div className="text-lg text-gray-600">{message}</div>
+    <div className="px-4">
+      <PageLoader message={message} />
     </div>
   );
 

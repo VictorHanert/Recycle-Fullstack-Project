@@ -5,6 +5,8 @@ import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { PageLoader } from "../components/shared/LoadingSpinners";
+import { notify } from "../utils/notifications";
 
 function Profile() {
   const { user, token } = useAuth();
@@ -77,8 +79,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setIsEditing(false);
       setError(null);
+      notify.success('Profile updated successfully!');
     } catch (err) {
-      setError(`Failed to update profile: ${err.message}`);
+      const errorMessage = `Failed to update profile: ${err.message}`;
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Profile update error:', err);
     }
   };
@@ -90,8 +95,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setIsEditingLocation(false);
       setError(null);
+      notify.success('Location updated successfully!');
     } catch (err) {
-      setError('Failed to update location');
+      const errorMessage = 'Failed to update location';
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Location update error:', err);
     }
   };
@@ -102,8 +110,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setLocationData({ city: '', postcode: '' });
       setError(null);
+      notify.success('Location removed successfully!');
     } catch (err) {
-      setError('Failed to remove location');
+      const errorMessage = 'Failed to remove location';
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Location remove error:', err);
     }
   };
@@ -117,8 +128,11 @@ function Profile() {
           await profileAPI.deleteMyAccount(token);
           // Redirect to home or logout
           window.location.href = '/';
+          notify.success('Account deleted successfully');
         } catch (err) {
-          setError('Failed to delete account');
+          const errorMessage = 'Failed to delete account';
+          setError(errorMessage);
+          notify.error(errorMessage);
           console.error('Account delete error:', err);
           showError('Error', 'Failed to delete account. Please try again.');
         }
@@ -133,10 +147,12 @@ function Profile() {
       async () => {
         try {
           await productsAPI.delete(productId);
+          notify.success('Product deleted successfully');
           // Refresh the products list
           fetchUserProducts();
         } catch (err) {
           console.error('Error deleting product:', err);
+          notify.error('Failed to delete product. Please try again.');
           showError('Error', 'Failed to delete product. Please try again.');
         }
       }
@@ -146,9 +162,7 @@ function Profile() {
   if (loading) {
     return (
       <div className="px-4 mb-48">
-        <div className="text-center py-8">
-          <div className="text-lg">Loading profile...</div>
-        </div>
+        <PageLoader message="Loading profile..." />
       </div>
     );
   }

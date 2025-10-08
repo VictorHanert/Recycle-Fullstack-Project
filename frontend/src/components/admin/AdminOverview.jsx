@@ -1,6 +1,7 @@
 import { useAuth } from "../../hooks/useAuth";
 import { useFetch } from "../../hooks/useFetch";
 import { Link } from "react-router-dom";
+import { InlineLoader } from "../shared/LoadingSpinners";
 
 function AdminOverview() {
   const { user, token } = useAuth();
@@ -48,7 +49,9 @@ function AdminOverview() {
         </div>
 
         {statsLoading && (
-          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-gray-500">Loading stats...</div>
+          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-gray-500 py-4">
+            <InlineLoader message="Loading stats..." />
+          </div>
         )}
         {statsError && (
           <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-red-500">Error loading stats: {statsError}</div>
@@ -83,11 +86,11 @@ function AdminOverview() {
               <p className="text-sm">New user registered: john@example.com</p>
               <p className="text-xs text-gray-500">2 minutes ago</p>
             </div>
-            <div className="p-3 border-l-4 border-green-400 bg-green-50">
+            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
               <p className="text-sm">Product updated: Wireless Headphones</p>
               <p className="text-xs text-gray-500">5 minutes ago</p>
             </div>
-            <div className="p-3 border-l-4 border-purple-400 bg-purple-50">
+            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
               <p className="text-sm">New order placed: #ORD-12345</p>
               <p className="text-xs text-gray-500">10 minutes ago</p>
             </div>
