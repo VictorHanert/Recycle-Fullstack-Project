@@ -1,14 +1,13 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, List
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 from app.config import get_settings
+from app.repositories.base import UserRepositoryInterface
 
 settings = get_settings()
 
@@ -18,6 +17,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:
     """Service class for authentication operations"""
+    
+    def __init__(self, user_repository: UserRepositoryInterface):
+        self.user_repository = user_repository
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -62,53 +64,29 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    @staticmethod
-    def register_user(db: Session, user: UserCreate) -> User:
+    def register_user(self, user: UserCreate) -> User:
         """Register a new user"""
         # Check if username already exists
-        existing_user = db.query(User).filter(User.username == user.username).first()
-        if existing_user:
+        if self.user_repository.check_username_exists(user.username):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already registered"
             )
 
         # Check if email already exists
-        existing_email = db.query(User).filter(User.email == user.email).first()
-        if existing_email:
+        if self.user_repository.check_email_exists(user.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
 
-        try:
-            # Create new user
-            hashed_password = AuthService.get_password_hash(user.password)
-            db_user = User(
-                username=user.username,
-                email=user.email,
-                full_name=user.full_name,
-                hashed_password=hashed_password,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
-            )
+        # Create new user
+        hashed_password = AuthService.get_password_hash(user.password)
+        return self.user_repository.create(user, hashed_password)
 
-            db.add(db_user)
-            db.commit()
-            db.refresh(db_user)
-            return db_user
-
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User registration failed due to database constraint"
-            )
-
-    @staticmethod
-    def authenticate_user(db: Session, username: str, password: str) -> User:
+    def authenticate_user(self, username: str, password: str) -> User:
         """Authenticate user with username and password"""
-        user = db.query(User).filter(User.username == username).first()
+        user = self.user_repository.get_by_username(username)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -131,40 +109,24 @@ class AuthService:
 
         return user
 
-    @staticmethod
-    def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    def get_user_by_username(self, username: str) -> Optional[User]:
         """Get user by username"""
-        return db.query(User).options(joinedload(User.location)).filter(User.username == username).first()
+        return self.user_repository.get_by_username(username)
 
-    @staticmethod
-    def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID"""
-        return db.query(User).options(joinedload(User.location)).filter(User.id == user_id).first()
+        return self.user_repository.get_by_id(user_id)
 
-    @staticmethod
-    def update_user(db: Session, user_id: int, user_update: UserUpdate) -> User:
+    def update_user(self, user_id: int, user_update: UserUpdate) -> User:
         """Update user information"""
-        user = db.query(User).filter(User.id == user_id).first()
+        user = self.user_repository.update(user_id, user_update)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        return user
 
-        # Update only provided fields
-        update_data = user_update.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(user, field, value)
-
-        user.updated_at = datetime.now(timezone.utc)
-
-        try:
-            db.commit()
-            db.refresh(user)
-            return user
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Update failed due to database constraint"
-            )
+    def search_users(self, search_term: str, skip: int = 0, limit: int = 100) -> List[User]:
+        """Search users by username, email, or full name"""
+        return self.user_repository.search_users(search_term, skip, limit)

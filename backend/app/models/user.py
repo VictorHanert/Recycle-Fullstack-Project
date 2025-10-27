@@ -25,10 +25,8 @@ class User(Base):
                         onupdate=lambda: datetime.now(timezone.utc))
 
 
-    # Relationship with products
-    products = relationship("Product", back_populates="seller", cascade="all, delete-orphan")
-
+    # Relationships
     location = relationship("Location", back_populates="users")
-    products = relationship("Product", back_populates="seller")
+    products = relationship("Product", back_populates="seller", cascade="all, delete-orphan")
     favorites = relationship("Favorite", back_populates="user")
     messages = relationship("Message", back_populates="sender")

@@ -1,112 +1,58 @@
 """Location service for CRUD operations."""
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from app.models.location import Location
 from app.schemas.location import LocationCreate, LocationUpdate
+from app.repositories.base import LocationRepositoryInterface
 
 
 class LocationService:
     """Service class for location operations"""
 
-    @staticmethod
-    def create_location(db: Session, location: LocationCreate) -> Location:
-        """Create a new location"""
-        # Check if location already exists
-        existing_location = db.query(Location).filter(
-            Location.city == location.city,
-            Location.postcode == location.postcode
-        ).first()
-        
-        if existing_location:
-            return existing_location
+    def __init__(self, location_repository: LocationRepositoryInterface):
+        self.location_repository = location_repository
 
-        try:
-            db_location = Location(
-                city=location.city,
-                postcode=location.postcode
-            )
-            db.add(db_location)
-            db.commit()
-            db.refresh(db_location)
-            return db_location
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Location creation failed"
-            )
+    def create_location(self, location: LocationCreate) -> Location:
+        """Create a new location or return existing one"""
+        return self.location_repository.get_or_create(location.city, location.postcode)
 
-    @staticmethod
-    def get_location_by_id(db: Session, location_id: int) -> Optional[Location]:
+    def get_location_by_id(self, location_id: int) -> Optional[Location]:
         """Get location by ID"""
-        return db.query(Location).filter(Location.id == location_id).first()
+        return self.location_repository.get_by_id(location_id)
 
-    @staticmethod
-    def get_all_locations(db: Session, skip: int = 0, limit: int = 100) -> List[Location]:
+    def get_all_locations(self, skip: int = 0, limit: int = 100) -> List[Location]:
         """Get all locations with pagination"""
-        return db.query(Location).offset(skip).limit(limit).all()
+        return self.location_repository.get_all(skip, limit)
 
-    @staticmethod
-    def search_locations(db: Session, query: str) -> List[Location]:
+    def search_locations(self, query: str) -> List[Location]:
         """Search locations by city or postcode"""
-        return db.query(Location).filter(
-            (Location.city.ilike(f"%{query}%")) | 
-            (Location.postcode.ilike(f"%{query}%"))
-        ).limit(10).all()
+        return self.location_repository.search_locations(query, 10)
 
-    @staticmethod
-    def update_location(db: Session, location_id: int, location_update: LocationUpdate) -> Location:
+    def update_location(self, location_id: int, location_update: LocationUpdate) -> Location:
         """Update location information"""
-        location = db.query(Location).filter(Location.id == location_id).first()
-        if not location:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Location not found"
-            )
-
-        # Update only provided fields
         update_data = location_update.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(location, field, value)
-
-        try:
-            db.commit()
-            db.refresh(location)
-            return location
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Update failed due to database constraint"
-            )
-
-    @staticmethod
-    def delete_location(db: Session, location_id: int) -> bool:
-        """Delete a location"""
-        location = db.query(Location).filter(Location.id == location_id).first()
-        if not location:
+        
+        updated_location = self.location_repository.update(
+            location_id, 
+            city=update_data.get('city'),
+            postcode=update_data.get('postcode')
+        )
+        
+        if not updated_location:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Location not found"
             )
+        
+        return updated_location
 
-        # Check if location is being used by users or products
-        if location.users or location.products:
+    def delete_location(self, location_id: int) -> bool:
+        """Delete a location"""
+        success = self.location_repository.delete(location_id)
+        if not success:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot delete location that is in use"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Location not found"
             )
-
-        try:
-            db.delete(location)
-            db.commit()
-            return True
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Delete failed due to database constraint"
-            )
+        return success

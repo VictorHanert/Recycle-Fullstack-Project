@@ -8,13 +8,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.routers import auth, products, admin, profile, location
 from app.db.mysql import create_tables
 from app.config import get_settings
-
-# Simple logging setup
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 from app.middleware import (
     create_error_response,
     log_http_exception,
@@ -22,6 +15,13 @@ from app.middleware import (
     log_general_exception,
     format_validation_errors
 )
+
+# Simple logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 

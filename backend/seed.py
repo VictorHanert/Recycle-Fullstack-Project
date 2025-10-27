@@ -6,12 +6,17 @@ import requests
 from sqlalchemy.orm import Session
 
 from app.db.mysql import SessionLocal, create_tables, drop_tables
-from app.models import (
-    User, Location, Category, Product, Color, Material, Tag,
-    ProductImage, ProductPriceHistory, Favorite,
-    Conversation, ConversationParticipant, Message,
-    SoldItemArchive, ItemView,
-)
+from app.models.user import User
+from app.models.location import Location
+from app.models.category import Category
+from app.models.product import Product
+from app.models.product_details import Color, Material, Tag
+from app.models.media import ProductImage
+from app.models.price_history import ProductPriceHistory
+from app.models.favorites import Favorite
+from app.models.messages import Conversation, ConversationParticipant, Message
+from app.models.sold import SoldItemArchive
+from app.models.item_views import ItemView
 from app.services.auth_service import AuthService
 
 fake = Faker("en_US")

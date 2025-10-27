@@ -3,17 +3,9 @@ from math import ceil
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 
-from app.db.mysql import get_db
-from app.dependencies import get_admin_user
+from app.dependencies import get_admin_user, get_auth_service, get_product_service, get_profile_service
 from app.models.user import User
-from app.models.product import Product
-from app.models.favorites import Favorite
-from app.models.item_views import ItemView
-from app.models.price_history import ProductPriceHistory
-from app.models.media import ProductImage
 from app.services.auth_service import AuthService
 from app.services.product_service import ProductService
 from app.services.profile_service import ProfileService
@@ -29,26 +21,21 @@ async def get_all_users(
     size: int = Query(15, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search term for username, email, or full name"),
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """Get all users (admin only)"""
-    query = db.query(User)
-    
-    # Apply search filter if provided
-    if search:
-        search_filter = f"%{search}%"
-        query = query.filter(
-            (User.username.ilike(search_filter)) |
-            (User.email.ilike(search_filter)) |
-            (User.full_name.ilike(search_filter))
-        )
-    
-    # Get total count for pagination
-    total = query.count()
-    
-    # Apply pagination
     skip = (page - 1) * size
-    users = query.offset(skip).limit(size).all()
+    
+    # Use AuthService search functionality
+    if search:
+        users = auth_service.search_users(search, skip, size)
+        # For total count, we'll get all matching results (could optimize this later)
+        all_matching = auth_service.search_users(search, 0, 1000)  # Large limit
+        total = len(all_matching)
+    else:
+        # Use repository get_all method through auth service
+        users = auth_service.user_repository.get_all(skip, size)
+        total = auth_service.user_repository.count_total_users()
     
     # Calculate total pages
     total_pages = ceil(total / size) if total > 0 else 1
@@ -65,11 +52,11 @@ async def get_all_users(
 async def create_user_admin(
     user_in: UserCreate,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
     """Create a new user (admin only). Uses AuthService to handle hashing and validation."""
     # Use AuthService.register_user to create (handles hashing/validation)
-    new_user = AuthService.register_user(db, user_in)
+    new_user = auth_service.register_user(user_in)
     return UserResponse.model_validate(new_user)
 
 
@@ -77,9 +64,9 @@ async def create_user_admin(
 async def get_user_admin(
     user_id: int,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = auth_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserResponse.model_validate(user)
@@ -90,43 +77,26 @@ async def update_user_admin(
     user_id: int,
     user_update: UserUpdate,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    update_data = user_update.model_dump(exclude_unset=True)
-    
-    # Handle password separately - hash it if provided
-    if 'password' in update_data:
-        update_data['hashed_password'] = AuthService.get_password_hash(update_data.pop('password'))
-    
-    for field, value in update_data.items():
-        setattr(user, field, value)
-
-    from datetime import datetime, timezone
-    user.updated_at = datetime.now(timezone.utc)
-
+    """Update user (admin only)"""
     try:
-        db.commit()
-        db.refresh(user)
-    except Exception:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to update user")
-
-    return UserResponse.model_validate(user)
+        updated_user = auth_service.update_user(user_id, user_update)
+        if not updated_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return UserResponse.model_validate(updated_user)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to update user: {str(e)}")
 
 
 @router.delete("/users/{user_id}")
 async def delete_user_admin(
     user_id: int,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    profile_service: ProfileService = Depends(get_profile_service)
 ):
     """Hard delete a user account and all related data (admin only)."""
-    # Use ProfileService to handle the deletion logic
-    ProfileService.delete_user_account(db, user_id)
+    profile_service.delete_user_account(user_id)
     return {"message": "User and all related data deleted permanently"}
 
 
@@ -138,14 +108,14 @@ async def get_all_products_admin(
     search: str = Query(None, description="Search term for product title or description"),
     include_sold: bool = Query(True, description="Include sold products"),
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    product_service: ProductService = Depends(get_product_service)
 ):
     """Get all products including sold ones (admin only)"""
     skip = (page - 1) * size
 
     # Get all products for admin (including sold, paused, draft)
     filter_params = ProductFilter(status=None, min_price=None, max_price=None, search_term=search)  # Admin sees all products
-    products, total = ProductService.get_products(db, skip=skip, limit=size, filter_params=filter_params)
+    products, total = product_service.get_products(skip=skip, limit=size, filter_params=filter_params)
     total_pages = ceil(total / size) if total > 0 else 1
 
     return ProductListResponse(
@@ -160,10 +130,10 @@ async def get_all_products_admin(
 async def create_product_admin(
     product_in: ProductCreate,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    product_service: ProductService = Depends(get_product_service)
 ):
     """Create a product as admin. Admin becomes the owner (seller_id set to admin user's id)."""
-    product = ProductService.create_product(db, product_in, _admin_user.id)
+    product = product_service.create_product(product_in, _admin_user.id)
     return ProductResponse.model_validate(product)
 
 
@@ -171,9 +141,9 @@ async def create_product_admin(
 async def get_product_admin(
     product_id: int,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    product_service: ProductService = Depends(get_product_service)
 ):
-    product = ProductService.get_product_by_id(db, product_id)
+    product = product_service.get_product_by_id(product_id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     return ProductResponse.model_validate(product)
@@ -184,9 +154,9 @@ async def update_product_admin(
     product_id: int,
     product_update: ProductUpdate,
     admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    product_service: ProductService = Depends(get_product_service)
 ):
-    updated = ProductService.update_product(db, product_id, product_update, admin_user.id, is_admin=True)
+    updated = product_service.update_product(product_id, product_update, admin_user.id, is_admin=True)
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or update failed")
     return ProductResponse.model_validate(updated)
@@ -196,55 +166,32 @@ async def update_product_admin(
 async def delete_product_admin(
     product_id: int,
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    product_service: ProductService = Depends(get_product_service)
 ):
-    # Attempt to delete product (ProductService.delete_product enforces ownership; bypass by direct DB delete)
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
+    """Delete a product (admin only) - uses repository delete (hard delete)"""
+    success = product_service.force_delete_product(product_id)
+    if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    try:
-        # Delete related records first to avoid foreign key constraints
-        db.query(Favorite).filter(Favorite.product_id == product_id).delete()
-        db.query(ItemView).filter(ItemView.product_id == product_id).delete()
-        db.query(ProductPriceHistory).filter(ProductPriceHistory.product_id == product_id).delete()
-        db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
-        
-        db.delete(product)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to delete product: {e}")
-
     return {"message": "Product deleted"}
 
 # -- Other Admin routes
 @router.get("/stats")
 async def get_platform_stats(
     _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service),
+    product_service: ProductService = Depends(get_product_service)
 ):
     """Get platform statistics (admin only)"""
-    total_users = db.query(User).count()
-    total_products = db.query(Product).count()
-    sold_products = db.query(Product).filter(Product.status == "sold").count()
-    active_products = total_products - sold_products
-    revenue_from_sold_products = db.query(func.sum(Product.price_amount)).filter(Product.status == "sold").scalar() or 0
-
-    return {
-        "total_users": total_users,
-        "total_products": total_products,
-        "sold_products": sold_products,
-        "active_products": active_products,
-        "conversion_rate": round((sold_products / total_products * 100) if total_products > 0 else 0, 2),
-        "revenue_from_sold_products": revenue_from_sold_products
-    }
+    stats = product_service.get_platform_statistics()
+    stats["total_users"] = auth_service.user_repository.count_total_users()
+    
+    return stats
 
 @router.get("/recent-activities")
 async def get_recent_activities(
-    _admin_user: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
+    _admin_user: User = Depends(get_admin_user)
 ):
     """Get recent activities (admin only)"""
+    # TODO: Implement recent activities tracking in services
     recent_activities = []
     return {"recent_activities": recent_activities}
