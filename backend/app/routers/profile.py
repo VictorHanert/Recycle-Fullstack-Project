@@ -36,15 +36,14 @@ async def update_my_profile(
     return profile_service.get_user_profile(current_user.id)
 
 
-# Note: Delete account functionality would need to be implemented in ProfileService
-# @router.delete("/me")
-# async def delete_my_account(
-#     current_user: User = Depends(get_current_active_user),
-#     profile_service: ProfileService = Depends(get_profile_service)
-# ):
-#     """Delete current user's account"""
-#     # This would need a delete_user_account method in ProfileService
-#     return {"message": "Account deleted successfully"}
+@router.delete("/me")
+async def delete_my_account(
+    current_user: User = Depends(get_current_active_user),
+    profile_service: ProfileService = Depends(get_profile_service)
+):
+    """Delete current user's account and all associated data"""
+    profile_service.delete_user_account(current_user.id)
+    return {"message": "Account deleted successfully"}
 
 @router.get("/me/products", response_model=List[ProductResponse])
 async def get_my_products(

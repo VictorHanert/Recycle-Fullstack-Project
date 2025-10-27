@@ -228,16 +228,10 @@ class MySQLProductRepository(ProductRepositoryInterface):
         
         try:
             # Delete many-to-many relationships first
-            
-            # Delete many-to-many relationships
             self.db.query(ProductColor).filter(ProductColor.product_id == product_id).delete()
             self.db.query(ProductMaterial).filter(ProductMaterial.product_id == product_id).delete() 
             self.db.query(ProductTag).filter(ProductTag.product_id == product_id).delete()
-            
-            # Delete favorites explicitly (even though they should CASCADE)
             self.db.query(Favorite).filter(Favorite.product_id == product_id).delete()
-            
-            # Delete the product
             self.db.delete(product)
             self.db.commit()
             return True
@@ -329,7 +323,7 @@ class MySQLProductRepository(ProductRepositoryInterface):
         }
     
     def record_view(self, product_id: int, viewer_user_id: int) -> bool:
-        """Record a product view."""
+        """Record a product view and increment views counter."""
         # Check if user already viewed this product
         existing_view = self.db.query(ItemView).filter(
             ItemView.product_id == product_id,
@@ -347,6 +341,12 @@ class MySQLProductRepository(ProductRepositoryInterface):
         
         try:
             self.db.add(new_view)
+            
+            # Increment the views counter on the product
+            product = self.db.query(Product).filter(Product.id == product_id).first()
+            if product:
+                product.views_count += 1
+            
             self.db.commit()
             return True
         except IntegrityError:

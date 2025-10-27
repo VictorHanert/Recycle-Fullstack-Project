@@ -26,6 +26,7 @@ class Product(Base):
 
     quantity = Column(Integer, nullable=False, default=1)
     likes_count = Column(Integer, nullable=False, default=0)
+    views_count = Column(Integer, nullable=False, default=0)
 
     price_amount = Column(Numeric(12, 2), nullable=True)
     price_currency = Column(String(3), nullable=True)
@@ -58,7 +59,7 @@ class Product(Base):
     colors = relationship("Color", secondary="product_colors", back_populates="products")
     materials = relationship("Material", secondary="product_materials", back_populates="products")
     tags = relationship("Tag", secondary="product_tags", back_populates="products")
-    favorites = relationship("Favorite", back_populates="product")
+    favorites = relationship("Favorite", back_populates="product", cascade="all, delete-orphan")
     views = relationship("ItemView", back_populates="product", cascade="all, delete-orphan")
 
     __table_args__ = (

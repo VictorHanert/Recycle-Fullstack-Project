@@ -55,7 +55,6 @@ async def create_user_admin(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Create a new user (admin only). Uses AuthService to handle hashing and validation."""
-    # Use AuthService.register_user to create (handles hashing/validation)
     new_user = auth_service.register_user(user_in)
     return UserResponse.model_validate(new_user)
 

@@ -1,5 +1,6 @@
 import logging
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
@@ -49,6 +50,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request/Response logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all HTTP requests and responses with timing"""
+    start_time = time.time()
+    
+    # Log request
+    logger.info(f"➡️  {request.method} {request.url.path}")
+    
+    # Process request
+    response = await call_next(request)
+    
+    # Log response with timing
+    duration = time.time() - start_time
+    logger.info(f"⬅️  {response.status_code} {request.method} {request.url.path} ({duration:.3f}s)")
+    
+    return response
 
 # Custom exception handlers with logging
 @app.exception_handler(StarletteHTTPException)
