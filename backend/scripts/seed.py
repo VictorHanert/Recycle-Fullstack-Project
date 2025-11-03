@@ -295,7 +295,7 @@ def main():
     db = SessionLocal()
     try:
         locations = seed_locations(db)
-        users = seed_users(db, 5, locations)
+        users = seed_users(db, 80, locations)
         print(f"Seeded {len(users)} users.")
 
         admin_user = User(

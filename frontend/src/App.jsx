@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
+import Favorites from "./pages/Favorites";
 import { PageLoader } from "./components/shared/LoadingSpinners";
 
 // Import admin components
@@ -100,6 +101,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <Favorites />
               </ProtectedRoute>
             }
           />
