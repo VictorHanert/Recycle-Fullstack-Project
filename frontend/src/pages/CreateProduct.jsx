@@ -6,6 +6,9 @@ import { currencyUtils } from "../utils/currencyUtils";
 import { PageLoader, ButtonLoader } from "../components/shared/LoadingSpinners";
 import { notify } from "../utils/notifications";
 
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CancelIcon from '@mui/icons-material/Cancel';
+
 function CreateProduct() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -714,6 +717,7 @@ function CreateProduct() {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              <AddCircleOutlineIcon fontSize="small" className="inline-block mr-2" />
               {loading ? (
                 <div className="flex items-center justify-center space-x-2">
                   <ButtonLoader size={16} />
@@ -726,8 +730,9 @@ function CreateProduct() {
             <button
               type="button"
               onClick={() => navigate('/products')}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
+              <CancelIcon fontSize="small" />
               Cancel
             </button>
           </div>

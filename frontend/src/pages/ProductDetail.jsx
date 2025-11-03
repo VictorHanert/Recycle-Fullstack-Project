@@ -11,6 +11,13 @@ import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 import { PageLoader } from "../components/shared/LoadingSpinners";
 import { notify } from "../utils/notifications";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import MessageIcon from '@mui/icons-material/Message';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 function ProductDetail() {
   const { id } = useParams();
@@ -242,23 +249,35 @@ function ProductDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     onClick={handleEdit}
-                    className="py-1 px-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700"
+                    className="p-1 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center gap-1"
                   >
+                    <EditIcon fontSize="small" />
                     Edit Product
                   </button>
 
                   <button
                     onClick={() => handleProductStatus(product.status === 'sold' ? 'active' : 'sold')}
-                    className="py-1 px-2 rounded-lg font-semibold bg-white-600 text-blue-600 hover:bg-green-70 border border-blue-600"
+                    className="p-1 rounded-lg font-semibold bg-white-600 text-blue-600 hover:bg-green-70 border border-blue-600 flex items-center justify-center gap-1"
                   >
-                    {product.status === 'sold' ? 'Mark as Available' : 'Mark as Sold'}
+                    {product.status === 'sold' ? (
+                      <>
+                        <CheckCircleIcon fontSize="small" />
+                        Mark as Available
+                      </>
+                    ) : (
+                      <>
+                        <PauseCircleIcon fontSize="small" />
+                        Mark as Sold
+                      </>
+                    )}
                   </button>
 
                   <button
                     onClick={handleDelete}
-                    className="py-1 px-2 rounded-lg font-semibold bg-red-600 text-white hover:bg-red-700"
+                    className="p-1 rounded-lg font-semibold bg-red-600 text-white hover:bg-red-700 flex items-center justify-center gap-1"
                   >
-                    Delete Product
+                    <DeleteIcon fontSize="small" />
+                    Delete
                   </button>
                 </div>
               ) : (
@@ -267,19 +286,20 @@ function ProductDetail() {
                   <button
                     onClick={handleContactSeller}
                     disabled={product.status === 'sold'}
-                    className={`py-3 px-6 rounded-lg font-semibold ${
+                    className={`py-3 px-6 rounded-lg font-semibold flex items-center justify-center gap-2 ${
                       product.status === 'sold'
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
+                    <MessageIcon fontSize="small" />
                     {product.status === 'sold' ? 'Sold' : 'Contact Seller'}
                   </button>
 
                   <button
                     onClick={handleLike}
                     disabled={isLoadingFavorite}
-                    className={`py-3 px-6 rounded-lg font-semibold border transition-colors ${
+                    className={`py-3 px-6 rounded-lg font-semibold border transition-colors flex items-center justify-center gap-2 ${
                       isFavorite
                         ? 'bg-blue-50 border-blue-500 text-blue-600 hover:bg-blue-100'
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -289,6 +309,11 @@ function ProductDetail() {
                       'Loading...'
                     ) : (
                       <>
+                        {isFavorite ? (
+                          <FavoriteIcon fontSize="small" />
+                        ) : (
+                          <FavoriteBorderIcon fontSize="small" />
+                        )}
                         {isFavorite ? 'Liked' : 'Like'} ({product.likes_count || 0})
                       </>
                     )}

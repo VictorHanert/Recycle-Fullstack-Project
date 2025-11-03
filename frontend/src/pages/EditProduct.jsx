@@ -5,6 +5,7 @@ import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
 import { PageLoader, ButtonLoader } from "../components/shared/LoadingSpinners";
 import { notify } from "../utils/notifications";
+import CancelIcon from '@mui/icons-material/Cancel';
 
 function EditProduct() {
   const navigate = useNavigate();
@@ -825,8 +826,9 @@ function EditProduct() {
             <button
               type="button"
               onClick={() => navigate(`/products/${id}`)}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
+              <CancelIcon fontSize="small" />
               Cancel
             </button>
           </div>

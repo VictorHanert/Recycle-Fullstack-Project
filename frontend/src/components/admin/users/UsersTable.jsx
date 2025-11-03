@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Pagination from '../../shared/Pagination';
 import { InlineLoader } from '../../shared/LoadingSpinners';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 function UsersTable({
   users,
@@ -119,14 +121,16 @@ function UsersTable({
                   <td className="px-6 py-2 whitespace-nowrap text-sm font-medium sticky right-0 bg-white">
                     <button
                       onClick={() => onEdit(user)}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="text-blue-600 hover:text-blue-900 mr-4 inline-flex items-center gap-1"
                     >
+                      <EditIcon fontSize="small" />
                       Edit
                     </button>
                     <button
                       onClick={() => onDelete(user.id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
                     >
+                      <DeleteIcon fontSize="small" />
                       Delete
                     </button>
                   </td>

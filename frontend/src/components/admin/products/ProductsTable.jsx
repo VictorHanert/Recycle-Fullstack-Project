@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Pagination from '../../shared/Pagination';
 import { InlineLoader } from '../../shared/LoadingSpinners';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 function ProductsTable({
   products,
@@ -147,14 +149,16 @@ function ProductsTable({
                         <td className="px-4 py-2 whitespace-nowrap text-sm font-medium sticky right-0 bg-white">
                           <button
                             onClick={() => onEdit(product)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
+                            className="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center gap-1"
                           >
+                            <EditIcon fontSize="small" />
                             Edit
                           </button>
                           <button
                             onClick={() => onDelete(product.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
                           >
+                            <DeleteIcon fontSize="small" />
                             Delete
                           </button>
                         </td>
