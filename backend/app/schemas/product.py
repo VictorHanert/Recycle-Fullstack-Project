@@ -149,7 +149,6 @@ class ProductResponse(BaseModel):
     location: Optional[LocationInfo] = None
     images: List[ProductImageInfo] = []
     views_count: int = 0
-    favorites_count: int = 0
     colors: List[ColorInfo] = []
     materials: List[MaterialInfo] = []
     tags: List[TagInfo] = []

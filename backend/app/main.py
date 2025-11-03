@@ -1,9 +1,5 @@
 import logging
-import uvicorn
 import time
-import subprocess
-import sys
-from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -12,9 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, profile, location
-from app.db.mysql import SessionLocal
+from app.routers import auth, products, admin, profile, location, favorites
 from app.config import get_settings
+from app.db.mysql import initialize_database
 from app.middleware import (
     create_error_response,
     log_http_exception,
@@ -32,93 +28,12 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-def run_migrations():
-    """Run Alembic migrations to ensure database schema is current."""
-    try:
-        logger.info("Running database migrations...")
-        subprocess.run(["alembic", "upgrade", "head"], check=True, capture_output=True)
-        logger.info("Migrations completed")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Migration failed: {e.stderr.decode()}")
-        raise
-    except FileNotFoundError:
-        logger.warning("Alembic not found, skipping migrations")
-
-
-def init_stored_objects():
-    """Initialize stored procedures, functions, views, triggers, and events."""
-    sql_file = Path(__file__).parent.parent / "scripts" / "mysql" / "init_database.sql"
-    
-    if not sql_file.exists():
-        logger.warning("init_database.sql not found, skipping")
-        return
-    
-    logger.info("Initializing database objects...")
-    db = SessionLocal()
-    
-    try:
-        with open(sql_file, 'r') as f:
-            sql_content = f.read()
-        
-        cursor = db.connection().connection.cursor()
-        
-        for statement in sql_content.split(';'):
-            statement = statement.strip()
-            if statement and not statement.startswith('--'):
-                try:
-                    cursor.execute(statement)
-                except Exception as e:
-                    if "already exists" not in str(e).lower():
-                        logger.debug(f"SQL note: {e}")
-        
-        db.connection().commit()
-        logger.info("Database objects initialized")
-    except Exception as e:
-        logger.error(f"Failed to initialize database objects: {e}")
-        raise
-    finally:
-        db.close()
-
-
-def seed_database():
-    """Seed the database with initial test data if not already seeded."""
-    try:
-        logger.info("Checking if database needs seeding...")
-        
-        # Check if we already have data (look for admin user)
-        db = SessionLocal()
-        from app.models.user import User
-        admin_exists = db.query(User).filter(User.email == "admin@test.com").first()
-        db.close()
-        
-        if admin_exists:
-            logger.info("Database already seeded, skipping")
-            return
-        
-        logger.info("Seeding database with test data...")
-        result = subprocess.run([sys.executable, "-m", "scripts.seed"], 
-                              cwd=Path(__file__).parent.parent,
-                              capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            logger.info("Database seeding completed")
-        else:
-            logger.error(f"Database seeding failed: {result.stderr}")
-            raise Exception(f"Seeding failed: {result.stderr}")
-            
-    except Exception as e:
-        logger.error(f"Failed to seed database: {e}")
-        raise
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
     # Startup
     logger.info("Starting application...")
-    run_migrations()
-    init_stored_objects()
-    seed_database()
+    initialize_database()
     logger.info("Application ready")
     
     yield
@@ -181,6 +96,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
+app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
 app.include_router(location.router, prefix="/api/locations", tags=["Locations"])
@@ -206,4 +122,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run(app, host=settings.api_host, port=settings.api_port)

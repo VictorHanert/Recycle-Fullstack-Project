@@ -74,26 +74,14 @@ class MySQLProductRepository(ProductRepositoryInterface):
         
         products = query.offset(skip).limit(limit).all()
         
-        # Set computed counts
-        for product in products:
-            product.views_count = len(product.views) if hasattr(product, 'views') else 0
-            product.favorites_count = len(product.favorites) if hasattr(product, 'favorites') else 0
-        
         return products
     
     def get_by_seller(self, seller_id: int, skip: int = 0, limit: int = 100) -> List[Product]:
         """Get products by seller ID."""
-        products = self.db.query(Product).options(*PRODUCT_LIST_LOAD_OPTIONS).filter(
+        return self.db.query(Product).options(*PRODUCT_LIST_LOAD_OPTIONS).filter(
             Product.seller_id == seller_id,
             Product.deleted_at.is_(None)
         ).order_by(desc(Product.created_at)).offset(skip).limit(limit).all()
-        
-        # Set computed counts
-        for product in products:
-            product.views_count = len(product.views) if hasattr(product, 'views') else 0
-            product.favorites_count = len(product.favorites) if hasattr(product, 'favorites') else 0
-        
-        return products
     
     def create(self, product_data: ProductCreate, seller_id: int) -> Product:
         """Create a new product."""
@@ -341,12 +329,7 @@ class MySQLProductRepository(ProductRepositoryInterface):
         
         try:
             self.db.add(new_view)
-            
-            # Increment the views counter on the product
-            product = self.db.query(Product).filter(Product.id == product_id).first()
-            if product:
-                product.views_count += 1
-            
+            # Note: views_count is auto-incremented by database trigger
             self.db.commit()
             return True
         except IntegrityError:
@@ -355,7 +338,7 @@ class MySQLProductRepository(ProductRepositoryInterface):
     
     def get_by_category(self, category: str, skip: int = 0, limit: int = 100) -> List[Product]:
         """Get products by category name."""
-        products = self.db.query(Product).join(Category, Product.category_id == Category.id).filter(
+        return self.db.query(Product).join(Category, Product.category_id == Category.id).filter(
             and_(
                 Category.name.ilike(f"%{category}%"),
                 Product.status == "active",
@@ -364,13 +347,6 @@ class MySQLProductRepository(ProductRepositoryInterface):
         ).options(*PRODUCT_LIST_LOAD_OPTIONS).order_by(
             desc(Product.created_at)
         ).offset(skip).limit(limit).all()
-        
-        # Set computed counts
-        for product in products:
-            product.views_count = len(product.views) if hasattr(product, 'views') else 0
-            product.favorites_count = len(product.favorites) if hasattr(product, 'favorites') else 0
-        
-        return products
     
     def _apply_filters(self, query, filters: ProductFilter):
         """Apply filters to the query."""

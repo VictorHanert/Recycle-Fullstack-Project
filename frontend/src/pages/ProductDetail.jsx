@@ -1,7 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
-import { productsAPI } from "../api";
+import { productsAPI, favoritesAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/products/ImageSlider";
@@ -17,8 +18,26 @@ function ProductDetail() {
   const { user } = useAuth();
   const { data: product, loading, error, refetch } = useFetch(`/api/products/${id}`);
   const { alertState, showConfirm, showError, showInfo, closeAlert } = useAlert();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
 
   const isOwner = user && product && user.id === product.seller?.id;
+
+  // Check favorite status when product loads
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (user && product) {
+        try {
+          const response = await favoritesAPI.checkStatus(id);
+          setIsFavorite(response.is_favorite);
+        } catch (err) {
+          // User not logged in or error checking status
+          setIsFavorite(false);
+        }
+      }
+    };
+    checkFavoriteStatus();
+  }, [user, product, id]);
 
   // Action handlers
   const handleEdit = () => navigate(`/products/${id}/edit`);
@@ -62,8 +81,21 @@ function ProductDetail() {
     showInfo('Contact Seller', 'Contact seller functionality would be implemented here');
   };
 
-  const handleLike = () => {
-    showInfo('Like Product', 'Like functionality would be implemented here');
+  const handleLike = async () => {
+    setIsLoadingFavorite(true);
+    try {
+      await favoritesAPI.toggle(id, isFavorite);
+      setIsFavorite(!isFavorite);
+      // Refetch product to update the favorites count
+      refetch();
+      
+      notify.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      notify.error('Failed to update favorites. Please try again.');
+    } finally {
+      setIsLoadingFavorite(false);
+    }
   };
 
   // Compact loading/error states
@@ -141,7 +173,7 @@ function ProductDetail() {
             {/* Views and Favorites */}
             <div className="flex items-center gap-6 mb-4">
               <span className="text-gray-600"><b>Views:</b> {product.views_count ?? null}</span>
-              <span className="text-gray-600"><b>Added to Favorites:</b> {product.favorites_count ?? null}</span>
+              <span className="text-gray-600"><b>Added to Favorites:</b> {product.likes_count ?? null}</span>
             </div>
 
             <div className="mb-6 space-y-2">
@@ -246,9 +278,20 @@ function ProductDetail() {
 
                   <button
                     onClick={handleLike}
-                    className="py-3 px-6 rounded-lg font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    disabled={isLoadingFavorite}
+                    className={`py-3 px-6 rounded-lg font-semibold border transition-colors ${
+                      isFavorite
+                        ? 'bg-blue-50 border-blue-500 text-blue-600 hover:bg-blue-100'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    Like ({product.likes_count || 0})
+                    {isLoadingFavorite ? (
+                      'Loading...'
+                    ) : (
+                      <>
+                        {isFavorite ? 'Liked' : 'Like'} ({product.likes_count || 0})
+                      </>
+                    )}
                   </button>
                 </div>
               )}

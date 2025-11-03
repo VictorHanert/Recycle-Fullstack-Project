@@ -1,18 +1,102 @@
+import { useState, useEffect } from 'react';
 import { formatRelativeTime, formatCondition } from '../../utils/formatUtils';
 import { currencyUtils } from '../../utils/currencyUtils';
+import { favoritesAPI } from '../../api';
+import { useAuth } from '../../hooks/useAuth';
+import { notify } from '../../utils/notifications';
 import PriceHistoryDisplay from './PriceHistoryDisplay';
 
-function ProductCard({ product, onClick }) {
+function ProductCard({ product, onClick, onFavoriteChange }) {
+    const { user } = useAuth();
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+    const [likesCount, setLikesCount] = useState(product.likes_count || 0);
+
+    // Check favorite status when component mounts
+    useEffect(() => {
+        const checkFavoriteStatus = async () => {
+            if (user && product.id) {
+                try {
+                    const response = await favoritesAPI.checkStatus(product.id);
+                    setIsFavorite(response.is_favorite);
+                } catch (err) {
+                    // User not logged in or error checking status
+                    setIsFavorite(false);
+                }
+            }
+        };
+        checkFavoriteStatus();
+    }, [user, product.id]);
+
+    // Update likes count when product prop changes
+    useEffect(() => {
+        setLikesCount(product.likes_count || 0);
+    }, [product.likes_count]);
+
+    const handleLike = async (e) => {
+        e.stopPropagation(); // Prevent card click
+        
+        if (!user) {
+            notify.info('Please log in to add favorites');
+            return;
+        }
+
+        setIsLoadingFavorite(true);
+        try {
+            await favoritesAPI.toggle(product.id, isFavorite);
+            const newIsFavorite = !isFavorite;
+            setIsFavorite(newIsFavorite);
+            
+            // Update local likes count optimistically
+            setLikesCount(prev => newIsFavorite ? prev + 1 : Math.max(0, prev - 1));
+            
+            notify.success(newIsFavorite ? 'Added to favorites' : 'Removed from favorites');
+            
+            // Notify parent component if callback provided
+            if (onFavoriteChange) {
+                onFavoriteChange(product.id, newIsFavorite);
+            }
+        } catch (err) {
+            console.error('Error toggling favorite:', err);
+            notify.error('Failed to update favorites. Please try again.');
+        } finally {
+            setIsLoadingFavorite(false);
+        }
+    };
+
     return (
         <div 
             className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer flex flex-col h-full"
             onClick={() => onClick && onClick(product)}
         >
             {/* Like button */}
-            <button className="absolute top-1 right-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="#6c6b6bff" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                </svg>
+            <button 
+                onClick={handleLike}
+                disabled={isLoadingFavorite}
+                className={`absolute top-2 right-2 p-2 rounded-full transition-all ${
+                    isFavorite 
+                        ? 'bg-red-500 hover:bg-red-600' 
+                        : 'bg-white/80 hover:bg-white'
+                } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''} shadow-md`}
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+                {isLoadingFavorite ? (
+                    <svg className="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                ) : (
+                    <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className={`h-5 w-5 ${isFavorite ? 'text-white' : 'text-gray-600'}`} 
+                        fill={isFavorite ? 'currentColor' : 'none'} 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                        strokeWidth={2}
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                )}
             </button>
             
             <img

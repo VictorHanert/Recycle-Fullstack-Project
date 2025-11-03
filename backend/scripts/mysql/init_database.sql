@@ -232,6 +232,62 @@ END$$
 DELIMITER ;
 
 -- ============================================
+-- COUNTER TRIGGERS (Auto-maintain views_count & likes_count)
+-- ============================================
+
+-- Trigger: Increment views_count when a view is added
+DROP TRIGGER IF EXISTS trg_item_views_after_insert;
+DELIMITER $$
+CREATE TRIGGER trg_item_views_after_insert
+AFTER INSERT ON item_views
+FOR EACH ROW
+BEGIN
+    UPDATE products
+    SET views_count = views_count + 1
+    WHERE id = NEW.product_id;
+END$$
+DELIMITER ;
+
+-- Trigger: Decrement views_count when a view is deleted
+DROP TRIGGER IF EXISTS trg_item_views_after_delete;
+DELIMITER $$
+CREATE TRIGGER trg_item_views_after_delete
+AFTER DELETE ON item_views
+FOR EACH ROW
+BEGIN
+    UPDATE products
+    SET views_count = GREATEST(views_count - 1, 0)
+    WHERE id = OLD.product_id;
+END$$
+DELIMITER ;
+
+-- Trigger: Increment likes_count when a favorite is added
+DROP TRIGGER IF EXISTS trg_favorites_after_insert;
+DELIMITER $$
+CREATE TRIGGER trg_favorites_after_insert
+AFTER INSERT ON favorites
+FOR EACH ROW
+BEGIN
+    UPDATE products
+    SET likes_count = likes_count + 1
+    WHERE id = NEW.product_id;
+END$$
+DELIMITER ;
+
+-- Trigger: Decrement likes_count when a favorite is removed
+DROP TRIGGER IF EXISTS trg_favorites_after_delete;
+DELIMITER $$
+CREATE TRIGGER trg_favorites_after_delete
+AFTER DELETE ON favorites
+FOR EACH ROW
+BEGIN
+    UPDATE products
+    SET likes_count = GREATEST(likes_count - 1, 0)
+    WHERE id = OLD.product_id;
+END$$
+DELIMITER ;
+
+-- ============================================
 -- EVENTS (Scheduled Tasks)
 -- ============================================
 
