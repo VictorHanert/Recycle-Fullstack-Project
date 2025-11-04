@@ -99,6 +99,14 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/messages/:userId"
             element={
               <ProtectedRoute>

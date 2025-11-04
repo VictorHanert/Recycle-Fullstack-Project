@@ -1,17 +1,13 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-
 from app.db.mysql import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from backend.app.schemas.message_schema import (
-    ConversationStart, MessageCreate, MessageUpdate,
-    ConversationOut, ConversationWithMessagesOut, MessageOut, ParticipantOut
-)
-from backend.app.services.message_service import MessageService
+from app.schemas.message_schema import (ConversationStart, MessageCreate, MessageUpdate,ConversationOut, ConversationWithMessagesOut, MessageOut, ParticipantOut)
+from app.services.message_service import MessageService
 
-router = APIRouter(prefix="/messages", tags=["messages"])
+router = APIRouter(tags=["messages"])
 
 @router.get("/conversations", response_model=List[ConversationOut])
 def list_conversations(
@@ -64,13 +60,14 @@ def start_conversation(
     )
     return MessageOut.model_validate(msg)
 
-@router.post("", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+@router.post("/conversations/{conversation_id}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
 def send_message(
+    conversation_id: int,
     payload: MessageCreate,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    msg = MessageService.send_message(db, payload.conversation_id, user.id, payload.body)
+    msg = MessageService.send_message(db, conversation_id, user.id, payload.body)
     return MessageOut.model_validate(msg)
 
 @router.patch("/{message_id}", response_model=MessageOut)

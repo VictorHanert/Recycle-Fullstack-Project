@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, profile
+from app.routers import auth, products, admin, profile, messages_router
 from app.db.mysql import create_tables
 from app.config import get_settings
 from app.middleware import (
@@ -48,6 +48,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
+app.include_router(messages_router.router, prefix="/api/messages", tags=["Messages"])
 
 @app.get("/")
 async def root():
