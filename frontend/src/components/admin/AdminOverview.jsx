@@ -1,7 +1,9 @@
-import { useAuth } from "../hooks/useAuth";
-import { useFetch } from "../hooks/useFetch";
+import { useAuth } from "../../hooks/useAuth";
+import { useFetch } from "../../hooks/useFetch";
+import { Link } from "react-router-dom";
+import { InlineLoader } from "../shared/LoadingSpinners";
 
-function Admin() {
+function AdminOverview() {
   const { user, token } = useAuth();
 
   const { data: stats, loading: statsLoading, error: statsError } = useFetch('/api/admin/stats', {
@@ -20,7 +22,7 @@ function Admin() {
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8 max-w-5xl mx-auto">
-        {/* Stats Cards - compact, all blue */}
+        {/* Stats Cards */}
         <div className="bg-white px-1 py-2 rounded shadow flex flex-col items-center">
           <h3 className="text-xs font-medium text-gray-700 mb-1 text-center">Total Users</h3>
           <p className="text-2xl font-bold text-blue-600">{stats?.total_users || 0}</p>
@@ -47,7 +49,9 @@ function Admin() {
         </div>
 
         {statsLoading && (
-          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-gray-500">Loading stats...</div>
+          <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-gray-500 py-4">
+            <InlineLoader message="Loading stats..." />
+          </div>
         )}
         {statsError && (
           <div className="col-span-2 sm:col-span-3 md:col-span-3 lg:col-span-6 text-center text-red-500">Error loading stats: {statsError}</div>
@@ -59,18 +63,18 @@ function Admin() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
-              + Add New Product
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
+            <Link to="/admin/users" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               👥 Manage Users
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
+            </Link>
+            <Link to="/admin/products" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
+              📦 Manage Products
+            </Link>
+            <Link to="/admin/locations" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
+              📍 Manage Locations
+            </Link>
+            <Link to="/admin/stats" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
               📊 View Reports
-            </button>
-            <button className="w-full text-left p-3 border rounded hover:bg-gray-50">
-              ⚙️ System Settings
-            </button>
+            </Link>
           </div>
         </div>
         
@@ -82,11 +86,11 @@ function Admin() {
               <p className="text-sm">New user registered: john@example.com</p>
               <p className="text-xs text-gray-500">2 minutes ago</p>
             </div>
-            <div className="p-3 border-l-4 border-green-400 bg-green-50">
+            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
               <p className="text-sm">Product updated: Wireless Headphones</p>
               <p className="text-xs text-gray-500">5 minutes ago</p>
             </div>
-            <div className="p-3 border-l-4 border-purple-400 bg-purple-50">
+            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
               <p className="text-sm">New order placed: #ORD-12345</p>
               <p className="text-xs text-gray-500">10 minutes ago</p>
             </div>
@@ -97,4 +101,4 @@ function Admin() {
   );
 }
 
-export default Admin;
+export default AdminOverview;

@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 // Components
-import ProductCard from "../components/ProductCard";
-import ProductFilters from "../components/ProductFilters";
-import Pagination from "../components/Pagination";
+import ProductCard from "../components/products/ProductCard";
+import ProductFilters from "../components/products/ProductFilters";
+import Pagination from "../components/shared/Pagination";
+import { PageLoader, InlineLoader } from "../components/shared/LoadingSpinners";
 
 // API
 import { productsAPI } from "../api";
+import { notify } from "../utils/notifications";
 
 function Products() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Basic state
   const [productsData, setProductsData] = useState(null);
@@ -20,16 +23,21 @@ function Products() {
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   // Filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "",
+    minPrice: "",
+    maxPrice: "",
+    locationId: "",
+    condition: "",
+    sortBy: "newest"
+  });
+
+  // Temporary state for inputs that should not auto-apply
+  const [tempSearch, setTempSearch] = useState("");
   const [tempMinPrice, setTempMinPrice] = useState("");
   const [tempMaxPrice, setTempMaxPrice] = useState("");
-  const [selectedLocationId, setSelectedLocationId] = useState("");
-  const [selectedCondition, setSelectedCondition] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+
   const [showFilters, setShowFilters] = useState(false);
 
   // Data states
@@ -37,6 +45,37 @@ function Products() {
   const [locations, setLocations] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [locationsLoading, setLocationsLoading] = useState(false);
+
+  // Initialize filters from URL parameters
+  useEffect(() => {
+    const newFilters = {
+      search: searchParams.get('search') || "",
+      category: searchParams.get('category') || "",
+      minPrice: searchParams.get('min_price') || "",
+      maxPrice: searchParams.get('max_price') || "",
+      locationId: searchParams.get('location_id') || "",
+      condition: searchParams.get('condition') || "",
+      sortBy: searchParams.get('sort') || "newest"
+    };
+    setFilters(newFilters);
+    // Initialize temporary state with URL values
+    setTempSearch(newFilters.search);
+    setTempMinPrice(newFilters.minPrice);
+    setTempMaxPrice(newFilters.maxPrice);
+  }, [searchParams]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== "newest") {
+        const paramKey = key === 'locationId' ? 'location_id' : key === 'minPrice' ? 'min_price' : key === 'maxPrice' ? 'max_price' : key;
+        params.set(paramKey, value);
+      }
+    });
+
+    setSearchParams(params);
+  }, [filters, setSearchParams]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,15 +90,6 @@ function Products() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Sync temp prices
-  useEffect(() => {
-    setTempMinPrice(minPrice);
-  }, [minPrice]);
-
-  useEffect(() => {
-    setTempMaxPrice(maxPrice);
-  }, [maxPrice]);
-
   // Fetch categories and locations
   useEffect(() => {
     const fetchCategories = async () => {
@@ -69,6 +99,7 @@ function Products() {
         setCategories(data);
       } catch (err) {
         console.error("Error fetching categories:", err);
+        notify.error("Failed to load categories");
       } finally {
         setCategoriesLoading(false);
       }
@@ -81,6 +112,7 @@ function Products() {
         setLocations(data);
       } catch (err) {
         console.error("Error fetching locations:", err);
+        notify.error("Failed to load locations");
       } finally {
         setLocationsLoading(false);
       }
@@ -100,61 +132,63 @@ function Products() {
         const data = await productsAPI.getAll({
           page,
           size: 15,
-          search: searchQuery || undefined,
-          category: selectedCategory || undefined,
-          min_price: minPrice || undefined,
-          max_price: maxPrice || undefined,
-          location_id: selectedLocationId || undefined,
-          condition: selectedCondition || undefined,
-          sort: sortBy || undefined
+          search: filters.search || undefined,
+          category: filters.category || undefined,
+          min_price: filters.minPrice || undefined,
+          max_price: filters.maxPrice || undefined,
+          location_id: filters.locationId || undefined,
+          condition: filters.condition || undefined,
+          sort: filters.sortBy || undefined
         });
 
         setProductsData(data);
       } catch (err) {
-        setError(err.message || "Error fetching products");
+        const errorMessage = err.message || "Error fetching products";
+        setError(errorMessage);
+        notify.error(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [page, searchQuery, selectedCategory, minPrice, maxPrice, selectedLocationId, selectedCondition, sortBy]);
+  }, [page, filters]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedCategory, minPrice, maxPrice, selectedLocationId, selectedCondition, sortBy]);
+  }, [filters]);
 
   // Event handlers
   const handleProductClick = (product) => {
     navigate(`/products/${product.id}`);
   };
 
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPage(1);
+  };
+
+  const handleFilterApply = () => {
+    // Apply all temporary values to actual filters
+    setFilters(prev => ({
+      ...prev,
+      search: tempSearch,
+      minPrice: tempMinPrice,
+      maxPrice: tempMaxPrice
+    }));
+    setPage(1);
+  };
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setSearchQuery(searchTerm);
-    setPage(1);
+    handleFilterApply();
   };
 
-  const handleCategoryChange = (e) => {
-    setSelectedCategory(e.target.value);
-    setPage(1);
-  };
-
-  const handleLocationChange = (e) => {
-    setSelectedLocationId(e.target.value);
-    setPage(1);
-  };
-
-  const handleConditionChange = (e) => {
-    setSelectedCondition(e.target.value);
-    setPage(1);
-  };
-
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
-    setPage(1);
-  };
+  const handleCategoryChange = (e) => updateFilter('category', e.target.value);
+  const handleLocationChange = (e) => updateFilter('locationId', e.target.value);
+  const handleConditionChange = (e) => updateFilter('condition', e.target.value);
+  const handleSortChange = (e) => updateFilter('sortBy', e.target.value);
 
   const handlePriceInputChange = (type, value) => {
     if (type === 'min') {
@@ -164,39 +198,25 @@ function Products() {
     }
   };
 
-  const handlePriceBlur = (type) => {
-    const value = type === 'min' ? tempMinPrice : tempMaxPrice;
-    if (type === 'min') {
-      setMinPrice(value);
-    } else {
-      setMaxPrice(value);
-    }
-    setPage(1);
-  };
-
   const clearFilters = () => {
-    setSearchTerm("");
-    setSearchQuery("");
-    setSelectedCategory("");
-    setMinPrice("");
-    setMaxPrice("");
+    setFilters({
+      search: "",
+      category: "",
+      minPrice: "",
+      maxPrice: "",
+      locationId: "",
+      condition: "",
+      sortBy: "newest"
+    });
+    setTempSearch("");
     setTempMinPrice("");
     setTempMaxPrice("");
-    setSelectedLocationId("");
-    setSelectedCondition("");
-    setSortBy("newest");
     setPage(1);
   };
 
-  const activeFiltersCount = [
-    searchQuery,
-    selectedCategory,
-    minPrice,
-    maxPrice,
-    selectedLocationId,
-    selectedCondition,
-    sortBy !== "newest"
-  ].filter(Boolean).length;
+  const activeFiltersCount = Object.values(filters).filter(value =>
+    value && value !== "newest"
+  ).length;
 
   return (
     <div className="relative px-4">
@@ -209,33 +229,33 @@ function Products() {
       <ProductFilters
         showFilters={showFilters}
         setShowFilters={setShowFilters}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
+        searchTerm={tempSearch}
+        setSearchTerm={setTempSearch}
         handleSearchSubmit={handleSearchSubmit}
-        selectedCategory={selectedCategory}
+        selectedCategory={filters.category}
         handleCategoryChange={handleCategoryChange}
         categories={categories}
         categoriesLoading={categoriesLoading}
-        selectedLocationId={selectedLocationId}
+        selectedLocationId={filters.locationId}
         handleLocationChange={handleLocationChange}
         locations={locations}
         locationsLoading={locationsLoading}
-        selectedCondition={selectedCondition}
+        selectedCondition={filters.condition}
         handleConditionChange={handleConditionChange}
-        sortBy={sortBy}
+        sortBy={filters.sortBy}
         handleSortChange={handleSortChange}
         tempMinPrice={tempMinPrice}
         tempMaxPrice={tempMaxPrice}
         handlePriceInputChange={handlePriceInputChange}
-        handlePriceBlur={handlePriceBlur}
+        handleFilterApply={handleFilterApply}
         clearFilters={clearFilters}
         activeFiltersCount={activeFiltersCount}
       />
 
       {/* Products Grid */}
       {loading ? (
-        <div className="px-4 flex justify-center items-center min-h-64">
-          <div className="text-lg text-gray-600">Loading products...</div>
+        <div className="px-4">
+          <PageLoader message="Loading products..." />
         </div>
       ) : error ? (
         <div className="px-4">

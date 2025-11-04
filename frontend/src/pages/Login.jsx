@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { notify } from "../utils/notifications";
+import { ButtonLoader } from "../components/shared/LoadingSpinners";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -18,12 +20,17 @@ function Login() {
     try {
       const result = await login({ username, password });
       if (result.success) {
+        notify.success("Successfully logged in! Welcome back.");
         navigate("/dashboard");
       } else {
-        setError(result.error || "Login failed");
+        const errorMessage = result.error || "Login failed";
+        setError(errorMessage);
+        notify.error(errorMessage);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      const errorMessage = "An unexpected error occurred";
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -78,9 +85,16 @@ function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <ButtonLoader size={16} />
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </div>
           

@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
@@ -8,7 +10,6 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
 import ProductDetail from "./pages/ProductDetail";
 import Products from "./pages/Products";
 import Profile from "./pages/Profile";
@@ -16,15 +17,28 @@ import UserProfile from "./pages/UserProfile";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
 import Messages from "./pages/Messages";
+import Favorites from "./pages/Favorites";
+import { PageLoader } from "./components/shared/LoadingSpinners";
+
+// Import admin components
+import AdminLayout from "./layouts/AdminLayout";
+import AdminOverview from "./components/admin/AdminOverview";
+import UsersManagement from "./components/admin/users/UsersManagement";
+import ProductsManagement from "./components/admin/products/ProductsManagement";
+import Stats from "./components/admin/Stats";
+import RecentActivity from "./components/admin/RecentActivity";
+import Locations from "./components/admin/Locations";
 
 // Protected Route wrapper component
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen">
+        <PageLoader size={60} message="Authenticating..." />
+      </div>
+    );
   }
   
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -35,9 +49,11 @@ function AdminRoute({ children }) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen">
+        <PageLoader size={60} message="Verifying admin access..." />
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
@@ -62,7 +78,6 @@ function AppRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
           <Route path="/user/:userId" element={<UserProfile />} />
 
           {/* Protected routes (requires login) */}
@@ -91,6 +106,22 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <Favorites />
+              </ProtectedRoute>
+            }
+          />
+          <Route 
+            path="/products/:id" 
+            element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route
             path="/products/:id/edit"
             element={
               <ProtectedRoute>
@@ -115,15 +146,22 @@ function AppRoutes() {
             }
           />
 
-          {/* Admin-only route */}
+          {/* Admin routes */}
           <Route
             path="/admin"
             element={
               <AdminRoute>
-                <Admin />
+                <AdminLayout />
               </AdminRoute>
             }
-          />
+          >
+            <Route index element={<AdminOverview />} />
+            <Route path="users" element={<UsersManagement />} />
+            <Route path="products" element={<ProductsManagement />} />
+            <Route path="stats" element={<Stats />} />
+            <Route path="activity" element={<RecentActivity />} />
+            <Route path="locations" element={<Locations />} />
+          </Route>
         </Routes>
       </MainLayout>
     </Router>
@@ -134,6 +172,18 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </AuthProvider>
   );
 }

@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
+import { PageLoader, ButtonLoader } from "../components/shared/LoadingSpinners";
+import { notify } from "../utils/notifications";
+
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 function CreateProduct() {
   const navigate = useNavigate();
@@ -245,12 +250,15 @@ function CreateProduct() {
 
       const newProduct = await productsAPI.create(productData);
 
+      notify.success("Product created successfully!");
       // Redirect to the newly created product
       navigate(`/products/${newProduct.id}`);
 
     } catch (err) {
       console.error("Error creating product:", err);
-      setError(err.message || "Failed to create product. Please try again.");
+      const errorMessage = err.message || "Failed to create product. Please try again.";
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -260,10 +268,7 @@ function CreateProduct() {
     return (
       <div className="px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading form data...</p>
-          </div>
+          <PageLoader message="Loading form data..." />
         </div>
       </div>
     );
@@ -712,13 +717,22 @@ function CreateProduct() {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating Product..." : "Create Product"}
+              <AddCircleOutlineIcon fontSize="small" className="inline-block mr-2" />
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <ButtonLoader size={16} />
+                  <span>Creating Product...</span>
+                </div>
+              ) : (
+                "Create Product"
+              )}
             </button>
             <button
               type="button"
               onClick={() => navigate('/products')}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
+              <CancelIcon fontSize="small" />
               Cancel
             </button>
           </div>

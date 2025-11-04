@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
-import { authAPI, apiClient } from "../api";
+import { authAPI, profileAPI, apiClient } from "../api";
+import { notify } from "../utils/notifications";
 
 const AuthContext = createContext();
 
@@ -19,7 +20,7 @@ export function AuthProvider({ children }) {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const userData = await authAPI.getProfile(storedToken);
+          const userData = await profileAPI.getMyProfile(storedToken);
           setUser(userData);
           setToken(storedToken);
         } catch (error) {
@@ -56,8 +57,10 @@ export function AuthProvider({ children }) {
   const register = async (userData) => {
     try {
       await authAPI.register(userData);
+      notify.success("Account created successfully! Please log in.");
       return { success: true };
     } catch (error) {
+      notify.error(error.message || "Registration failed");
       return { success: false, error: error.message };
     }
   };
@@ -66,6 +69,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setUser(null);
     setToken(null);
+    notify.info("You have been logged out");
   };
 
   const value = {

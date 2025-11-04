@@ -6,35 +6,57 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from .location import LocationResponse
 
 
+# ============================================
+# BASE SCHEMAS
+# ============================================
+
 class UserBase(BaseModel):
     """Base user schema with common fields"""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]+$")
+    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
     full_name: Optional[str] = Field(None, max_length=100)
 
 
+# ============================================
+# REQUEST SCHEMAS (Input)
+# ============================================
+
 class UserCreate(UserBase):
-    """Schema for user creation"""
+    """Schema for user registration (auth/register)"""
     password: str = Field(..., min_length=8, max_length=100)
 
 
-class UserUpdate(BaseModel):
-    """Schema for user updates"""
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = Field(None, max_length=100)
-    phone: Optional[str] = Field(None, max_length=64)
-    location_id: Optional[int] = None
-    is_active: Optional[bool] = None
-
-
 class UserLogin(BaseModel):
-    """Schema for user login"""
+    """Schema for user login (auth/login)"""
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=1, max_length=100)
 
 
+class UserUpdate(BaseModel):
+    """Schema for user updates (admin can update all fields)"""
+    email: Optional[EmailStr] = None
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
+    full_name: Optional[str] = Field(None, max_length=100)
+    phone: Optional[str] = Field(None, max_length=64)
+    location_id: Optional[int] = None
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=100)
+
+
+class ProfileUpdate(BaseModel):
+    """Schema for profile updates (users can only update their own profile fields)"""
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+
+
+# ============================================
+# RESPONSE SCHEMAS (Output)
+# ============================================
+
 class UserResponse(UserBase):
-    """Schema for user response (without sensitive data)"""
+    """Standard user response (used in most endpoints)"""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -47,44 +69,15 @@ class UserResponse(UserBase):
     updated_at: datetime
 
 
-class UserInDB(UserResponse):
-    """Schema for user in database (with hashed password)"""
-    hashed_password: str
-
-
-# Token schemas for authentication
-class Token(BaseModel):
-    """JWT Token response"""
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int  # seconds
-    user: UserResponse
-
-
-class TokenData(BaseModel):
-    """Token payload data"""
-    username: Optional[str] = None
-    expires: Optional[datetime] = None
-
-
-# Profile-specific schemas
-class ProfileUpdate(BaseModel):
-    """Schema for profile updates"""
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
-
-
 class UserProfileResponse(UserResponse):
-    """Enhanced user profile response with additional data"""
+    """Enhanced user profile response (profile/me endpoint)"""
     model_config = ConfigDict(from_attributes=True)
     
-    # This would include product count, etc.
     product_count: Optional[int] = None
 
 
 class PublicUserProfile(BaseModel):
-    """Public user profile (visible to all users)"""
+    """Public user profile visible to all users (profile/{user_id} endpoint)"""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
@@ -93,3 +86,24 @@ class PublicUserProfile(BaseModel):
     location: Optional[LocationResponse] = None
     created_at: datetime
     product_count: Optional[int] = None
+
+
+class UserListResponse(BaseModel):
+    """Paginated user list response (admin/users endpoint)"""
+    users: List[UserResponse]
+    total: int
+    page: int
+    size: int
+    total_pages: int
+
+
+# ============================================
+# AUTHENTICATION SCHEMAS
+# ============================================
+
+class Token(BaseModel):
+    """JWT Token response (auth/login endpoint)"""
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int  # seconds
+    user: UserResponse

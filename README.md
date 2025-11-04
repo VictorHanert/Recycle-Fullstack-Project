@@ -44,10 +44,17 @@ docker-compose down
 ```
 
 ### Seed the Database
+The database is automatically seeded with test data during application startup. This includes:
+- Sample users (including admin@test.com / admin123)
+- Product categories and details
+- Test products with images and price history
+- Sample conversations and favorites
+
+If you need to manually reseed the database, you can run:
 ```bash
 cd backend
 poetry install
-poetry run python seed.py
+poetry run python scripts/seed.py
 ```
 
 ## Access Points
@@ -55,7 +62,7 @@ poetry run python seed.py
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs (Swagger UI)
-- **API Documentation**: http://localhost:8000/redocs (ReDoc)
+- **API Documentation**: http://localhost:8000/redoc (ReDoc)
 
 ## Project Structure
 ```

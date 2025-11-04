@@ -3,8 +3,15 @@ import { useAuth } from "../hooks/useAuth";
 import { profileAPI } from "../api";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
-import Alert from "../components/Alert";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { PageLoader } from "../components/shared/LoadingSpinners";
+import { notify } from "../utils/notifications";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import AddLocationIcon from '@mui/icons-material/AddLocation';
 
 function Profile() {
   const { user, token } = useAuth();
@@ -77,8 +84,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setIsEditing(false);
       setError(null);
+      notify.success('Profile updated successfully!');
     } catch (err) {
-      setError(`Failed to update profile: ${err.message}`);
+      const errorMessage = `Failed to update profile: ${err.message}`;
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Profile update error:', err);
     }
   };
@@ -90,8 +100,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setIsEditingLocation(false);
       setError(null);
+      notify.success('Location updated successfully!');
     } catch (err) {
-      setError('Failed to update location');
+      const errorMessage = 'Failed to update location';
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Location update error:', err);
     }
   };
@@ -102,8 +115,11 @@ function Profile() {
       setProfileData(updatedProfile);
       setLocationData({ city: '', postcode: '' });
       setError(null);
+      notify.success('Location removed successfully!');
     } catch (err) {
-      setError('Failed to remove location');
+      const errorMessage = 'Failed to remove location';
+      setError(errorMessage);
+      notify.error(errorMessage);
       console.error('Location remove error:', err);
     }
   };
@@ -117,8 +133,11 @@ function Profile() {
           await profileAPI.deleteMyAccount(token);
           // Redirect to home or logout
           window.location.href = '/';
+          notify.success('Account deleted successfully');
         } catch (err) {
-          setError('Failed to delete account');
+          const errorMessage = 'Failed to delete account';
+          setError(errorMessage);
+          notify.error(errorMessage);
           console.error('Account delete error:', err);
           showError('Error', 'Failed to delete account. Please try again.');
         }
@@ -133,10 +152,12 @@ function Profile() {
       async () => {
         try {
           await productsAPI.delete(productId);
+          notify.success('Product deleted successfully');
           // Refresh the products list
           fetchUserProducts();
         } catch (err) {
           console.error('Error deleting product:', err);
+          notify.error('Failed to delete product. Please try again.');
           showError('Error', 'Failed to delete product. Please try again.');
         }
       }
@@ -146,9 +167,7 @@ function Profile() {
   if (loading) {
     return (
       <div className="px-4 mb-48">
-        <div className="text-center py-8">
-          <div className="text-lg">Loading profile...</div>
-        </div>
+        <PageLoader message="Loading profile..." />
       </div>
     );
   }
@@ -179,8 +198,9 @@ function Profile() {
             {!isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
               >
+                <EditIcon fontSize="small" />
                 Edit
               </button>
             )}
@@ -218,15 +238,17 @@ function Profile() {
               <div className="flex space-x-2">
                 <button
                   type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
                 >
+                  <SaveIcon fontSize="small" />
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2"
                 >
+                  <CancelIcon fontSize="small" />
                   Cancel
                 </button>
               </div>
@@ -248,9 +270,19 @@ function Profile() {
             {!isEditingLocation && (
               <button
                 onClick={() => setIsEditingLocation(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
               >
-                {profileData?.location ? 'Edit' : 'Add Location'}
+                {profileData?.location ? (
+                  <>
+                    <EditIcon fontSize="small" />
+                    Edit
+                  </>
+                ) : (
+                  <>
+                    <AddLocationIcon fontSize="small" />
+                    Add Location
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -280,23 +312,26 @@ function Profile() {
                 <div className="flex space-x-2">
                   <button
                     type="submit"
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
                   >
+                    <SaveIcon fontSize="small" />
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditingLocation(false)}
-                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2"
                   >
+                    <CancelIcon fontSize="small" />
                     Cancel
                   </button>
                   {profileData?.location && (
                     <button
                       type="button"
                       onClick={handleRemoveLocation}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center gap-2"
                     >
+                      <DeleteIcon fontSize="small" />
                       Remove Location
                     </button>
                   )}
@@ -326,11 +361,13 @@ function Profile() {
                   <h3 className="font-semibold">{product.title}</h3>
                   <p className="text-gray-600">{product.price_amount} {currencyUtils.getCurrencySymbol(product.price_currency)}</p>
                   <p className="text-sm text-gray-500">Status: {product.status}</p>
-                  <div className="mt-2">
-                    <a href={`/products/${product.id}/edit`} className="text-blue-500 hover:underline text-sm mr-2">
+                  <div className="mt-2 flex items-center gap-3">
+                    <a href={`/products/${product.id}/edit`} className="text-blue-500 hover:underline text-sm flex items-center gap-1">
+                      <EditIcon fontSize="small" />
                       Edit
                     </a>
-                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:underline text-sm">
+                    <button onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:underline text-sm flex items-center gap-1">
+                      <DeleteIcon fontSize="small" />
                       Delete
                     </button>
                   </div>
@@ -350,8 +387,9 @@ function Profile() {
           </p>
           <button
             onClick={handleDeleteAccount}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2"
           >
+            <DeleteIcon fontSize="small" />
             Delete Account
           </button>
         </div>

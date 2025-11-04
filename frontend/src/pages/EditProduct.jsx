@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
+import { PageLoader, ButtonLoader } from "../components/shared/LoadingSpinners";
+import { notify } from "../utils/notifications";
+import CancelIcon from '@mui/icons-material/Cancel';
 
 function EditProduct() {
   const navigate = useNavigate();
@@ -294,13 +297,16 @@ function EditProduct() {
       };
 
       await productsAPI.update(id, productData);
-
+      
+      notify.success("Product updated successfully!");
       // Redirect to the updated product
       navigate(`/products/${id}`);
 
     } catch (err) {
       console.error("Error updating product:", err);
-      setError(err.message || "Failed to update product. Please try again.");
+      const errorMessage = err.message || "Failed to update product. Please try again.";
+      setError(errorMessage);
+      notify.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -310,10 +316,7 @@ function EditProduct() {
     return (
       <div className="px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading product data...</p>
-          </div>
+          <PageLoader message="Loading product data..." />
         </div>
       </div>
     );
@@ -811,13 +814,21 @@ function EditProduct() {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Updating Product..." : "Update Product"}
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <ButtonLoader size={16} />
+                  <span>Updating Product...</span>
+                </div>
+              ) : (
+                "Update Product"
+              )}
             </button>
             <button
               type="button"
               onClick={() => navigate(`/products/${id}`)}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
+              <CancelIcon fontSize="small" />
               Cancel
             </button>
           </div>

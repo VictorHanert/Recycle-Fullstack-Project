@@ -16,5 +16,12 @@ RUN poetry install --no-root --no-interaction --no-ansi
 # Copy application code
 COPY ./app ./app
 
+# Copy Alembic configuration and migrations
+COPY alembic.ini ./
+COPY ./alembic ./alembic
+
+# Copy scripts for database initialization
+COPY ./scripts ./scripts
+
 # Expose port
 EXPOSE 8000

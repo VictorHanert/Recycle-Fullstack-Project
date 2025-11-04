@@ -1,35 +1,54 @@
-from fastapi import FastAPI
+import logging
+import time
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.routers import auth, products, admin, profile, messages_router
-from app.db.mysql import create_tables
 from app.config import get_settings
+from app.db.mysql import initialize_database
 from app.middleware import (
-    http_exception_handler,
-    validation_exception_handler,
-    general_exception_handler
+    create_error_response,
+    log_http_exception,
+    log_validation_exception,
+    log_general_exception,
+    format_validation_errors
 )
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
-# Create database tables on startup
-create_tables()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown events."""
+    # Startup
+    logger.info("Starting application...")
+    initialize_database()
+    logger.info("Application ready")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down...")
 
 app = FastAPI(
     title="Marketplace API",
     description="A modern marketplace platform where users can list and sell products",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
-
-# Add exception handlers
-app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
 
 # Configure CORS
 cors_origins = settings.cors_origins.split(",")
@@ -41,14 +60,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log HTTP responses with timing"""
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+    logger.info(f"⬅️  {response.status_code} {request.method} {request.url.path} ({duration:.3f}s)")
+    
+    return response
+
+# Custom exception handlers with logging
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request, exc):
+    """Handle HTTP exceptions with logging"""
+    log_http_exception(exc, str(request.url.path))
+    return create_error_response(exc.status_code, exc.detail, str(request.url.path))
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request, exc):
+    """Handle validation errors with logging"""
+    log_validation_exception(exc, str(request.url.path))
+    errors = format_validation_errors(exc)
+    return create_error_response(422, "Validation error", str(request.url.path), errors)
+
+@app.exception_handler(Exception)
+async def custom_general_exception_handler(request, exc):
+    """Handle unexpected exceptions with logging"""
+    log_general_exception(exc, str(request.url.path))
+    return create_error_response(500, "Internal server error", str(request.url.path))
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
+app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
 app.include_router(messages_router.router, prefix="/api/messages", tags=["Messages"])
+app.include_router(location.router, prefix="/api/locations", tags=["Locations"])
+
 
 @app.get("/")
 async def root():

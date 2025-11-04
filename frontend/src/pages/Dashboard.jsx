@@ -2,8 +2,18 @@ import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { productsAPI } from "../api";
 import { currencyUtils } from "../utils/currencyUtils";
-import Alert from "../components/Alert";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { notify } from "../utils/notifications";
+import { CardLoader } from "../components/shared/LoadingSpinners";
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PersonIcon from '@mui/icons-material/Person';
+import MessageIcon from '@mui/icons-material/Message';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import HistoryIcon from '@mui/icons-material/History';
 
 function Dashboard() {
   const { user } = useAuth();
@@ -22,10 +32,12 @@ function Dashboard() {
       async () => {
         try {
           await productsAPI.delete(productId);
+          notify.success("Product deleted successfully");
           // Refresh the products list after deletion
           refetch();
         } catch (err) {
           console.error('Error deleting product:', err);
+          notify.error("Failed to delete product. Please try again.");
           showError('Error', 'Failed to delete product. Please try again.');
         }
       }
@@ -47,34 +59,51 @@ function Dashboard() {
             <p className="text-gray-600 mb-4">Access administrative features and controls.</p>
             <button 
               onClick={() => window.location.href = '/admin'}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2"
             >
-              Go to Admin →
+              <AdminPanelSettingsIcon fontSize="small" />
+              Go to Admin <ArrowForwardIcon fontSize="small" />
             </button>
           </div>
         ) : (
         <>
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-semibold mb-2 text-blue-600">Profile</h3>
-            <p className="text-gray-600 mb-4">Manage your account settings and preferences.</p>
+            <h3 className="text-xl font-semibold mb-2 text-blue-600 flex items-center gap-2">
+              <PersonIcon />
+              Profile
+            </h3>
+            <p className="text-gray-600 mb-4">Manage your account.</p>
             <button 
               onClick={() => window.location.href = '/profile'}
-              className="text-blue-600 hover:text-blue-800"
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
-              Go to Profile →
+              Go to Profile <ArrowForwardIcon fontSize="small" />
             </button>
           </div>
           
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-semibold mb-2 text-blue-600">Last viewed</h3>
-            <p className="text-gray-600 mb-4">This is the last products you viewed.</p>
-            <button className="text-blue-600 hover:text-blue-800">View History →</button>
+            <h3 className="text-xl font-semibold mb-2 text-blue-600 flex items-center gap-2">
+              <MessageIcon />
+              Messages
+            </h3>
+            <p className="text-gray-600 mb-4">0 new messages.</p>
+            <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              View Messages <ArrowForwardIcon fontSize="small" />
+            </button>
           </div>
           
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-semibold mb-2 text-blue-600">Wishlist</h3>
+            <h3 className="text-xl font-semibold mb-2 text-blue-600 flex items-center gap-2">
+              <FavoriteIcon />
+              Favorites
+            </h3>
             <p className="text-gray-600 mb-4">Keep track of products you want to buy.</p>
-            <button className="text-blue-600 hover:text-blue-800">View Wishlist →</button>
+            <button 
+              onClick={() => window.location.href = '/favorites'}
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              View Favorites <ArrowForwardIcon fontSize="small" />
+            </button>
           </div>
         </>
         )}
@@ -87,9 +116,7 @@ function Dashboard() {
           </h2>
           
           {loading ? (
-            <div className="text-center py-8">
-              <div className="text-lg text-gray-600">Loading your products...</div>
-            </div>
+            <CardLoader message="Loading your products..." />
           ) : error ? (
             <div className="text-center py-8">
               <div className="text-red-600 mb-4">Error loading products: {error}</div>
@@ -107,11 +134,13 @@ function Dashboard() {
                   <a href={`/products/${product.id}`} className="font-semibold hover:underline">{product.title}</a>
                   <p className="text-gray-600">{product.price_amount} {currencyUtils.getCurrencySymbol(product.price_currency)}</p>
                   <p className="text-sm text-gray-500">Status: {product.status}</p>
-                    <div className="mt-2">
-                        <a href={`/products/${product.id}/edit`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline text-sm mr-2">
+                    <div className="mt-2 flex items-center gap-3">
+                        <a href={`/products/${product.id}/edit`} onClick={(e) => e.stopPropagation()} className="text-blue-500 hover:underline text-sm flex items-center gap-1">
+                        <EditIcon fontSize="small" />
                         Edit
                       </a>
-                      <button onClick={(e) => handleDeleteProduct(e, product.id)} className="text-red-500 hover:underline text-sm">
+                      <button onClick={(e) => handleDeleteProduct(e, product.id)} className="text-red-500 hover:underline text-sm flex items-center gap-1">
+                        <DeleteIcon fontSize="small" />
                         Delete
                       </button>
                     </div>

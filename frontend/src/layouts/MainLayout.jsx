@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import Navbar from "../components/shared/Navbar";
+import Footer from "../components/shared/Footer";
 
 function MainLayout({ children }) {
   const { user, logout, isAuthenticated } = useAuth();

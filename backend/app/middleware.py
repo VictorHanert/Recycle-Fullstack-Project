@@ -1,30 +1,43 @@
-from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
-from typing import Union
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """Handle HTTP exceptions with consistent format"""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": True,
-            "message": exc.detail,
-            "status_code": exc.status_code,
-            "path": str(request.url.path)
-        }
-    )
+def create_error_response(status_code: int, message: str, path: str, details=None):
+    """Helper function to create consistent error responses"""
+    content = {
+        "error": True,
+        "message": message,
+        "status_code": status_code,
+        "path": path
+    }
+    if details:
+        content["details"] = details
+    return JSONResponse(status_code=status_code, content=content)
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """Handle validation errors with detailed information"""
+def log_http_exception(exc: StarletteHTTPException, path: str):
+    """Log HTTP exceptions"""
+    logger.warning(f"HTTP Exception: {exc.detail} - Path: {path}")
+
+
+def log_validation_exception(exc: RequestValidationError, path: str):
+    """Log validation exceptions"""
+    logger.warning(f"Validation Error: {exc} - Path: {path}")
+
+
+def log_general_exception(exc: Exception, path: str):
+    """Log general exceptions with full stack trace"""
+    logger.exception(f"Unexpected error on {path}: {exc}")
+
+
+def format_validation_errors(exc: RequestValidationError):
+    """Format validation errors for response"""
     errors = []
     for error in exc.errors():
         errors.append({
@@ -32,28 +45,4 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": error["msg"],
             "type": error["type"]
         })
-
-    return JSONResponse(
-        status_code=422,
-        content={
-            "error": True,
-            "message": "Validation error",
-            "status_code": 422,
-            "details": errors,
-            "path": str(request.url.path)
-        }
-    )
-
-
-async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle unexpected exceptions"""
-    logger.exception(f"Unexpected error on {request.url.path}: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": True,
-            "message": "Internal server error",
-            "status_code": 500,
-            "path": str(request.url.path)
-        }
-    )
+    return errors
