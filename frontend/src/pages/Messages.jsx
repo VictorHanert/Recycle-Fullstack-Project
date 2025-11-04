@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { formatRelativeTime } from "../utils/formatUtils";
 import { apiClient } from "../api/base";
-import Alert from "../components/Alert";
+import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
 function Messages() {
@@ -94,6 +94,7 @@ function Messages() {
       if (target) {
         setSelectedProductId(target.product_id);
         setSelectedConversationId(target.id);
+        navigate("/messages", { replace: true });
         return;
       }
 
@@ -119,6 +120,7 @@ function Messages() {
           await refetchConversations();
           setSelectedProductId(newConv.product_id ?? null);
           setSelectedConversationId(newConv.id ?? null);
+          navigate("/messages", { replace: true });
         } catch (err) {
           console.error("Failed to create conversation", err);
           showError("Error", err.message || "Failed to create conversation");
@@ -134,6 +136,14 @@ function Messages() {
     showError,
     query,
   ]);
+
+  const selectedProductConvs = useMemo(
+  () => (selectedProductId ? (conversationsByProduct.get(selectedProductId) || []) : []),
+  [selectedProductId, conversationsByProduct]
+  );
+
+  const hasMultipleConvsForSelected = selectedProductConvs.length > 1;
+
 
   const handleSelectProduct = (productId) => {
     setSelectedProductId(productId);

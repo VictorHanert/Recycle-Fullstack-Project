@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, profile, messages_router
+from app.routers import auth, products, admin, profile, messages_router, favorites, location
 from app.config import get_settings
 from app.db.mysql import initialize_database
 from app.middleware import (
