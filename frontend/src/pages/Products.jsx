@@ -69,7 +69,7 @@ function Products() {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value && value !== "newest") {
-        const paramKey = key === 'locationId' ? 'location_id' : key === 'minPrice' ? 'min_price' : key === 'maxPrice' ? 'max_price' : key;
+        const paramKey = key === 'locationId' ? 'location_id' : key === 'minPrice' ? 'min_price' : key === 'maxPrice' ? 'max_price' : key === 'sortBy' ? 'sort' : key;
         params.set(paramKey, value);
       }
     });

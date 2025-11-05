@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
 from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import and_, desc, asc, or_, func
+from sqlalchemy import and_, desc, asc, or_, func, text
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
@@ -370,12 +370,12 @@ class MySQLProductRepository(ProductRepositoryInterface):
             query = query.filter(Product.status == filters.status)
         
         if filters.search_term:
-            search = f"%{filters.search_term}%"
+            # Use MySQL FULLTEXT search with MATCH AGAINST
+            # ft_product_search index on (title, description)
+            # Supports boolean operators: +required -exclude "exact phrase"
+            search_term = filters.search_term.replace("'", "''")  # Escape single quotes
             query = query.filter(
-                or_(
-                    Product.title.ilike(search),
-                    Product.description.ilike(search)
-                )
+                text(f"MATCH(title, description) AGAINST('{search_term}' IN BOOLEAN MODE)")
             )
         
         return query
@@ -389,6 +389,12 @@ class MySQLProductRepository(ProductRepositoryInterface):
             "price_high": desc(Product.price_amount),
             "title": asc(Product.title)
         }
+        
+        if filters and filters.search_term and filters.sort_by == "relevance":
+            search_term = filters.search_term.replace("'", "''")  # Escape single quotes
+            return query.order_by(
+                text(f"MATCH(title, description) AGAINST('{search_term}' IN NATURAL LANGUAGE MODE) DESC")
+            )
         
         if filters and filters.sort_by:
             return query.order_by(sort_options.get(filters.sort_by, desc(Product.created_at)))
