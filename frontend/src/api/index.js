@@ -5,3 +5,4 @@ export { productsAPI } from './products.js';
 export { profileAPI } from './profile.js';
 export { adminAPI } from './admin.js';
 export { favoritesAPI } from './favorites.js';
+export { activityAPI } from './activity.js';

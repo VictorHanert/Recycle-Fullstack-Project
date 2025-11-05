@@ -7,6 +7,8 @@ import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/products/ImageSlider";
 import PriceHistoryDisplay from "../components/products/PriceHistoryDisplay";
+import ViewHistory from "../components/shared/RecentlyViewedProducts";
+import ProductRecommendations from "../components/shared/ProductRecommendations";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 import { PageLoader } from "../components/shared/LoadingSpinners";
@@ -332,6 +334,16 @@ function ProductDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Recently Viewed Products Section */}
+      <div className="mt-8">
+        <ViewHistory limit={5} currentProductId={id} />
+      </div>
+
+      {/* Product Recommendations Section */}
+      <div className="mt-8">
+        <ProductRecommendations productId={id} limit={5} />
       </div>
     </div>
 

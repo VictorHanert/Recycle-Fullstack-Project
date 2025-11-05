@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import PopularProducts from "../components/shared/PopularProducts";
 
 function Home() {
   const { isAuthenticated } = useAuth();
@@ -64,6 +65,11 @@ function Home() {
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Popular Products Section */}
+      <div className="my-12">
+        <PopularProducts limit={5} />
       </div>
 
       {/* Blue Container Section */}

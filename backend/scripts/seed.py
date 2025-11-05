@@ -314,7 +314,8 @@ def main():
 
         categories = seed_categories(db)
         colors, materials, tags = seed_details(db)
-        products = seed_products(db, users, categories, locations, colors, materials, tags)
+        non_admin_users = [u for u in users if not u.is_admin]
+        products = seed_products(db, non_admin_users, categories, locations, colors, materials, tags)
         print(f"Seeded {len(products)} products.")
         seed_sold_archive(db, products)
         seed_favorites(db, users, products)

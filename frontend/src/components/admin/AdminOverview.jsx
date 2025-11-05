@@ -2,6 +2,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { useFetch } from "../../hooks/useFetch";
 import { Link } from "react-router-dom";
 import { InlineLoader } from "../shared/LoadingSpinners";
+import RecentActivity from "./RecentActivity";
+import PopularProducts from "../shared/PopularProducts";
 
 function AdminOverview() {
   const { user, token } = useAuth();
@@ -58,44 +60,14 @@ function AdminOverview() {
         )}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <Link to="/admin/users" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              👥 Manage Users
-            </Link>
-            <Link to="/admin/products" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              📦 Manage Products
-            </Link>
-            <Link to="/admin/locations" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              📍 Manage Locations
-            </Link>
-            <Link to="/admin/stats" className="block w-full text-left p-3 border rounded hover:bg-gray-50">
-              📊 View Reports
-            </Link>
-          </div>
-        </div>
-        
-        {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
-              <p className="text-sm">New user registered: john@example.com</p>
-              <p className="text-xs text-gray-500">2 minutes ago</p>
-            </div>
-            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
-              <p className="text-sm">Product updated: Wireless Headphones</p>
-              <p className="text-xs text-gray-500">5 minutes ago</p>
-            </div>
-            <div className="p-3 border-l-4 border-blue-400 bg-blue-50">
-              <p className="text-sm">New order placed: #ORD-12345</p>
-              <p className="text-xs text-gray-500">10 minutes ago</p>
-            </div>
-          </div>
-        </div>
+      {/* Recent Activity - Live Data */}
+      <div className="mb-8">
+        <RecentActivity />
+      </div>
+
+      {/* Popular Products - Static Data */}
+      <div className="mb-8">
+        <PopularProducts />
       </div>
     </div>
   );

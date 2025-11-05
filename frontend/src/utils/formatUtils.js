@@ -53,3 +53,10 @@ export const formatCondition = (condition) => {
 
   return conditionMap[condition] || condition.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
+
+// Export as object
+export const formatUtils = {
+  timeAgo: formatRelativeTime,
+  formatRelativeTime,
+  formatCondition
+};

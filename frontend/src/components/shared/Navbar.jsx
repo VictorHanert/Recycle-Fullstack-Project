@@ -16,7 +16,7 @@ function Navbar({ user, onLogout }) {
 
   return (
     <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-0 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <a href="/" className="text-xl font-medium text-gray-700">
@@ -27,7 +27,7 @@ function Navbar({ user, onLogout }) {
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6 font-medium">
+          <div className="hidden md:flex items-center space-x-3 md:space-x-4 lg:space-x-6 font-medium">
             <a href="/" className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
               <HomeIcon fontSize="small" />
               Home

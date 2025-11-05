@@ -118,7 +118,7 @@ function ProductCard({ product, onClick, onFavoriteChange }) {
                     oldPriceClassName="text-sm line-through text-gray-500"
                     discountClassName="text-green-600 text-xs font-medium"
                 />
-                <h3 className="text-md font-semibold text-gray-900 mb-1">
+                <h3 className="text-md font-semibold text-gray-900 mb-1 truncate">
                     {product.title}
                     </h3>
                     <span className="text-sm text-gray-500 mb-1">
