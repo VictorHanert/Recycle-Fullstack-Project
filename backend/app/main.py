@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, profile, location, favorites, activity
+from app.routers import auth, products, admin, profile, location, favorites, activity, messages_router
 from app.config import get_settings
 from app.db.mysql import initialize_database
 from app.middleware import (
@@ -100,7 +100,9 @@ app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"]
 app.include_router(activity.router, prefix="/api/activity", tags=["Activity & History"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
+app.include_router(messages_router.router, prefix="/api/messages", tags=["Messages"])
 app.include_router(location.router, prefix="/api/locations", tags=["Locations"])
+
 
 @app.get("/")
 async def root():

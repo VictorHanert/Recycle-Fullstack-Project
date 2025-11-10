@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate} from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
@@ -20,6 +20,13 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import MessageIcon from '@mui/icons-material/Message';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+
 
 function ProductDetail() {
   const { id } = useParams();
@@ -31,6 +38,14 @@ function ProductDetail() {
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
 
   const isOwner = user && product && user.id === product.seller?.id;
+
+  const [isMessagePromptOpen, setIsMessagePromptOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+  const quickMessages = [
+    "Hi! Is this still available?",
+    "Can you tell me more about this product?",
+    "Is the price negotiable?",
+  ];
 
   // Check favorite status when product loads
   useEffect(() => {
@@ -86,9 +101,18 @@ function ProductDetail() {
     }
   };
 
-  const handleContactSeller = () => {
-    showInfo('Contact Seller', 'Contact seller functionality would be implemented here');
-  };
+const handleContactSeller = () => {
+  if (product?.seller?.id) {
+    setIsMessagePromptOpen(true);
+  } else {
+    showError("Error", "Seller information not available.");
+  }
+};
+
+const handleSendMessage = (message) => {
+  const msg = encodeURIComponent(message.trim());
+  navigate(`/messages/${product.seller.id}?productId=${product.id}&msg=${msg}`);
+};
 
   const handleLike = async () => {
     setIsLoadingFavorite(true);
@@ -346,6 +370,46 @@ function ProductDetail() {
         <ProductRecommendations productId={id} limit={5} />
       </div>
     </div>
+
+  <Dialog open={isMessagePromptOpen} onClose={() => setIsMessagePromptOpen(false)}>
+    <DialogTitle>Contact Seller</DialogTitle>
+    <DialogContent className="space-y-3 mt-2">
+      <p className="text-gray-700 mb-2">Choose a quick message:</p>
+      <div className="flex flex-col gap-2">
+        {quickMessages.map((msg) => (
+          <Button
+            key={msg}
+            variant="outlined"
+            onClick={() => handleSendMessage(msg)}
+          >
+            {msg}
+          </Button>
+        ))}
+      </div>
+
+      <div className="mt-4">
+        <p className="text-gray-700 mb-2">Or write your own:</p>
+        <TextField
+          fullWidth
+          multiline
+          rows={2}
+          value={customMessage}
+          onChange={(e) => setCustomMessage(e.target.value)}
+          placeholder="Type your message..."
+        />
+      </div>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setIsMessagePromptOpen(false)}>Cancel</Button>
+      <Button
+        disabled={!customMessage.trim()}
+        variant="contained"
+        onClick={() => handleSendMessage(customMessage.trim())}
+      >
+        Send
+      </Button>
+    </DialogActions>
+  </Dialog>
 
     <Alert
       isOpen={alertState.isOpen}
