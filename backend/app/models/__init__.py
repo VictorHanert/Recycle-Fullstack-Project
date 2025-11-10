@@ -10,7 +10,8 @@ from app.models.favorites import Favorite
 from app.models.item_views import ItemView
 from app.models.price_history import ProductPriceHistory
 from app.models.sold import SoldItemArchive
-from app.models.messages import Conversation, ConversationParticipant, Message
+from app.models.messages import Conversation, ConversationParticipant, Message, MessageRead
+from app.models.product_details import Color, Material, Tag, ProductColor, ProductMaterial, ProductTag
 
 __all__ = [
     "User",
@@ -24,5 +25,12 @@ __all__ = [
     "SoldItemArchive",
     "Conversation",
     "ConversationParticipant", 
-    "Message"
+    "Message",
+    "MessageRead",
+    "Color",
+    "Material", 
+    "Tag",
+    "ProductColor",
+    "ProductMaterial",
+    "ProductTag"
 ]

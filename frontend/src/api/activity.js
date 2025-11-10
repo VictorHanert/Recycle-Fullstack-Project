@@ -14,7 +14,7 @@ const activityAPI = {
   },
 
   getProductRecommendations: async (productId, limit = 5) => {
-    return apiClient.get(`/api/activity/recommendations/${productId}?limit=${limit}`);
+    return apiClient.get(`/api/activity/products/${productId}/recommendations?limit=${limit}`);
   },
 
   recordView: async (productId) => {
