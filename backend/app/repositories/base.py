@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.product import Product
 from app.models.location import Location
-from app.schemas.user import UserCreate, UserUpdate
-from app.schemas.product import ProductCreate, ProductUpdate, ProductFilter
+from app.schemas.user_schema import UserCreate, UserUpdate
+from app.schemas.product_schema import ProductCreate, ProductUpdate, ProductFilter
 
 # Type variables for generic repository
 T = TypeVar('T')

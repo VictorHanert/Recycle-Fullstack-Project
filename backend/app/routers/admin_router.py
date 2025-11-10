@@ -9,8 +9,8 @@ from app.models.user import User
 from app.services.auth_service import AuthService
 from app.services.product_service import ProductService
 from app.services.profile_service import ProfileService
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse
-from app.schemas.product import ProductListResponse, ProductFilter, ProductCreate, ProductUpdate, ProductResponse
+from app.schemas.user_schema import UserCreate, UserUpdate, UserResponse, UserListResponse
+from app.schemas.product_schema import ProductListResponse, ProductFilter, ProductCreate, ProductUpdate, ProductResponse
 
 router = APIRouter()
 

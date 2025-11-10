@@ -13,7 +13,7 @@ from app.dependencies import (
     get_repository_factory_dep
 )
 from app.models.user import User
-from app.schemas.product import (
+from app.schemas.product_schema import (
     ProductCreate,
     ProductFilter,
     ProductListResponse,
@@ -26,7 +26,7 @@ from app.schemas.product import (
     LocationInfo,
 )
 from app.services.product_service import ProductService
-from app.schemas.product import ProductDetailsResponse
+from app.schemas.product_schema import ProductDetailsResponse
 
 router = APIRouter()
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from .location import LocationResponse
+from .location_schema import LocationResponse
 
 
 # ============================================

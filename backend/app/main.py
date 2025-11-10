@@ -2,13 +2,14 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
+from app.routers import activity_router, admin_router, auth_router, favorites_router, location_router, products_router, profile_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.routers import auth, products, admin, profile, location, favorites, activity, messages_router
+from app.routers import messages_router
 from app.config import get_settings
 from app.db.mysql import initialize_database
 from app.middleware import (
@@ -94,14 +95,14 @@ async def custom_general_exception_handler(request, exc):
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(products.router, prefix="/api/products", tags=["Products"])
-app.include_router(favorites.router, prefix="/api/favorites", tags=["Favorites"])
-app.include_router(activity.router, prefix="/api/activity", tags=["Activity & History"])
-app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
-app.include_router(profile.router, prefix="/api/profile", tags=["Profile"])
+app.include_router(auth_router.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(products_router.router, prefix="/api/products", tags=["Products"])
+app.include_router(favorites_router.router, prefix="/api/favorites", tags=["Favorites"])
+app.include_router(activity_router.router, prefix="/api/activity", tags=["Activity & History"])
+app.include_router(admin_router.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(profile_router.router, prefix="/api/profile", tags=["Profile"])
 app.include_router(messages_router.router, prefix="/api/messages", tags=["Messages"])
-app.include_router(location.router, prefix="/api/locations", tags=["Locations"])
+app.include_router(location_router.router, prefix="/api/locations", tags=["Locations"])
 
 
 @app.get("/")

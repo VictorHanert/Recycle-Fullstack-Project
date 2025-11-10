@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from fastapi import HTTPException, status, UploadFile
 
 from app.models.product import Product
-from app.schemas.product import ProductCreate, ProductFilter, ProductUpdate, ProductResponse
+from app.schemas.product_schema import ProductCreate, ProductFilter, ProductUpdate, ProductResponse
 from app.repositories.base import ProductRepositoryInterface, UserRepositoryInterface
 from app.services.file_upload_service import FileUploadService
 

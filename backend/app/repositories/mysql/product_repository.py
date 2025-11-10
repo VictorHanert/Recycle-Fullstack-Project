@@ -16,7 +16,7 @@ from app.models.product_details import ProductColor, ProductMaterial, ProductTag
 from app.models.product_images import ProductImage
 from app.models.item_views import ItemView
 from app.models.favorites import Favorite
-from app.schemas.product import ProductCreate, ProductUpdate, ProductFilter
+from app.schemas.product_schema import ProductCreate, ProductUpdate, ProductFilter
 
 
 # Common loading options for different query types
