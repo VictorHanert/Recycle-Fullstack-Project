@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { profileAPI } from "../api";
 import { productsAPI } from "../api";
@@ -14,6 +15,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import AddLocationIcon from '@mui/icons-material/AddLocation';
 
 function Profile() {
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -131,9 +133,9 @@ function Profile() {
       async () => {
         try {
           await profileAPI.deleteMyAccount(token);
-          // Redirect to home or logout
-          window.location.href = '/';
           notify.success('Account deleted successfully');
+          // Redirect to home after logout
+          navigate('/');
         } catch (err) {
           const errorMessage = 'Failed to delete account';
           setError(errorMessage);

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { productsAPI } from "../api";
@@ -19,6 +20,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function Dashboard() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { data: userProducts, loading, error, refetch } = useFetch(
     user ? `/api/profile/${user.id}/products` : null
@@ -61,7 +63,7 @@ function Dashboard() {
             <h3 className="text-xl font-semibold mb-2 text-red-600">Admin Panel</h3>
             <p className="text-gray-600 mb-4">Access administrative features and controls.</p>
             <button 
-              onClick={() => window.location.href = '/admin'}
+              onClick={() => navigate('/admin')}
               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 flex items-center gap-2"
             >
               <AdminPanelSettingsIcon fontSize="small" />
@@ -77,7 +79,7 @@ function Dashboard() {
             </h3>
             <p className="text-gray-600 mb-4">Manage your account settings and personal information.</p>
             <button 
-              onClick={() => window.location.href = '/profile'}
+              onClick={() => navigate('/profile')}
               className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               Go to Profile <ArrowForwardIcon fontSize="small" />
@@ -102,7 +104,7 @@ function Dashboard() {
             </h3>
             <p className="text-gray-600 mb-4">Browse and manage your saved favorite products.</p>
             <button 
-              onClick={() => window.location.href = '/favorites'}
+              onClick={() => navigate('/favorites')}
               className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               View Favorites <ArrowForwardIcon fontSize="small" />
@@ -116,7 +118,7 @@ function Dashboard() {
             </h3>
             <p className="text-gray-600 mb-4">Explore bikes and accessories from our community.</p>
             <button 
-              onClick={() => window.location.href = '/products'}
+              onClick={() => navigate('/products')}
               className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               Browse Products <ArrowForwardIcon fontSize="small" />
@@ -130,7 +132,7 @@ function Dashboard() {
             </h3>
             <p className="text-gray-600 mb-4">List your bike or accessories for sale on the marketplace.</p>
             <button 
-              onClick={() => window.location.href = '/create-product'}
+              onClick={() => navigate('/create-product')}
               className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               Create Listing <ArrowForwardIcon fontSize="small" />
