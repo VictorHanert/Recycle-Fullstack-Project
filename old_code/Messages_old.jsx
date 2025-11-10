@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { useFetch } from "../hooks/useFetch";
-import { formatRelativeTime } from "../utils/formatUtils";
-import { apiClient } from "../api/base";
-import { productsAPI } from "../api/products";
-import Alert from "../components/shared/Alert";
-import { useAlert } from "../hooks/useAlert";
+import { useAuth } from "../frontend/src/hooks/useAuth";
+import { useFetch } from "../frontend/src/hooks/useFetch";
+import { formatRelativeTime } from "../frontend/src/utils/formatUtils";
+import { apiClient } from "../frontend/src/api/base";
+import { productsAPI } from "../frontend/src/api/products";
+import Alert from "../frontend/src/components/shared/Alert";
+import { useAlert } from "../frontend/src/hooks/useAlert";
 
 function Messages() {
   const navigate = useNavigate();
