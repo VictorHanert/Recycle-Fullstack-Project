@@ -98,6 +98,7 @@ function EditProduct() {
         // Set existing images
         if (productData.images) {
           setImages(productData.images.map(img => ({
+            id: img.id,  // Include the image ID for keep_image_ids
             url: img.url,
             filename: img.url.split('/').pop(),
             existing: true
@@ -122,63 +123,41 @@ function EditProduct() {
     }
   }, [id, user]);
 
-  // Handle image upload
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Validate file count
     if (images.length + files.length > 10) {
       alert("Maximum 10 images allowed");
       return;
     }
 
-    setUploadingImages(true);
     const newImages = [];
 
-    try {
-      for (const file of files) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          alert(`${file.name} is not a valid image file`);
-          continue;
-        }
-
-        // Validate file size (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
-          alert(`${file.name} is too large. Maximum size is 5MB`);
-          continue;
-        }
-
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', file);
-
-        const response = await fetch('/api/products/upload-image', {
-          method: 'POST',
-          body: formDataUpload
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          newImages.push({
-            url: result.url,
-            filename: result.filename,
-            file: file
-          });
-        } else {
-          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          console.error('Upload failed:', errorData);
-          alert(`Failed to upload ${file.name}: ${errorData.detail || response.statusText}`);
-        }
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not a valid image file`);
+        continue;
       }
 
-      setImages(prev => [...prev, ...newImages]);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload images. Please try again.');
-    } finally {
-      setUploadingImages(false);
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum size is 5MB`);
+        continue;
+      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      
+      newImages.push({
+        file: file,
+        url: previewUrl,
+        filename: file.name,
+        isNew: true
+      });
     }
+
+    setImages(prev => [...prev, ...newImages]);
   };
 
   // Remove image
@@ -274,6 +253,9 @@ function EditProduct() {
       setLoading(true);
       setError(null);
 
+      const existingImages = images.filter(img => img.id);
+      const newImages = images.filter(img => img.isNew);
+
       const productData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -281,7 +263,6 @@ function EditProduct() {
         price_currency: formData.price_currency,
         category_id: parseInt(formData.category_id),
         status: formData.status,
-        // Optional fields - only include if they have values
         ...(formData.condition && { condition: formData.condition }),
         ...(formData.quantity && { quantity: parseInt(formData.quantity) }),
         ...(formData.location_id && { location_id: parseInt(formData.location_id) }),
@@ -292,11 +273,12 @@ function EditProduct() {
         color_ids: formData.color_ids,
         material_ids: formData.material_ids,
         tag_ids: formData.tag_ids,
-        // Include all current images (existing + new)
-        image_urls: images.map(img => img.url)
+        keep_image_ids: existingImages.map(img => img.id)
       };
 
-      await productsAPI.update(id, productData);
+      const imageFiles = newImages.map(img => img.file);
+
+      await productsAPI.update(id, productData, imageFiles);
       
       notify.success("Product updated successfully!");
       // Redirect to the updated product

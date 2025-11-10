@@ -5,7 +5,7 @@ from app.models.user import User
 from app.models.location import Location
 from app.models.category import Category
 from app.models.product import Product
-from app.models.media import ProductImage
+from app.models.product_images import ProductImage
 from app.models.favorites import Favorite
 from app.models.item_views import ItemView
 from app.models.price_history import ProductPriceHistory
