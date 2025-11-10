@@ -8,6 +8,9 @@
 .vscode/
 .idea/
 
+# Project specific
+TODO.md
+
 # OS
 .DS_Store
 Thumbs.db

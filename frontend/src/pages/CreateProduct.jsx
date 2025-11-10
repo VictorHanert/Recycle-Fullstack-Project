@@ -46,66 +46,42 @@ function CreateProduct() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Handle image upload
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Validate file count
     if (images.length + files.length > 10) {
       alert("Maximum 10 images allowed");
       return;
     }
 
-    setUploadingImages(true);
     const newImages = [];
 
-    try {
-      for (const file of files) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          alert(`${file.name} is not a valid image file`);
-          continue;
-        }
-
-        // Validate file size (5MB max)
-        if (file.size > 5 * 1024 * 1024) {
-          alert(`${file.name} is too large. Maximum size is 5MB`);
-          continue;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/products/upload-image', {
-          method: 'POST',
-          // headers: {
-          //   'Authorization': `Bearer ${token}`
-          // },  // Temporarily disabled for testing
-          body: formData
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          newImages.push({
-            url: result.url,
-            filename: result.filename,
-            file: file
-          });
-        } else {
-          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-          console.error('Upload failed:', errorData);
-          alert(`Failed to upload ${file.name}: ${errorData.detail || response.statusText}`);
-        }
+    for (const file of files) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not a valid image file`);
+        continue;
       }
 
-      setImages(prev => [...prev, ...newImages]);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload images. Please try again.');
-    } finally {
-      setUploadingImages(false);
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum size is 5MB`);
+        continue;
+      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      
+      newImages.push({
+        file: file,
+        url: previewUrl,
+        filename: file.name,
+        isNew: true
+      });
     }
+
+    setImages(prev => [...prev, ...newImages]);
   };
 
   // Remove image
@@ -234,7 +210,6 @@ function CreateProduct() {
         price_amount: parseFloat(formData.price_amount),
         price_currency: formData.price_currency,
         category_id: parseInt(formData.category_id),
-        // Optional fields - only include if they have values
         ...(formData.condition && { condition: formData.condition }),
         ...(formData.quantity && { quantity: parseInt(formData.quantity) }),
         ...(formData.location_id && { location_id: parseInt(formData.location_id) }),
@@ -244,14 +219,16 @@ function CreateProduct() {
         ...(formData.weight_kg && { weight_kg: parseFloat(formData.weight_kg) }),
         ...(formData.color_ids.length > 0 && { color_ids: formData.color_ids }),
         ...(formData.material_ids.length > 0 && { material_ids: formData.material_ids }),
-        ...(formData.tag_ids.length > 0 && { tag_ids: formData.tag_ids }),
-        ...(images.length > 0 && { image_urls: images.map(img => img.url) })
+        ...(formData.tag_ids.length > 0 && { tag_ids: formData.tag_ids })
       };
 
-      const newProduct = await productsAPI.create(productData);
+      const imageFiles = images
+        .map(img => img.file)
+        .filter(file => file instanceof File);
+
+      const newProduct = await productsAPI.create(productData, imageFiles);
 
       notify.success("Product created successfully!");
-      // Redirect to the newly created product
       navigate(`/products/${newProduct.id}`);
 
     } catch (err) {

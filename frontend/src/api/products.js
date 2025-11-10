@@ -15,7 +15,30 @@ export const productsAPI = {
   getLocations: () => apiClient.get('/api/products/locations'),
   getCurrencies: () => apiClient.get('/api/products/currencies'),
   getProductDetails: () => apiClient.get('/api/products/productdetails'),
-  create: (product) => apiClient.post('/api/products/', product),
-  update: (id, product) => apiClient.put(`/api/products/${id}`, product),
+  
+  create: (productData, images = []) => {
+    const formData = new FormData();
+    formData.append('product_data', JSON.stringify(productData));
+    
+    images.forEach((image) => {
+      if (image instanceof File) {
+        formData.append('images', image);
+      }
+    });
+    
+    return apiClient.post('/api/products/', formData);
+  },
+  
+  update: (id, productData, images = []) => {
+    const formData = new FormData();
+    formData.append('product_data', JSON.stringify(productData));
+    
+    images.forEach((image) => {
+      formData.append('images', image);
+    });
+    
+    return apiClient.put(`/api/products/${id}`, formData);
+  },
+  
   delete: (id) => apiClient.delete(`/api/products/${id}`)
 };

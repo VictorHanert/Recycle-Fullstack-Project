@@ -59,18 +59,20 @@ class ApiClient {
   }
 
   post(endpoint, data, options = {}) {
+    const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data)
+      body: isFormData ? data : JSON.stringify(data)
     });
   }
 
   put(endpoint, data, options = {}) {
+    const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: isFormData ? data : JSON.stringify(data)
     });
   }
 

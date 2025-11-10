@@ -11,7 +11,7 @@ from app.models.location import Location
 from app.models.category import Category
 from app.models.product import Product
 from app.models.product_details import Color, Material, Tag
-from app.models.media import ProductImage
+from app.models.product_images import ProductImage
 from app.models.price_history import ProductPriceHistory
 from app.models.favorites import Favorite
 from app.models.messages import Conversation, ConversationParticipant, Message
