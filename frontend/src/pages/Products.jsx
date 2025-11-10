@@ -10,10 +10,19 @@ import { PageLoader, InlineLoader } from "../components/shared/LoadingSpinners";
 // API
 import { productsAPI } from "../api";
 import { notify } from "../utils/notifications";
+import { useProductsStore } from "../stores/productsStore";
 
 function Products() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Zustand store
+  const { 
+    categories, 
+    locations, 
+    fetchCategories, 
+    fetchLocations 
+  } = useProductsStore();
 
   // Basic state
   const [productsData, setProductsData] = useState(null);
@@ -21,6 +30,8 @@ function Products() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -39,12 +50,6 @@ function Products() {
   const [tempMaxPrice, setTempMaxPrice] = useState("");
 
   const [showFilters, setShowFilters] = useState(false);
-
-  // Data states
-  const [categories, setCategories] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // Initialize filters from URL parameters
   useEffect(() => {
@@ -90,26 +95,23 @@ function Products() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch categories and locations
+  // Fetch categories and locations from store
   useEffect(() => {
-    const fetchCategories = async () => {
+    const loadData = async () => {
+      setCategoriesLoading(true);
+      setLocationsLoading(true);
+      
       try {
-        setCategoriesLoading(true);
-        const data = await productsAPI.getCategories();
-        setCategories(data);
+        await fetchCategories();
       } catch (err) {
         console.error("Error fetching categories:", err);
         notify.error("Failed to load categories");
       } finally {
         setCategoriesLoading(false);
       }
-    };
 
-    const fetchLocations = async () => {
       try {
-        setLocationsLoading(true);
-        const data = await productsAPI.getLocations();
-        setLocations(data);
+        await fetchLocations();
       } catch (err) {
         console.error("Error fetching locations:", err);
         notify.error("Failed to load locations");
@@ -118,9 +120,8 @@ function Products() {
       }
     };
 
-    fetchCategories();
-    fetchLocations();
-  }, []);
+    loadData();
+  }, [fetchCategories, fetchLocations]);
 
   // Fetch products
   useEffect(() => {

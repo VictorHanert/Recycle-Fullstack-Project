@@ -1,8 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate} from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
-import { productsAPI, favoritesAPI } from "../api";
+import { useFavoritesStore } from "../stores/favoritesStore";
+import { useProductsStore } from "../stores/productsStore";
+import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/products/ImageSlider";
@@ -20,6 +22,13 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import MessageIcon from '@mui/icons-material/Message';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+
 
 function ProductDetail() {
   const { id } = useParams();
@@ -27,26 +36,35 @@ function ProductDetail() {
   const { user } = useAuth();
   const { data: product, loading, error, refetch } = useFetch(`/api/products/${id}`);
   const { alertState, showConfirm, showError, showInfo, closeAlert } = useAlert();
-  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Zustand stores
+  const { 
+    isFavorite, 
+    toggleFavorite, 
+    checkFavoriteStatus 
+  } = useFavoritesStore();
+  
+  const { invalidateProduct, updateProductInCache } = useProductsStore();
+
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+  const isFav = isFavorite(Number(id));
 
   const isOwner = user && product && user.id === product.seller?.id;
 
+  const [isMessagePromptOpen, setIsMessagePromptOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+  const quickMessages = [
+    "Hi! Is this still available?",
+    "Can you tell me more about this product?",
+    "Is the price negotiable?",
+  ];
+
   // Check favorite status when product loads
   useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      if (user && product) {
-        try {
-          const response = await favoritesAPI.checkStatus(id);
-          setIsFavorite(response.is_favorite);
-        } catch (err) {
-          // User not logged in or error checking status
-          setIsFavorite(false);
-        }
-      }
-    };
-    checkFavoriteStatus();
-  }, [user, product, id]);
+    if (user && product) {
+      checkFavoriteStatus(Number(id));
+    }
+  }, [user, product, id, checkFavoriteStatus]);
 
   // Action handlers
   const handleEdit = () => navigate(`/products/${id}/edit`);
@@ -58,6 +76,7 @@ function ProductDetail() {
       async () => {
         try {
           await productsAPI.delete(id);
+          invalidateProduct(Number(id)); // Remove from cache
           notify.success('Product deleted successfully');
           navigate('/products');
         } catch (err) {
@@ -79,6 +98,10 @@ function ProductDetail() {
       await productsAPI.update(id, { status: newStatus });
       notify.success(`Product ${statusMessages[newStatus]} successfully`);
       refetch();
+      // Update cache
+      if (product) {
+        updateProductInCache(Number(id), { ...product, status: newStatus });
+      }
     } catch (err) {
       console.error(`Error ${statusMessages[newStatus]}:`, err);
       notify.error(`Failed to ${statusMessages[newStatus]}. Please try again.`);
@@ -86,22 +109,27 @@ function ProductDetail() {
     }
   };
 
-  const handleContactSeller = () => {
-    showInfo('Contact Seller', 'Contact seller functionality would be implemented here');
-  };
+const handleContactSeller = () => {
+  if (product?.seller?.id) {
+    setIsMessagePromptOpen(true);
+  } else {
+    showError("Error", "Seller information not available.");
+  }
+};
+
+const handleSendMessage = (message) => {
+  const msg = encodeURIComponent(message.trim());
+  navigate(`/messages/${product.seller.id}?productId=${product.id}&msg=${msg}`);
+};
 
   const handleLike = async () => {
     setIsLoadingFavorite(true);
     try {
-      await favoritesAPI.toggle(id, isFavorite);
-      setIsFavorite(!isFavorite);
+      await toggleFavorite(Number(id));
       // Refetch product to update the favorites count
       refetch();
-      
-      notify.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
     } catch (err) {
       console.error('Error toggling favorite:', err);
-      notify.error('Failed to update favorites. Please try again.');
     } finally {
       setIsLoadingFavorite(false);
     }
@@ -302,7 +330,7 @@ function ProductDetail() {
                     onClick={handleLike}
                     disabled={isLoadingFavorite}
                     className={`py-3 px-6 rounded-lg font-semibold border transition-colors flex items-center justify-center gap-2 ${
-                      isFavorite
+                      isFav
                         ? 'bg-blue-50 border-blue-500 text-blue-600 hover:bg-blue-100'
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                     } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -311,12 +339,12 @@ function ProductDetail() {
                       'Loading...'
                     ) : (
                       <>
-                        {isFavorite ? (
+                        {isFav ? (
                           <FavoriteIcon fontSize="small" />
                         ) : (
                           <FavoriteBorderIcon fontSize="small" />
                         )}
-                        {isFavorite ? 'Liked' : 'Like'} ({product.likes_count || 0})
+                        {isFav ? 'Liked' : 'Like'} ({product.likes_count || 0})
                       </>
                     )}
                   </button>
@@ -346,6 +374,46 @@ function ProductDetail() {
         <ProductRecommendations productId={id} limit={5} />
       </div>
     </div>
+
+  <Dialog open={isMessagePromptOpen} onClose={() => setIsMessagePromptOpen(false)}>
+    <DialogTitle>Contact Seller</DialogTitle>
+    <DialogContent className="space-y-3 mt-2">
+      <p className="text-gray-700 mb-2">Choose a quick message:</p>
+      <div className="flex flex-col gap-2">
+        {quickMessages.map((msg) => (
+          <Button
+            key={msg}
+            variant="outlined"
+            onClick={() => handleSendMessage(msg)}
+          >
+            {msg}
+          </Button>
+        ))}
+      </div>
+
+      <div className="mt-4">
+        <p className="text-gray-700 mb-2">Or write your own:</p>
+        <TextField
+          fullWidth
+          multiline
+          rows={2}
+          value={customMessage}
+          onChange={(e) => setCustomMessage(e.target.value)}
+          placeholder="Type your message..."
+        />
+      </div>
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setIsMessagePromptOpen(false)}>Cancel</Button>
+      <Button
+        disabled={!customMessage.trim()}
+        variant="contained"
+        onClick={() => handleSendMessage(customMessage.trim())}
+      >
+        Send
+      </Button>
+    </DialogActions>
+  </Dialog>
 
     <Alert
       isOpen={alertState.isOpen}

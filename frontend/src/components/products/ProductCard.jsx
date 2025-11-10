@@ -1,32 +1,25 @@
 import { useState, useEffect } from 'react';
 import { formatRelativeTime, formatCondition } from '../../utils/formatUtils';
 import { currencyUtils } from '../../utils/currencyUtils';
-import { favoritesAPI } from '../../api';
+import { useFavoritesStore } from '../../stores/favoritesStore';
 import { useAuth } from '../../hooks/useAuth';
 import { notify } from '../../utils/notifications';
 import PriceHistoryDisplay from './PriceHistoryDisplay';
 
 function ProductCard({ product, onClick, onFavoriteChange }) {
     const { user } = useAuth();
-    const [isFavorite, setIsFavorite] = useState(false);
+    const { isFavorite, toggleFavorite, checkFavoriteStatus } = useFavoritesStore();
     const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
     const [likesCount, setLikesCount] = useState(product.likes_count || 0);
+    
+    const isFav = isFavorite(product.id);
 
     // Check favorite status when component mounts
     useEffect(() => {
-        const checkFavoriteStatus = async () => {
-            if (user && product.id) {
-                try {
-                    const response = await favoritesAPI.checkStatus(product.id);
-                    setIsFavorite(response.is_favorite);
-                } catch (err) {
-                    // User not logged in or error checking status
-                    setIsFavorite(false);
-                }
-            }
-        };
-        checkFavoriteStatus();
-    }, [user, product.id]);
+        if (user && product.id) {
+            checkFavoriteStatus(product.id);
+        }
+    }, [user, product.id, checkFavoriteStatus]);
 
     // Update likes count when product prop changes
     useEffect(() => {
@@ -43,14 +36,10 @@ function ProductCard({ product, onClick, onFavoriteChange }) {
 
         setIsLoadingFavorite(true);
         try {
-            await favoritesAPI.toggle(product.id, isFavorite);
-            const newIsFavorite = !isFavorite;
-            setIsFavorite(newIsFavorite);
+            const newIsFavorite = await toggleFavorite(product.id);
             
             // Update local likes count optimistically
             setLikesCount(prev => newIsFavorite ? prev + 1 : Math.max(0, prev - 1));
-            
-            notify.success(newIsFavorite ? 'Added to favorites' : 'Removed from favorites');
             
             // Notify parent component if callback provided
             if (onFavoriteChange) {
@@ -58,7 +47,6 @@ function ProductCard({ product, onClick, onFavoriteChange }) {
             }
         } catch (err) {
             console.error('Error toggling favorite:', err);
-            notify.error('Failed to update favorites. Please try again.');
         } finally {
             setIsLoadingFavorite(false);
         }
@@ -74,11 +62,11 @@ function ProductCard({ product, onClick, onFavoriteChange }) {
                 onClick={handleLike}
                 disabled={isLoadingFavorite}
                 className={`absolute top-2 right-2 p-2 rounded-full transition-all ${
-                    isFavorite 
+                    isFav 
                         ? 'bg-red-500 hover:bg-red-600' 
                         : 'bg-white/80 hover:bg-white'
                 } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''} shadow-md`}
-                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                title={isFav ? 'Remove from favorites' : 'Add to favorites'}
             >
                 {isLoadingFavorite ? (
                     <svg className="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -88,8 +76,8 @@ function ProductCard({ product, onClick, onFavoriteChange }) {
                 ) : (
                     <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className={`h-5 w-5 ${isFavorite ? 'text-white' : 'text-gray-600'}`} 
-                        fill={isFavorite ? 'currentColor' : 'none'} 
+                        className={`h-5 w-5 ${isFav ? 'text-white' : 'text-gray-600'}`} 
+                        fill={isFav ? 'currentColor' : 'none'} 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"
                         strokeWidth={2}
