@@ -1,7 +1,7 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import MainLayout from "./layouts/MainLayout";
 
@@ -69,6 +69,22 @@ function AdminRoute({ children }) {
 
 // App routes component
 function AppRoutes() {
+  const { checkAuth, loading } = useAuth();
+  
+  // Check authentication on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  
+  // Show loader while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <PageLoader size={60} message="Loading..." />
+      </div>
+    );
+  }
+  
   return (
     <Router>
       <MainLayout>
@@ -170,7 +186,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
+    <>
       <AppRoutes />
       <ToastContainer
         position="top-right"
@@ -184,7 +200,7 @@ function App() {
         pauseOnHover
         theme="light"
       />
-    </AuthProvider>
+    </>
   );
 }
 

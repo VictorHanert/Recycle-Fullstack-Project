@@ -2,7 +2,9 @@ import { useParams, useNavigate} from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
-import { productsAPI, favoritesAPI } from "../api";
+import { useFavoritesStore } from "../stores/favoritesStore";
+import { useProductsStore } from "../stores/productsStore";
+import { productsAPI } from "../api";
 import { formatRelativeTime, formatCondition } from "../utils/formatUtils";
 import { currencyUtils } from "../utils/currencyUtils";
 import ImageSlider from "../components/products/ImageSlider";
@@ -34,8 +36,18 @@ function ProductDetail() {
   const { user } = useAuth();
   const { data: product, loading, error, refetch } = useFetch(`/api/products/${id}`);
   const { alertState, showConfirm, showError, showInfo, closeAlert } = useAlert();
-  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Zustand stores
+  const { 
+    isFavorite, 
+    toggleFavorite, 
+    checkFavoriteStatus 
+  } = useFavoritesStore();
+  
+  const { invalidateProduct, updateProductInCache } = useProductsStore();
+
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
+  const isFav = isFavorite(Number(id));
 
   const isOwner = user && product && user.id === product.seller?.id;
 
@@ -49,19 +61,10 @@ function ProductDetail() {
 
   // Check favorite status when product loads
   useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      if (user && product) {
-        try {
-          const response = await favoritesAPI.checkStatus(id);
-          setIsFavorite(response.is_favorite);
-        } catch (err) {
-          // User not logged in or error checking status
-          setIsFavorite(false);
-        }
-      }
-    };
-    checkFavoriteStatus();
-  }, [user, product, id]);
+    if (user && product) {
+      checkFavoriteStatus(Number(id));
+    }
+  }, [user, product, id, checkFavoriteStatus]);
 
   // Action handlers
   const handleEdit = () => navigate(`/products/${id}/edit`);
@@ -73,6 +76,7 @@ function ProductDetail() {
       async () => {
         try {
           await productsAPI.delete(id);
+          invalidateProduct(Number(id)); // Remove from cache
           notify.success('Product deleted successfully');
           navigate('/products');
         } catch (err) {
@@ -94,6 +98,10 @@ function ProductDetail() {
       await productsAPI.update(id, { status: newStatus });
       notify.success(`Product ${statusMessages[newStatus]} successfully`);
       refetch();
+      // Update cache
+      if (product) {
+        updateProductInCache(Number(id), { ...product, status: newStatus });
+      }
     } catch (err) {
       console.error(`Error ${statusMessages[newStatus]}:`, err);
       notify.error(`Failed to ${statusMessages[newStatus]}. Please try again.`);
@@ -117,15 +125,11 @@ const handleSendMessage = (message) => {
   const handleLike = async () => {
     setIsLoadingFavorite(true);
     try {
-      await favoritesAPI.toggle(id, isFavorite);
-      setIsFavorite(!isFavorite);
+      await toggleFavorite(Number(id));
       // Refetch product to update the favorites count
       refetch();
-      
-      notify.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
     } catch (err) {
       console.error('Error toggling favorite:', err);
-      notify.error('Failed to update favorites. Please try again.');
     } finally {
       setIsLoadingFavorite(false);
     }
@@ -326,7 +330,7 @@ const handleSendMessage = (message) => {
                     onClick={handleLike}
                     disabled={isLoadingFavorite}
                     className={`py-3 px-6 rounded-lg font-semibold border transition-colors flex items-center justify-center gap-2 ${
-                      isFavorite
+                      isFav
                         ? 'bg-blue-50 border-blue-500 text-blue-600 hover:bg-blue-100'
                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                     } ${isLoadingFavorite ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -335,12 +339,12 @@ const handleSendMessage = (message) => {
                       'Loading...'
                     ) : (
                       <>
-                        {isFavorite ? (
+                        {isFav ? (
                           <FavoriteIcon fontSize="small" />
                         ) : (
                           <FavoriteBorderIcon fontSize="small" />
                         )}
-                        {isFavorite ? 'Liked' : 'Like'} ({product.likes_count || 0})
+                        {isFav ? 'Liked' : 'Like'} ({product.likes_count || 0})
                       </>
                     )}
                   </button>

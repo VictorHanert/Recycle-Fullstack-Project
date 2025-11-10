@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { useMessagesStore } from "../stores/messagesStore";
-import { useProductsStore } from "../stores/productsStore";
+import { useFetch } from "../hooks/useFetch";
 import { formatRelativeTime } from "../utils/formatUtils";
 import { apiClient } from "../api/base";
+import { productsAPI } from "../api/products";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
@@ -18,109 +18,107 @@ function Messages() {
   const query = new URLSearchParams(location.search);
   const routeProductId = query.get("productId");
 
-  // Zustand stores
-  const {
-    conversations,
-    fetchConversations,
-    fetchMessages,
-    sendMessage,
-    markAsRead,
-    getMessages,
-    findConversation,
-  } = useMessagesStore();
-
-  const { fetchProduct, getProductFromCache } = useProductsStore();
-
-  // Local UI state
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [messageText, setMessageText] = useState("");
   const [productDetails, setProductDetails] = useState({});
   const [isSending, setIsSending] = useState(false);
   const [showChatView, setShowChatView] = useState(false);
-  const [loading, setLoading] = useState(true);
-  
-  // Track if we've already created a conversation to prevent duplicates
-  const createdConversationRef = useRef(false);
-  const routeHandledRef = useRef(false);
+
+  const authHeaders = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token]
+  );
+
+  const {
+    data: conversations,
+    loading: convLoading,
+    error: convError,
+    refetch: refetchConversations,
+  } = useFetch("/api/messages/conversations", { headers: authHeaders });
+
+  const {
+    data: messages,
+    loading: msgLoading,
+    error: msgError,
+    refetch: refetchMessages,
+  } = useFetch(
+    selectedConversationId
+      ? `/api/messages/conversations/${selectedConversationId}`
+      : null,
+    { headers: authHeaders }
+  );
 
   const endRef = useRef(null);
 
-  // Get current messages from store
-  const currentMessages = getMessages(selectedConversationId);
-
-  // Initial load
-  useEffect(() => {
-    const loadData = async () => {
-      if (token) {
-        try {
-          await fetchConversations(token);
-        } catch (error) {
-          console.error('Failed to load conversations:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    loadData();
-  }, [token, fetchConversations]);
-
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (endRef.current && currentMessages?.messages) {
+    if (endRef.current && messages?.messages) {
+      // Scroll only within the message container, not the whole page
       endRef.current.scrollIntoView({ 
         behavior: "smooth",
-        block: "nearest",
+        block: "nearest",  // Don't scroll the page, only the container
         inline: "nearest"
       });
     }
-  }, [currentMessages?.messages]);
+  }, [messages?.messages]);
 
-  // Auto-refresh conversations and messages
+  // Auto-refresh conversations to check for new messages
   useEffect(() => {
-    if (!token) return;
-
+    // Only refresh when page is visible (not in another tab)
     const handleVisibilityChange = () => {
-      if (!document.hidden && token) {
-        fetchConversations(token);
+      if (!document.hidden) {
+        refetchConversations();
         if (selectedConversationId) {
-          fetchMessages(selectedConversationId, token);
+          refetchMessages();
         }
       }
     };
 
+    // Refresh every 5 seconds only when page is visible
     const intervalId = setInterval(() => {
-      if (!document.hidden && token) {
-        fetchConversations(token);
+      if (!document.hidden) {
+        refetchConversations();
+        // If viewing a conversation, refresh messages too
         if (selectedConversationId) {
-          fetchMessages(selectedConversationId, token);
+          refetchMessages();
         }
       }
-    }, 5000);
+    }, 5000); // 5000ms = 5 seconds
 
+    // Also refresh when user comes back to the tab
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Cleanup interval and listener on unmount
     return () => {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedConversationId, token, fetchConversations, fetchMessages]);
+  }, [selectedConversationId, refetchConversations, refetchMessages]);
 
-  // Mark messages as read
+  // Mark messages as read when opening a conversation OR when new messages arrive
   useEffect(() => {
-    if (selectedConversationId && showChatView && token) {
-      markAsRead(selectedConversationId, token);
-    }
-  }, [selectedConversationId, showChatView, currentMessages, token, markAsRead]);
+    const markAsRead = async () => {
+      if (selectedConversationId && showChatView) {
+        try {
+          await apiClient.request(
+            `/api/messages/conversations/${selectedConversationId}/mark-read`,
+            {
+              method: "POST",
+              headers: authHeaders,
+            }
+          );
+          await refetchConversations(); // Refresh to update unread counts
+        } catch (err) {
+          console.error("Failed to mark as read:", err);
+        }
+      }
+    };
 
-  // Fetch messages when conversation is selected
-  useEffect(() => {
-    if (selectedConversationId && token) {
-      fetchMessages(selectedConversationId, token);
-    }
-  }, [selectedConversationId, token, fetchMessages]);
+    markAsRead();
+  }, [selectedConversationId, showChatView, messages]); // Added messages dependency
 
-  // Fetch product details for all unique product IDs
+  // Fetch product details for all unique product IDs in conversations
   useEffect(() => {
     if (!conversations || conversations.length === 0) return;
 
@@ -132,24 +130,16 @@ function Messages() {
       ),
     ];
 
+    // Fetch details for product IDs we don't have yet
     const fetchProducts = async () => {
       for (const productId of uniqueProductIds) {
         if (!productDetails[productId]) {
           try {
-            // Try cache first
-            let product = getProductFromCache(productId);
-            
-            // If not in cache, fetch it
-            if (!product) {
-              product = await fetchProduct(productId);
-            }
-            
-            if (product) {
-              setProductDetails((prev) => ({
-                ...prev,
-                [productId]: product,
-              }));
-            }
+            const product = await productsAPI.getById(productId);
+            setProductDetails((prev) => ({
+              ...prev,
+              [productId]: product,
+            }));
           } catch (error) {
             console.error(`Failed to fetch product ${productId}:`, error);
           }
@@ -158,39 +148,71 @@ function Messages() {
     };
 
     fetchProducts();
-  }, [conversations, productDetails, fetchProduct, getProductFromCache]);
+  }, [conversations]);
 
-  // Handle route params for direct conversation access
+  const conversationsByProduct = useMemo(() => {
+    const map = new Map();
+    (conversations || []).forEach((c) => {
+      const pid = c.product_id;
+      if (!pid) return;
+      if (!map.has(pid)) map.set(pid, []);
+      map.get(pid).push(c);
+    });
+    return map;
+  }, [conversations]);
+
+  const { sellerProducts, buyerProducts } = useMemo(() => {
+    const seller = [];
+    const buyerMap = new Map();
+    
+    // Build unique products for buyer
+    (conversations || []).forEach((c) => {
+      const pid = c.product_id;
+      if (!pid) return;
+      if (!buyerMap.has(pid)) {
+        buyerMap.set(pid, { id: pid, conversations: [] });
+      }
+    });
+    
+    // Convert map to array and populate conversations
+    const buyer = Array.from(buyerMap.values());
+    buyer.forEach((entry) => {
+      entry.conversations = (conversationsByProduct.get(entry.id) || []).sort(
+        (a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || "")
+      );
+    });
+    
+    return { sellerProducts: seller, buyerProducts: buyer };
+  }, [conversations, conversationsByProduct]);
+
   useEffect(() => {
-    const handleRouteParams = async () => {
-      // Prevent multiple executions
-      if (routeHandledRef.current) return;
-      
+    (async () => {
       if (!conversations || (!routeUserId && !routeProductId)) return;
-      
-      // Mark as handled before async operations
-      routeHandledRef.current = true;
 
-      const target = findConversation(routeProductId, routeUserId);
+      const target = conversations.find(
+        (c) =>
+          String(c.product_id) === String(routeProductId) &&
+          c.participants?.some(
+            (p) => String(p.user_id) === String(routeUserId)
+          )
+      );
 
       if (target) {
         setSelectedProductId(target.product_id);
         setSelectedConversationId(target.id);
-        setShowChatView(true);
         navigate("/messages", { replace: true });
         return;
       }
 
-      // Only create conversation if we haven't already
-      if (routeProductId && routeUserId && token && !createdConversationRef.current) {
-        createdConversationRef.current = true;
+      if (routeProductId && routeUserId) {
         try {
-          const initialMessage = query.get("msg") || "Hi! I'm interested in your product.";
+          const initialMessage =
+            query.get("msg") || "Hi! I'm interested in your product.";
           const res = await apiClient.request(`/api/messages/conversations`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              ...authHeaders,
             },
             body: JSON.stringify({
               product_id: Number(routeProductId),
@@ -198,48 +220,33 @@ function Messages() {
               first_message: initialMessage,
             }),
           });
-          const newConv = typeof res.json === "function" ? await res.json() : res;
+          const newConv =
+            typeof res.json === "function" ? await res.json() : res;
 
-          await fetchConversations(token);
+          await refetchConversations();
           setSelectedProductId(newConv.product_id ?? null);
           setSelectedConversationId(newConv.id ?? null);
-          setShowChatView(true);
           navigate("/messages", { replace: true });
         } catch (err) {
           console.error("Failed to create conversation", err);
           showError("Error", err.message || "Failed to create conversation");
-          createdConversationRef.current = false; // Reset on error
         }
       }
-    };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    routeUserId,
+    routeProductId,
+    conversations,
+  ]);
 
-    handleRouteParams();
-  }, [routeUserId, routeProductId, conversations, token]);
-  
-  // Reset route handled ref when navigating away from messages with params
-  useEffect(() => {
-    if (!routeUserId && !routeProductId) {
-      routeHandledRef.current = false;
-      createdConversationRef.current = false;
-    }
-  }, [routeUserId, routeProductId]);
+  const selectedProductConvs = useMemo(
+  () => (selectedProductId ? (conversationsByProduct.get(selectedProductId) || []) : []),
+  [selectedProductId, conversationsByProduct]
+  );
 
-  // Group conversations by product
-  const conversationsByProduct = new Map();
-  (conversations || []).forEach((c) => {
-    const pid = c.product_id;
-    if (!pid) return;
-    if (!conversationsByProduct.has(pid)) conversationsByProduct.set(pid, []);
-    conversationsByProduct.get(pid).push(c);
-  });
+  const hasMultipleConvsForSelected = selectedProductConvs.length > 1;
 
-  // Get unique products with conversations
-  const buyerProducts = Array.from(conversationsByProduct.keys()).map((pid) => ({
-    id: pid,
-    conversations: conversationsByProduct.get(pid).sort(
-      (a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || "")
-    ),
-  }));
 
   const handleSelectProduct = (productId) => {
     setSelectedProductId(productId);
@@ -255,6 +262,7 @@ function Messages() {
   const handleBackToConversations = () => {
     setShowChatView(false);
     setSelectedConversationId(null);
+    // Keep selectedProductId so we go back to conversations list
   };
 
   const handleBackToProducts = () => {
@@ -266,12 +274,24 @@ function Messages() {
   const handleSend = async (e) => {
     e.preventDefault();
     const body = messageText.trim();
-    if (!body || !selectedConversationId || isSending || !token) return;
+    if (!body || !selectedConversationId || isSending) return;
 
     setIsSending(true);
     try {
-      await sendMessage(selectedConversationId, body, token);
+      await apiClient.request(
+        `/api/messages/conversations/${selectedConversationId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({ 
+            conversation_id: selectedConversationId,
+            body 
+          }),
+        }
+      );
       setMessageText("");
+      await refetchMessages();
+      await refetchConversations();
     } catch (err) {
       console.error("Send message error:", err);
       showError("Error", err.message || "Failed to send message");
@@ -285,9 +305,11 @@ function Messages() {
     const latestCreatedAt = entry.conversations?.[0]?.last_message_at;
     const product = productDetails[entry.id];
     
+    // Calculate total unread across all conversations for this product
     const totalUnread = entry.conversations?.reduce((sum, conv) => 
       sum + (conv.unread_count || 0), 0) || 0;
     
+    // Get the first product image or use placeholder
     const imageUrl = product?.images?.[0]?.url || "https://placehold.co/60x60.png";
     const productTitle = product?.title || `Product #${entry.id}`;
 
@@ -301,6 +323,7 @@ function Messages() {
             : "bg-white border-gray-200"
         }`}
       >
+        {/* Unread badge */}
         {totalUnread > 0 && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center">
             {totalUnread > 9 ? '9+' : totalUnread}
@@ -346,6 +369,7 @@ function Messages() {
             : "bg-white border-gray-200"
         }`}
       >
+        {/* Red dot for unread messages */}
         {hasUnread && (
           <span className="absolute top-3 right-3 h-3 w-3 bg-red-500 rounded-full"></span>
         )}
@@ -365,24 +389,24 @@ function Messages() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-gray-600">Loading conversations...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="px-4">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Messages</h1>
 
+          {(convLoading || convError) && (
+            <div className="mb-4">
+              {convLoading ? (
+                <div className="text-gray-600">Loading conversations...</div>
+              ) : (
+                <div className="text-red-600">{convError}</div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Products Column */}
+            {/* Products Column - Always visible */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
                 <div className="p-4 border-b flex items-center justify-between">
@@ -400,7 +424,7 @@ function Messages() {
               </div>
             </div>
 
-            {/* Initial prompt */}
+            {/* Step 1: Initial prompt - Show when no product selected */}
             {!selectedProductId && !showChatView && (
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow p-8 h-[70vh] flex items-center justify-center">
@@ -426,7 +450,7 @@ function Messages() {
               </div>
             )}
 
-            {/* Conversations List */}
+            {/* Step 2: Conversations List - Show when product selected but no chat */}
             {selectedProductId && !showChatView && (
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
@@ -450,7 +474,7 @@ function Messages() {
               </div>
             )}
 
-            {/* Chat View */}
+            {/* Step 3: Chat View - Show when conversation selected */}
             {showChatView && (
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
@@ -489,90 +513,94 @@ function Messages() {
                         })()}
                       </div>
                     </div>
-                    {selectedConversationId && (
-                      <button
-                        className="text-sm text-blue-600 hover:underline"
-                        onClick={() => token && fetchMessages(selectedConversationId, token)}
-                        title="Refresh"
-                      >
-                        Refresh
-                      </button>
-                    )}
-                  </div>
+                  {selectedConversationId && (
+                    <button
+                      className="text-sm text-blue-600 hover:underline"
+                      onClick={() => refetchMessages()}
+                      title="Refresh"
+                    >
+                      Refresh
+                    </button>
+                  )}
+                </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {!selectedConversationId && (
-                      <div className="h-full w-full flex items-center justify-center text-gray-500">
-                        Select a conversation to start chatting
-                      </div>
-                    )}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {msgLoading && selectedConversationId && (
+                    <div className="text-gray-500">Loading messages…</div>
+                  )}
+                  {msgError && <div className="text-red-600">{msgError}</div>}
+                  {!selectedConversationId && (
+                    <div className="h-full w-full flex items-center justify-center text-gray-500">
+                      Select a conversation to start chatting
+                    </div>
+                  )}
 
-                    {Array.isArray(currentMessages?.messages) &&
-                      currentMessages.messages.map((m) => {
-                        const isOwn = m.sender_id === user?.id;
-                        return (
+                  {Array.isArray(messages?.messages) &&
+                    messages.messages.map((m) => {
+                      const isOwn = m.sender_id === user?.id;
+                      return (
+                        <div
+                          key={m.id}
+                          className={`flex ${
+                            isOwn ? "justify-end" : "justify-start"
+                          }`}
+                        >
                           <div
-                            key={m.id}
-                            className={`flex ${
-                              isOwn ? "justify-end" : "justify-start"
+                            className={`max-w-[75%] rounded-2xl px-4 py-2 border ${
+                              isOwn
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-gray-50 text-gray-900 border-gray-200"
                             }`}
                           >
+                            {m.body && (
+                              <p className="whitespace-pre-wrap break-words">
+                                {m.body}
+                              </p>
+                            )}
                             <div
-                              className={`max-w-[75%] rounded-2xl px-4 py-2 border ${
-                                isOwn
-                                  ? "bg-blue-600 text-white border-blue-600"
-                                  : "bg-gray-50 text-gray-900 border-gray-200"
+                              className={`mt-1 text-xs ${
+                                isOwn ? "text-blue-100" : "text-gray-500"
                               }`}
                             >
-                              {m.body && (
-                                <p className="whitespace-pre-wrap break-words">
-                                  {m.body}
-                                </p>
-                              )}
-                              <div
-                                className={`mt-1 text-xs ${
-                                  isOwn ? "text-blue-100" : "text-gray-500"
-                                }`}
-                              >
-                                {formatRelativeTime(m.created_at)}
-                              </div>
+                              {formatRelativeTime(m.created_at)}
                             </div>
                           </div>
-                        );
-                      })}
-                    <div ref={endRef} />
-                  </div>
-
-                  <form
-                    onSubmit={handleSend}
-                    className="p-3 border-t flex items-center gap-2"
-                  >
-                    <input
-                      type="text"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                      placeholder={
-                        selectedConversationId
-                          ? "Type your message…"
-                          : "Select a conversation first"
-                      }
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      disabled={!selectedConversationId}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!selectedConversationId || !messageText.trim() || isSending}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                        !selectedConversationId || !messageText.trim() || isSending
-                          ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
-                      }`}
-                    >
-                      {isSending ? "Sending..." : "Send"}
-                    </button>
-                  </form>
+                        </div>
+                      );
+                    })}
+                  <div ref={endRef} />
                 </div>
+
+                <form
+                  onSubmit={handleSend}
+                  className="p-3 border-t flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                    placeholder={
+                      selectedConversationId
+                        ? "Type your message…"
+                        : "Select a conversation first"
+                    }
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    disabled={!selectedConversationId}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!selectedConversationId || !messageText.trim() || isSending}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      !selectedConversationId || !messageText.trim() || isSending
+                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}
+                  >
+                    {isSending ? "Sending..." : "Send"}
+                  </button>
+                </form>
               </div>
+            </div>
             )}
           </div>
 
@@ -580,7 +608,8 @@ function Messages() {
             <div className="mt-6 bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg">
               <p className="font-medium">No chats yet</p>
               <p className="text-sm">
-                Go to a product page and use "Contact Seller" to start a conversation.
+                Go to a product page and use “Contact Seller” to start a
+                conversation.
               </p>
             </div>
           )}
