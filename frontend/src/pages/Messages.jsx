@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useFetch } from "../hooks/useFetch";
 import { formatRelativeTime } from "../utils/formatUtils";
 import { apiClient } from "../api/base";
+import { productsAPI } from "../api/products";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
 
@@ -20,6 +21,9 @@ function Messages() {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [messageText, setMessageText] = useState("");
+  const [productDetails, setProductDetails] = useState({});
+  const [isSending, setIsSending] = useState(false);
+  const [showChatView, setShowChatView] = useState(false);
 
   const authHeaders = useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
@@ -46,9 +50,38 @@ function Messages() {
   );
 
   const endRef = useRef(null);
+
+  // Fetch product details for all unique product IDs in conversations
   useEffect(() => {
-    if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messages, selectedConversationId]);
+    if (!conversations || conversations.length === 0) return;
+
+    const uniqueProductIds = [
+      ...new Set(
+        conversations
+          .map((c) => c.product_id)
+          .filter((id) => id !== null && id !== undefined)
+      ),
+    ];
+
+    // Fetch details for product IDs we don't have yet
+    const fetchProducts = async () => {
+      for (const productId of uniqueProductIds) {
+        if (!productDetails[productId]) {
+          try {
+            const product = await productsAPI.getById(productId);
+            setProductDetails((prev) => ({
+              ...prev,
+              [productId]: product,
+            }));
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error);
+          }
+        }
+      }
+    };
+
+    fetchProducts();
+  }, [conversations]);
 
   const conversationsByProduct = useMemo(() => {
     const map = new Map();
@@ -63,19 +96,25 @@ function Messages() {
 
   const { sellerProducts, buyerProducts } = useMemo(() => {
     const seller = [];
-    const buyer = [];
+    const buyerMap = new Map();
+    
+    // Build unique products for buyer
     (conversations || []).forEach((c) => {
       const pid = c.product_id;
       if (!pid) return;
-      if (!buyer.find((p) => p.id === pid)) {
-        buyer.push({ id: pid, conversations: [] });
+      if (!buyerMap.has(pid)) {
+        buyerMap.set(pid, { id: pid, conversations: [] });
       }
     });
+    
+    // Convert map to array and populate conversations
+    const buyer = Array.from(buyerMap.values());
     buyer.forEach((entry) => {
       entry.conversations = (conversationsByProduct.get(entry.id) || []).sort(
         (a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || "")
       );
     });
+    
     return { sellerProducts: seller, buyerProducts: buyer };
   }, [conversations, conversationsByProduct]);
 
@@ -127,14 +166,11 @@ function Messages() {
         }
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     routeUserId,
     routeProductId,
     conversations,
-    authHeaders,
-    refetchConversations,
-    showError,
-    query,
   ]);
 
   const selectedProductConvs = useMemo(
@@ -147,42 +183,64 @@ function Messages() {
 
   const handleSelectProduct = (productId) => {
     setSelectedProductId(productId);
-    const convs = conversationsByProduct.get(productId) || [];
-    if (convs.length === 1) setSelectedConversationId(convs[0].id);
-    else setSelectedConversationId(null);
+    setSelectedConversationId(null);
+    setShowChatView(false);
   };
 
   const handleSelectConversation = (conversationId) => {
     setSelectedConversationId(conversationId);
+    setShowChatView(true);
+  };
+
+  const handleBackToConversations = () => {
+    setShowChatView(false);
+    setSelectedConversationId(null);
+    // Keep selectedProductId so we go back to conversations list
+  };
+
+  const handleBackToProducts = () => {
+    setShowChatView(false);
+    setSelectedConversationId(null);
+    setSelectedProductId(null);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
     const body = messageText.trim();
-    if (!body || !selectedConversationId) return;
+    if (!body || !selectedConversationId || isSending) return;
 
+    setIsSending(true);
     try {
       await apiClient.request(
         `/api/messages/conversations/${selectedConversationId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ body }),
+          body: JSON.stringify({ 
+            conversation_id: selectedConversationId,
+            body 
+          }),
         }
       );
       setMessageText("");
       await refetchMessages();
       await refetchConversations();
-      if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       console.error("Send message error:", err);
       showError("Error", err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
     }
   };
 
   const renderProductItem = (entry) => {
     const convCount = entry.conversations?.length || 0;
     const latestCreatedAt = entry.conversations?.[0]?.last_message_at;
+    const product = productDetails[entry.id];
+    
+    // Get the first product image or use placeholder
+    const imageUrl = product?.images?.[0]?.url || "https://placehold.co/60x60.png";
+    const productTitle = product?.title || `Product #${entry.id}`;
 
     return (
       <button
@@ -195,13 +253,13 @@ function Messages() {
         }`}
       >
         <img
-          src={"https://placehold.co/60x60.png"}
-          alt={"Product"}
+          src={imageUrl}
+          alt={productTitle}
           className="w-12 h-12 rounded object-cover border"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <p className="font-semibold truncate">{`Product #${entry.id}`}</p>
+            <p className="font-semibold truncate">{productTitle}</p>
             {convCount > 1 && (
               <span className="ml-2 text-xs bg-gray-100 px-2 py-0.5 rounded-full border">
                 {convCount} chats
@@ -220,6 +278,8 @@ function Messages() {
 
   const renderConversationItem = (c) => {
     const other = c.participants?.find((p) => p.user_id !== user?.id);
+    const displayName = other?.username || `User #${other?.user_id}` || "Conversation";
+    
     return (
       <button
         key={c.id}
@@ -231,7 +291,7 @@ function Messages() {
         }`}
       >
         <p className="font-medium truncate">
-          {other ? `User #${other.user_id}` : "Conversation"}
+          {displayName}
         </p>
         {c.last_message_preview && (
           <p className="text-sm text-gray-600 truncate">
@@ -261,55 +321,114 @@ function Messages() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white rounded-lg shadow p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold">My Conversations</h2>
-                  <span className="text-xs text-gray-500">Buyer view</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Products Column - Always visible */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
+                <div className="p-4 border-b flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">My Products</h2>
                 </div>
-                {(buyerProducts || []).length === 0 ? (
-                  <p className="text-gray-500 text-sm">No conversations yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {buyerProducts.map(renderProductItem)}
-                  </div>
-                )}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {(buyerProducts || []).length === 0 ? (
+                    <p className="text-gray-500 text-sm">No conversations yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {buyerProducts.map(renderProductItem)}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="lg:col-span-1">
-              {selectedProductId ? (
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold mb-3">Conversations</h2>
-                  <div className="space-y-2">
-                    {(conversationsByProduct.get(selectedProductId) || []).map(
-                      renderConversationItem
-                    )}
+            {/* Step 1: Initial prompt - Show when no product selected */}
+            {!selectedProductId && !showChatView && (
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow p-8 h-[70vh] flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-16 w-16 mx-auto mb-4 text-gray-300"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      />
+                    </svg>
+                    <p className="text-lg font-medium">Click on a conversation</p>
+                    <p className="text-sm mt-2">to see your messages!</p>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow p-4 h-full min-h-32 flex items-center justify-center text-gray-500">
-                  Select a product to view its chats
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
-                <div className="px-4 py-3 border-b flex items-center justify-between">
-                  <div className="font-semibold">
-                    {(() => {
-                      const conv = (conversations || []).find(
-                        (c) => c.id === selectedConversationId
-                      );
-                      if (!conv) return "Chat";
-                      const other = conv.participants?.find(
-                        (p) => p.user_id !== user?.id
-                      );
-                      return other ? `User #${other.user_id}` : "Chat";
-                    })()}
+            {/* Step 2: Conversations List - Show when product selected but no chat */}
+            {selectedProductId && !showChatView && (
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
+                  <div className="p-4 border-b flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Conversations</h2>
+                    <button
+                      onClick={handleBackToProducts}
+                      className="text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      ← Back
+                    </button>
                   </div>
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <div className="space-y-2">
+                      {(conversationsByProduct.get(selectedProductId) || []).map(
+                        renderConversationItem
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Chat View - Show when conversation selected */}
+            {showChatView && (
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-lg shadow flex flex-col h-[70vh]">
+                  <div className="px-4 py-3 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleBackToConversations}
+                        className="text-gray-600 hover:text-gray-900 transition"
+                        title="Back to conversations"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+                      <div className="font-semibold">
+                        {(() => {
+                          const conv = (conversations || []).find(
+                            (c) => c.id === selectedConversationId
+                          );
+                          if (!conv) return "Chat";
+                          const other = conv.participants?.find(
+                            (p) => p.user_id !== user?.id
+                          );
+                          return other?.username || `User #${other?.user_id}` || "Chat";
+                        })()}
+                      </div>
+                    </div>
                   {selectedConversationId && (
                     <button
                       className="text-sm text-blue-600 hover:underline"
@@ -334,8 +453,7 @@ function Messages() {
 
                   {Array.isArray(messages?.messages) &&
                     messages.messages.map((m) => {
-                      const isOwn =
-                        (m.sender?.id ?? m.sender?.user_id) === user?.id;
+                      const isOwn = m.sender_id === user?.id;
                       return (
                         <div
                           key={m.id}
@@ -387,18 +505,19 @@ function Messages() {
                   />
                   <button
                     type="submit"
-                    disabled={!selectedConversationId || !messageText.trim()}
+                    disabled={!selectedConversationId || !messageText.trim() || isSending}
                     className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                      !selectedConversationId || !messageText.trim()
+                      !selectedConversationId || !messageText.trim() || isSending
                         ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                         : "bg-blue-600 text-white hover:bg-blue-700"
                     }`}
                   >
-                    Send
+                    {isSending ? "Sending..." : "Send"}
                   </button>
                 </form>
               </div>
             </div>
+            )}
           </div>
 
           {conversations && conversations.length === 0 && (

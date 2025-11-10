@@ -18,6 +18,7 @@ class MessageUpdate(BaseModel):
 class ParticipantOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     user_id: int
+    username: Optional[str] = None
 
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

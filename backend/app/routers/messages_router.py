@@ -23,7 +23,12 @@ def list_conversations(
         out.append(ConversationOut(
             id=c.id,
             product_id=c.product_id,
-            participants=[ParticipantOut(user_id=p.user_id) for p in c.participants],
+            participants=[
+                ParticipantOut(
+                    user_id=p.user_id,
+                    username=p.user.username if p.user else None
+                ) for p in c.participants
+            ],
             last_message_preview=(last.body[:120] if last and last.body else None),
             last_message_at=(last.created_at if last else None),
         ))
@@ -39,7 +44,12 @@ def get_conversation(
     return ConversationWithMessagesOut(
         id=c.id,
         product_id=c.product_id,
-        participants=[ParticipantOut(user_id=p.user_id) for p in c.participants],
+        participants=[
+            ParticipantOut(
+                user_id=p.user_id,
+                username=p.user.username if p.user else None
+            ) for p in c.participants
+        ],
         last_message_preview=(c.messages[-1].body[:120] if c.messages and c.messages[-1].body else None),
         last_message_at=(c.messages[-1].created_at if c.messages else None),
         messages=[MessageOut.model_validate(m) for m in c.messages]
