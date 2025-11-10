@@ -51,6 +51,73 @@ function Messages() {
 
   const endRef = useRef(null);
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (endRef.current && messages?.messages) {
+      // Scroll only within the message container, not the whole page
+      endRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "nearest",  // Don't scroll the page, only the container
+        inline: "nearest"
+      });
+    }
+  }, [messages?.messages]);
+
+  // Auto-refresh conversations to check for new messages
+  useEffect(() => {
+    // Only refresh when page is visible (not in another tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refetchConversations();
+        if (selectedConversationId) {
+          refetchMessages();
+        }
+      }
+    };
+
+    // Refresh every 5 seconds only when page is visible
+    const intervalId = setInterval(() => {
+      if (!document.hidden) {
+        refetchConversations();
+        // If viewing a conversation, refresh messages too
+        if (selectedConversationId) {
+          refetchMessages();
+        }
+      }
+    }, 5000); // 5000ms = 5 seconds
+
+    // Also refresh when user comes back to the tab
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup interval and listener on unmount
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedConversationId, refetchConversations, refetchMessages]);
+
+  // Mark messages as read when opening a conversation OR when new messages arrive
+  useEffect(() => {
+    const markAsRead = async () => {
+      if (selectedConversationId && showChatView) {
+        try {
+          await apiClient.request(
+            `/api/messages/conversations/${selectedConversationId}/mark-read`,
+            {
+              method: "POST",
+              headers: authHeaders,
+            }
+          );
+          await refetchConversations(); // Refresh to update unread counts
+        } catch (err) {
+          console.error("Failed to mark as read:", err);
+        }
+      }
+    };
+
+    markAsRead();
+  }, [selectedConversationId, showChatView, messages]); // Added messages dependency
+
   // Fetch product details for all unique product IDs in conversations
   useEffect(() => {
     if (!conversations || conversations.length === 0) return;
@@ -238,6 +305,10 @@ function Messages() {
     const latestCreatedAt = entry.conversations?.[0]?.last_message_at;
     const product = productDetails[entry.id];
     
+    // Calculate total unread across all conversations for this product
+    const totalUnread = entry.conversations?.reduce((sum, conv) => 
+      sum + (conv.unread_count || 0), 0) || 0;
+    
     // Get the first product image or use placeholder
     const imageUrl = product?.images?.[0]?.url || "https://placehold.co/60x60.png";
     const productTitle = product?.title || `Product #${entry.id}`;
@@ -246,12 +317,19 @@ function Messages() {
       <button
         key={entry.id}
         onClick={() => handleSelectProduct(entry.id)}
-        className={`w-full text-left flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition ${
+        className={`w-full text-left flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 transition relative ${
           selectedProductId === entry.id
             ? "bg-blue-50 border-blue-200"
             : "bg-white border-gray-200"
         }`}
       >
+        {/* Unread badge */}
+        {totalUnread > 0 && (
+          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center">
+            {totalUnread > 9 ? '9+' : totalUnread}
+          </span>
+        )}
+        
         <img
           src={imageUrl}
           alt={productTitle}
@@ -279,22 +357,28 @@ function Messages() {
   const renderConversationItem = (c) => {
     const other = c.participants?.find((p) => p.user_id !== user?.id);
     const displayName = other?.username || `User #${other?.user_id}` || "Conversation";
+    const hasUnread = (c.unread_count || 0) > 0;
     
     return (
       <button
         key={c.id}
         onClick={() => handleSelectConversation(c.id)}
-        className={`w-full text-left p-3 rounded-lg border hover:bg-gray-50 transition ${
+        className={`w-full text-left p-3 rounded-lg border hover:bg-gray-50 transition relative ${
           selectedConversationId === c.id
             ? "bg-blue-50 border-blue-200"
             : "bg-white border-gray-200"
         }`}
       >
-        <p className="font-medium truncate">
+        {/* Red dot for unread messages */}
+        {hasUnread && (
+          <span className="absolute top-3 right-3 h-3 w-3 bg-red-500 rounded-full"></span>
+        )}
+        
+        <p className={`font-medium truncate ${hasUnread ? 'font-bold' : ''}`}>
           {displayName}
         </p>
         {c.last_message_preview && (
-          <p className="text-sm text-gray-600 truncate">
+          <p className={`text-sm truncate ${hasUnread ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>
             {c.last_message_preview}
           </p>
         )}

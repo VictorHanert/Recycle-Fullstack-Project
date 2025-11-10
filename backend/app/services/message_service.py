@@ -3,8 +3,7 @@ from typing import List, Tuple, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, exists, and_
-
-from app.models.messages import Conversation, ConversationParticipant, Message
+from app.models.messages import Conversation, ConversationParticipant, Message, MessageRead
 from app.models.product import Product
 
 class MessageService:
@@ -112,5 +111,42 @@ class MessageService:
         if msg.sender_id != requester_id:
             raise HTTPException(status_code=403, detail="Only the sender can delete")
         msg.deleted_at = datetime.now(timezone.utc)
-        # optional: also null out body if you want “Message deleted”
+        # optional: also null out body if you want "Message deleted"
+        db.commit()
+
+    @staticmethod
+    def get_unread_count(db: Session, conversation_id: int, user_id: int) -> int:
+        """Count unread messages for a user in a conversation."""
+        unread = (db.query(Message)
+                    .filter(Message.conversation_id == conversation_id,
+                            Message.sender_id != user_id,
+                            Message.deleted_at.is_(None))
+                    .outerjoin(MessageRead, and_(
+                        MessageRead.message_id == Message.id,
+                        MessageRead.user_id == user_id
+                    ))
+                    .filter(MessageRead.user_id.is_(None))
+                    .count())
+        return unread
+
+    @staticmethod
+    def mark_conversation_as_read(db: Session, conversation_id: int, user_id: int) -> None:
+        """Mark all messages in a conversation as read for a user."""
+        if not MessageService._is_participant(db, conversation_id, user_id):
+            raise HTTPException(status_code=403, detail="Not a participant")
+        
+        unread_messages = (db.query(Message)
+                            .filter(Message.conversation_id == conversation_id,
+                                    Message.sender_id != user_id,
+                                    Message.deleted_at.is_(None))
+                            .outerjoin(MessageRead, and_(
+                                MessageRead.message_id == Message.id,
+                                MessageRead.user_id == user_id
+                            ))
+                            .filter(MessageRead.user_id.is_(None))
+                            .all())
+        
+        for msg in unread_messages:
+            db.add(MessageRead(message_id=msg.id, user_id=user_id))
+        
         db.commit()

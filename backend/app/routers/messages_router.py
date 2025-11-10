@@ -20,6 +20,7 @@ def list_conversations(
     out = []
     for c in convs:
         last = c.messages[-1] if c.messages else None
+        unread_count = MessageService.get_unread_count(db, c.id, user.id)
         out.append(ConversationOut(
             id=c.id,
             product_id=c.product_id,
@@ -31,6 +32,7 @@ def list_conversations(
             ],
             last_message_preview=(last.body[:120] if last and last.body else None),
             last_message_at=(last.created_at if last else None),
+            unread_count=unread_count,
         ))
     return out
 
@@ -97,4 +99,14 @@ def delete_message(
     user: User = Depends(get_current_user),
 ):
     MessageService.delete_message(db, message_id, user.id)
+    return
+
+@router.post("/conversations/{conversation_id}/mark-read", status_code=status.HTTP_204_NO_CONTENT)
+def mark_conversation_as_read(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Mark all messages in a conversation as read."""
+    MessageService.mark_conversation_as_read(db, conversation_id, user.id)
     return
