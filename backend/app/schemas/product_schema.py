@@ -126,7 +126,10 @@ class ProductUpdate(BaseModel):
     color_ids: Optional[List[int]] = Field(None)
     material_ids: Optional[List[int]] = Field(None)
     tag_ids: Optional[List[int]] = Field(None)
-    image_urls: Optional[List[str]] = Field(None)
+    
+    # Image management for updates
+    image_urls: Optional[List[str]] = Field(None, description="New image URLs to add")
+    keep_image_ids: Optional[List[int]] = Field(None, description="IDs of existing images")
 
 
 class ProductFilter(BaseModel):

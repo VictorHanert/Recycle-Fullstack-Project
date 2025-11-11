@@ -13,10 +13,10 @@ from app.models.category import Category
 from app.models.price_history import ProductPriceHistory
 from app.models.product_details import Color, Material, Tag
 from app.models.product_details import ProductColor, ProductMaterial, ProductTag
-from app.models.media import ProductImage
+from app.models.product_images import ProductImage
 from app.models.item_views import ItemView
 from app.models.favorites import Favorite
-from app.schemas.product import ProductCreate, ProductUpdate, ProductFilter
+from app.schemas.product_schema import ProductCreate, ProductUpdate, ProductFilter
 
 
 # Common loading options for different query types
@@ -143,13 +143,17 @@ class MySQLProductRepository(ProductRepositoryInterface):
                 detail="Product creation failed due to database constraint"
             ) from e
     
-    def update(self, product_id: int, product_data: ProductUpdate) -> Optional[Product]:
+    def update(self, product_id: int, product_data: ProductUpdate, new_image_urls: Optional[List[str]] = None) -> tuple[Optional[Product], List[str]]:
         """Update product information."""
-        product = self.db.query(Product).filter(Product.id == product_id).first()
+        product = self.db.query(Product).options(selectinload(Product.images)).filter(
+            Product.id == product_id
+        ).first()
+        
         if not product:
-            return None
+            return None, []
         
         update_data = product_data.model_dump(exclude_unset=True)
+        deleted_image_urls = []
         
         # Check if price has changed and create price history entry
         if 'price_amount' in update_data or 'price_currency' in update_data:
@@ -167,21 +171,40 @@ class MySQLProductRepository(ProductRepositoryInterface):
         # Handle many-to-many relationships
         self._handle_product_relationships(product, update_data, is_update=True)
         
-        # Handle images
-        if 'image_urls' in update_data:
-            # Delete existing images
-            self.db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+        # Handle image updates
+        keep_image_ids = update_data.pop('keep_image_ids', None)
+        update_data.pop('image_urls', None)  # Remove old field if present
+        
+        if keep_image_ids is not None:
+            # Get current images
+            current_images = self.db.query(ProductImage).filter(
+                ProductImage.product_id == product_id
+            ).all()
             
-            # Add new images
-            if update_data['image_urls']:
-                for i, image_url in enumerate(update_data['image_urls']):
-                    new_image = ProductImage(
-                        product_id=product_id,
-                        url=image_url,
-                        sort_order=i + 1
-                    )
-                    self.db.add(new_image)
-            update_data.pop('image_urls')
+            # Identify images to delete (not in keep list)
+            for img in current_images:
+                if img.id not in keep_image_ids:
+                    deleted_image_urls.append(img.url)
+                    self.db.delete(img)
+        
+        # Add new images
+        if new_image_urls:
+            # Get current max sort_order
+            max_sort_order = 0
+            remaining_images = self.db.query(ProductImage).filter(
+                ProductImage.product_id == product_id
+            ).all()
+            
+            if remaining_images:
+                max_sort_order = max(img.sort_order for img in remaining_images)
+            
+            for i, image_url in enumerate(new_image_urls):
+                new_image = ProductImage(
+                    product_id=product_id,
+                    url=image_url,
+                    sort_order=max_sort_order + i + 1
+                )
+                self.db.add(new_image)
         
         # Handle status changes
         if 'status' in update_data:
@@ -199,7 +222,7 @@ class MySQLProductRepository(ProductRepositoryInterface):
         try:
             self.db.commit()
             self.db.refresh(product)
-            return product
+            return product, deleted_image_urls
         except IntegrityError as e:
             self.db.rollback()
             raise HTTPException(
@@ -207,12 +230,17 @@ class MySQLProductRepository(ProductRepositoryInterface):
                 detail="Update failed due to database constraint"
             ) from e
     
-    def delete(self, product_id: int) -> bool:
-        """Hard delete a product and all related data"""
+    def delete(self, product_id: int) -> Optional[List[str]]:
+        """Hard delete a product and all related data."""
+        product = self.db.query(Product).options(selectinload(Product.images)).filter(
+            Product.id == product_id
+        ).first()
         
-        product = self.db.query(Product).filter(Product.id == product_id).first()
         if not product:
-            return False
+            return None
+        
+        # Collect image URLs for cleanup
+        image_urls = [img.url for img in product.images]
         
         try:
             # Delete many-to-many relationships first
@@ -222,10 +250,10 @@ class MySQLProductRepository(ProductRepositoryInterface):
             self.db.query(Favorite).filter(Favorite.product_id == product_id).delete()
             self.db.delete(product)
             self.db.commit()
-            return True
+            return image_urls
         except Exception:
             self.db.rollback()
-            return False
+            return None
 
     def soft_delete(self, product_id: int) -> bool:
         """Soft delete a product."""

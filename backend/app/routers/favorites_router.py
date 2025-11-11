@@ -8,7 +8,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.favorites import Favorite
 from app.models.product import Product
-from app.schemas.product import ProductResponse
+from app.schemas.product_schema import ProductResponse
 
 router = APIRouter()
 

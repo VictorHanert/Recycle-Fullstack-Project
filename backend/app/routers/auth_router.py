@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from datetime import timedelta
 
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
+from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
 from app.services.auth_service import AuthService
 from app.dependencies import get_auth_service
 
