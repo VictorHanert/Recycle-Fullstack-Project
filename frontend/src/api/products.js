@@ -8,7 +8,7 @@ export const productsAPI = {
       Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== "")
     );
     const queryString = new URLSearchParams(filteredParams).toString();
-    return apiClient.get(`/api/products${queryString ? `?${queryString}` : ""}`);
+    return apiClient.get(`/api/products/${queryString ? `?${queryString}` : ""}`);
   },
   getById: (id) => apiClient.get(`/api/products/${id}`),
   getCategories: () => apiClient.get('/api/products/categories'),
