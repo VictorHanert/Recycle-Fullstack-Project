@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.routers import messages_router
 from app.config import get_settings
@@ -50,6 +51,11 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan
 )
+
+# Respect proxy headers (X-Forwarded-For, X-Forwarded-Proto) when running behind
+# Azure App Service or other reverse proxies so generated URLs and redirects use
+# the original client scheme (https) instead of the internal proxy scheme (http).
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Configure CORS
 cors_origins = settings.cors_origins.split(",")
