@@ -90,7 +90,10 @@ function Dashboard() {
               Messages
             </h3>
             <p className="text-gray-600 mb-4">View and manage your conversations with other users.</p>
-            <button className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+            <button 
+              onClick={() => window.location.href = '/messages'}
+              className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
               View Messages <ArrowForwardIcon fontSize="small" />
             </button>
           </div>

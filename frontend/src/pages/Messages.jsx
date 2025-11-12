@@ -7,6 +7,7 @@ import { formatRelativeTime } from "../utils/formatUtils";
 import { apiClient } from "../api/base";
 import Alert from "../components/shared/Alert";
 import { useAlert } from "../hooks/useAlert";
+import { Refresh } from '@mui/icons-material';
 
 function Messages() {
   const navigate = useNavigate();
@@ -495,7 +496,7 @@ function Messages() {
                         onClick={() => token && fetchMessages(selectedConversationId, token)}
                         title="Refresh"
                       >
-                        Refresh
+                        <Refresh className="h-5 w-5" />
                       </button>
                     )}
                   </div>

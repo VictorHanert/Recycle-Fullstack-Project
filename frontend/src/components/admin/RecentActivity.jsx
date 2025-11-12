@@ -83,9 +83,9 @@ function RecentActivity() {
             <h3 className="text-lg font-semibold">Recent Products</h3>
           </div>
           {activityData?.recent_products?.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-5">
               {activityData.recent_products.map((product) => (
-                <div key={product.product_id} className="border-b pb-3 last:border-b-0">
+                <div key={product.product_id} className="border-b pb-5 last:border-b-0">
                   <a
                     href={`/products/${product.product_id}`}
                     className="font-medium text-gray-900 hover:text-blue-600"

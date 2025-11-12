@@ -25,26 +25,26 @@ BEGIN
         ROLLBACK;
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error archiving product';
     END;
-    
+
     START TRANSACTION;
-    
-    -- Insert into sold archive
+
+    -- Insert into sold archive with buyer and sale price
     INSERT INTO sold_item_archive (
-        product_id, title, category_id, location_id,
+        product_id, buyer_id, title, category_id, location_id,
         price_amount, price_currency, sold_at
     )
-    SELECT 
-        id, title, category_id, location_id,
-        price_amount, price_currency, NOW()
+    SELECT
+        id, p_buyer_id, title, category_id, location_id,
+        COALESCE(p_sale_price, price_amount), price_currency, NOW()
     FROM products
     WHERE id = p_product_id;
-    
+
     -- Update product status
-    UPDATE products 
+    UPDATE products
     SET status = 'sold',
         updated_at = NOW()
     WHERE id = p_product_id;
-    
+
     COMMIT;
 END$$
 
