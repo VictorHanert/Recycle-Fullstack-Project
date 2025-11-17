@@ -5,7 +5,7 @@ import { notify } from "../utils/notifications";
 import { ButtonLoader } from "../components/shared/LoadingSpinners";
 
 function Login() {
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +18,7 @@ function Login() {
     setIsLoading(true);
 
     try {
-      const result = await login({ username, password });
+      const result = await login({ identifier, password });
       if (result.success) {
         notify.success("Successfully logged in! Welcome back.");
         navigate("/dashboard");
@@ -53,16 +53,16 @@ function Login() {
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                Username or Email
               </label>
               <input
-                id="username"
+                id="identifier"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Enter your username"
+                placeholder="Enter your username or email"
               />
             </div>
             

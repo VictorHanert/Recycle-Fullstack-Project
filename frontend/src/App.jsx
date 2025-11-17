@@ -19,6 +19,7 @@ import EditProduct from "./pages/EditProduct";
 import Messages from "./pages/Messages";
 import Favorites from "./pages/Favorites";
 import { PageLoader } from "./components/shared/LoadingSpinners";
+import ErrorPage from "./pages/ErrorPage";
 
 // Import admin components
 import AdminLayout from "./layouts/AdminLayout";
@@ -178,6 +179,9 @@ function AppRoutes() {
             <Route path="activity" element={<RecentActivity />} />
             <Route path="locations" element={<Locations />} />
           </Route>
+          
+          {/* Error page - catch all unmatched routes */}
+          <Route path="*" element={<ErrorPage />} />
         </Routes>
       </MainLayout>
     </Router>

@@ -46,8 +46,13 @@ export const useAuthStore = create(
       
       register: async (userData) => {
         try {
-          await authAPI.register(userData);
-          notify.success("Account created successfully! Please log in.");
+          const response = await authAPI.register(userData);
+          const { access_token, user } = response;
+          
+          set({ token: access_token, user, loading: false, isHydrated: true });
+          apiClient.setToken(access_token);
+          
+          notify.success("Account created successfully! Welcome!");
           return { success: true };
         } catch (error) {
           notify.error(error.message || "Registration failed");

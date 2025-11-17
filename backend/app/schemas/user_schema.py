@@ -27,8 +27,8 @@ class UserCreate(UserBase):
 
 
 class UserLogin(BaseModel):
-    """Schema for user login (auth/login)"""
-    username: str = Field(..., min_length=3, max_length=50)
+    """Schema for user login (auth/login) - accepts either username or email"""
+    identifier: str = Field(..., min_length=3, max_length=100, description="Username or email address")
     password: str = Field(..., min_length=1, max_length=100)
 
 

@@ -79,9 +79,9 @@ function Register() {
       });
       
       if (result.success) {
-        setSuccess("Registration successful! You can now log in.");
+        setSuccess("Registration successful! Welcome to the platform.");
         setTimeout(() => {
-          navigate("/login");
+          navigate("/dashboard");
         }, 2000);
       } else {
         const errorMessage = result.error || "Registration failed";

@@ -84,20 +84,24 @@ class AuthService:
         hashed_password = AuthService.get_password_hash(user.password)
         return self.user_repository.create(user, hashed_password)
 
-    def authenticate_user(self, username: str, password: str) -> User:
-        """Authenticate user with username and password"""
-        user = self.user_repository.get_by_username(username)
+    def authenticate_user(self, identifier: str, password: str) -> User:
+        """Authenticate user with username/email and password"""
+        # Try to find user by username first, then by email
+        user = self.user_repository.get_by_username(identifier)
+        if not user:
+            user = self.user_repository.get_by_email(identifier)
+        
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail="Incorrect username/email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
         if not AuthService.verify_password(password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
+                detail="Incorrect username/email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
