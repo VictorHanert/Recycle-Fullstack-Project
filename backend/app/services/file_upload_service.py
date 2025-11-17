@@ -5,6 +5,10 @@ from uuid import uuid4
 import os
 
 from fastapi import UploadFile, HTTPException, status
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
+
+from app.config import get_settings
 
 
 class FileUploadService:
@@ -17,12 +21,30 @@ class FileUploadService:
     
     def __init__(self, upload_base_path: str = "uploads/product_images"):
         """Initialize file upload service."""
+        settings = get_settings()
+        self.storage_mode = settings.storage_mode
         self.upload_base_path = Path(upload_base_path)
-        self._ensure_upload_directory()
+        
+        if self.storage_mode == "local":
+            self._ensure_upload_directory()
+        elif self.storage_mode == "azure":
+            self.azure_connection_string = settings.azure_storage_connection_string
+            self.container_name = "product-images"
+            self.blob_service_client = BlobServiceClient.from_connection_string(self.azure_connection_string)
+            self._ensure_container()
+        else:
+            raise ValueError(f"Invalid storage_mode: {self.storage_mode}. Must be 'local' or 'azure'")
     
     def _ensure_upload_directory(self):
         """Create upload directory if it doesn't exist."""
         self.upload_base_path.mkdir(parents=True, exist_ok=True)
+    
+    def _ensure_container(self):
+        """Ensure the Azure container exists."""
+        try:
+            self.blob_service_client.create_container(self.container_name)
+        except ResourceExistsError:
+            pass  # Container already exists
     
     async def validate_and_save_images(self, files: List[UploadFile], max_count: Optional[int] = None) -> List[str]:
         """Validate and save multiple image files."""
@@ -87,12 +109,22 @@ class FileUploadService:
             )
         
         unique_filename = f"{uuid4()}{file_extension}"
-        file_path = self.upload_base_path / unique_filename
         
-        with open(file_path, "wb") as buffer:
-            buffer.write(content)
+        if self.storage_mode == "local":
+            file_path = self.upload_base_path / unique_filename
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
+            return f"/{self.upload_base_path}/{unique_filename}"
         
-        return f"/{self.upload_base_path}/{unique_filename}"
+        elif self.storage_mode == "azure":
+            blob_client = self.blob_service_client.get_blob_client(
+                container=self.container_name, 
+                blob=unique_filename
+            )
+            blob_client.upload_blob(content, overwrite=True)
+            return blob_client.url
+        else:
+            raise ValueError(f"Invalid storage mode: {self.storage_mode}")
     
     async def delete_images(self, image_urls: List[str]) -> None:
         """Delete image files from storage."""
@@ -105,12 +137,19 @@ class FileUploadService:
         """Clean up image files."""
         for url in image_urls:
             try:
-                filename = Path(url).name
-                file_path = self.upload_base_path / filename
-                
-                if file_path.exists():
-                    os.remove(file_path)
-                    
+                if self.storage_mode == "local":
+                    filename = Path(url).name
+                    file_path = self.upload_base_path / filename
+                    if file_path.exists():
+                        os.remove(file_path)
+                elif self.storage_mode == "azure":
+                    # Extract blob name from URL
+                    blob_name = url.split('/')[-1]
+                    blob_client = self.blob_service_client.get_blob_client(
+                        container=self.container_name, 
+                        blob=blob_name
+                    )
+                    blob_client.delete_blob()
             except Exception:
                 pass
     

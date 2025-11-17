@@ -181,6 +181,23 @@ DELIMITER ;
 -- VIEWS
 -- ============================================
 
+-- A view that shows only active products with essential details for public listing.
+DROP VIEW IF EXISTS vw_public_products;
+CREATE VIEW vw_public_products AS
+SELECT 
+    p.id,
+    p.title,
+    p.price_amount,
+    p.price_currency,
+    p.status,
+    (SELECT pi.url 
+     FROM product_images pi 
+     WHERE pi.product_id = p.id 
+     ORDER BY pi.sort_order ASC 
+     LIMIT 1) AS image_url
+FROM products p
+WHERE p.status = 'active';
+
 -- Popular products by favorites and views
 DROP VIEW IF EXISTS vw_popular_products;
 CREATE VIEW vw_popular_products AS
