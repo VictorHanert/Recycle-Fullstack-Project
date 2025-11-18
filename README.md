@@ -1,56 +1,75 @@
-# Fullstack Project
+# <img src="frontend/public/favicon.png" alt="Recycle logo" style="height:1em; vertical-align:middle; width:auto;" /> Recycle Marketplace
+
+A modern fullstack web application for buying and selling bicycles. Users can browse products, manage favorites, send messages to sellers, and more.
+
+**Live Demo**: [https://recycle-marketplace.vercel.app/](https://recycle-marketplace.vercel.app/)
+
+## Features
+
+- User authentication with JWT tokens
+- Product listing and browsing
+- Favorites system
+- Real-time messaging between users
+- User profiles and product management
+- Advanced search and filtering
+- Admin dashboard with analytics
+- Rate limiting for security (5 login attempts/minute)
+- Azure Blob Storage for images
+- Application monitoring with Azure Application Insights
+
 ## Tech Stack
 
 ### Frontend
-- **React** with Vite
-- **React Router** for navigation
-- **Tailwind CSS and MUI** for styling
-- **Context API** for state management
+![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
+![MUI](https://img.shields.io/badge/MUI-007FFF?style=flat&logo=mui&logoColor=white)
+![React Router](https://img.shields.io/badge/React_Router-CA4245?style=flat&logo=react-router&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-000000?style=flat&logo=zustand&logoColor=white)
+![Eslint](https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=eslint&logoColor=white)
 
-### Backend
-- **Python** with FastAPI
-- **SQLAlchemy** ORM
-- **Pydantic** for data validation
-- **JWT** authentication
-- **CORS** middleware
+### Backend & Database
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+![Uvicorn](https://img.shields.io/badge/Uvicorn-4A4A55?style=flat&logo=uvicorn&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=flat&logo=sqlalchemy&logoColor=w8Ahite)
+![Alembic](https://img.shields.io/badge/Alembic-2D3A45?style=flat&logo=alembic&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=flat&logo=pydantic&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-000000?style=flat&logo=json-web-tokens&logoColor=white)
 
-### Databases
-- **MySQL** (primary database)
-- **MongoDB** (document store)
-- **Neo4j** (graph database)
-
-### Testing
-- **Jest** for frontend testing
-- **Pytest** for backend testing
-
-### Development & Deployment
-- **Docker** & Docker Compose
-- **Poetry** for Python dependency management
-- **ESLint** for code linting
+### DevOps & Cloud
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Azure](https://img.shields.io/badge/Azure-0078D4?style=flat&logo=microsoft-azure&logoColor=white)
+![Github](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)
 
 ## Getting Started
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Node.js 20+ (for local frontend development)
+- Python 3.13+ (for local backend development)
 
 ### Start the Application
 
 ```bash
-# Start whole platform (frontend, backend, and databases)
-docker-compose up
-
-# Start only frontend and backend (if databases are already running)
-docker-compose up frontend backend
+# Start whole platform (frontend, backend, and database)
+docker-compose up --build -d
 
 # Stop all services
 docker-compose down
 ```
 
 ### Seed the Database
-The database is automatically seeded with test data during application startup. This includes:
-- Sample users (including admin@test.com / admin123)
-- Product categories and details
-- Test products with images and price history
-- Sample conversations and favorites
+The MySQL database is automatically seeded with test data during application startup:
+- 👤 Sample users (admin@test.com / admin123)
+- 📦 Product categories and details
+- 🚴 Test products with images and price history
+- 💬 Sample conversations and favorites
 
-If you need to manually reseed the database, you can run:
+**Manual seeding** (if needed):
 ```bash
 cd backend
 poetry install
@@ -59,47 +78,35 @@ poetry run python scripts/seed.py
 
 ## Access Points
 
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs (Swagger UI)
-- **API Documentation**: http://localhost:8000/redoc (ReDoc)
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Frontend** | http://localhost:5173 | React application |
+| **Backend API** | http://localhost:8000 | FastAPI server |
+| **API Docs (Swagger)** | http://localhost:8000/docs | Interactive API documentation |
+| **API Docs (ReDoc)** | http://localhost:8000/redoc | Alternative API docs |
 
 ## Project Structure
 ```
 ├── frontend/          # React application with Vite, Tailwind and MUI
 │   └── src/
 │
-├── backend/           # FastAPI application
+├── backend/           # Python FastAPI app
 │   ├── app/
-│   │   ├── main.py    # Application entry point
-│   │   ├── db/        # Database configuration
-│   │   ├── routers/   # API routes
-│   │   ├── models/    # Database models
-│   │   ├── schemas/   # Pydantic schemas
-│   │   └── services/  # Business logic
-└── docker-compose.yml # Container orchestration
-```
+│   │   ├── main.py         # Application entry point
+│   │   ├── db/             # Database configuration
+│   │   ├── models/         # Database models
+│   │   ├── repositories/   # Data access layer
+│   │   ├── routers/        # API routes
+│   │   ├── schemas/        # Pydantic schemas
+│   │   └── services/       # Business logic
+│   ├── alembic/            # Database migrations
+│   ├── scripts/            # Utility scripts (seeding, etc.)
+│   └── tests/              # Backend tests
+│
+└── docker-compose.yml      # Container orchestration
 
-## Development
+## 🔐 Default Credentials
 
-### View Logs
-```bash
-# All logs including DB's
-docker-compose logs -f
-
-# Backend logs
-docker logs -f fullstack_project-backend-1
-
-# Frontend logs
-docker logs -f fullstack_project-frontend-1
-```
-
-### Database Access
-```bash
-# MySQL
-docker exec -it fullstack_project-mysql-db-1 mysql -u root -proot marketplace
-
-# MongoDB
-
-# Neo4j
-```
+For testing purposes, use these credentials:
+- **Admin**: admin@test.com / admin123
+- **Regular User**: register your own

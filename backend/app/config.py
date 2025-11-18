@@ -25,15 +25,6 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    # MongoDB Configuration (optional)
-    mongodb_url: str = "mongodb://localhost:27017"
-    mongodb_database: str = "marketplace"
-
-    # Neo4j Configuration (optional)
-    neo4j_url: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = "password"
-
     # Azure Storage Configuration
     azure_storage_connection_string: str = ""
     storage_mode: str = "local"  # "local" or "azure"
