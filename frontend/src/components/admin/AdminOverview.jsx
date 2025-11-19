@@ -1,18 +1,18 @@
+import { useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useFetch } from "../../hooks/useFetch";
+import { useAdminStore } from "../../stores";
 import { Link } from "react-router-dom";
 import { InlineLoader } from "../shared/LoadingSpinners";
 import RecentActivity from "./RecentActivity";
 import PopularProducts from "../shared/PopularProducts";
 
 function AdminOverview() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const { stats, statsLoading, statsError, fetchStats } = useAdminStore();
 
-  const { data: stats, loading: statsLoading, error: statsError } = useFetch('/api/admin/stats', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div className="px-4">
