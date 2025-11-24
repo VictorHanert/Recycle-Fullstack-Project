@@ -26,6 +26,7 @@ faker = "^37.6.0"
 requests = "^2.32.5"
 azure-storage-blob = "^12.23.1"
 slowapi = "^0.1.9"
+sentry-sdk = {extras = ["fastapi"], version = "^2.46.0"}
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.0"

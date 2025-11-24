@@ -1,4 +1,5 @@
 import logging
+import sentry_sdk
 import time
 from contextlib import asynccontextmanager
 
@@ -24,6 +25,7 @@ from app.middleware import (
     format_validation_errors
 )
 
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -31,6 +33,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+sentry_sdk.init(
+    dsn=settings.sentry_dsn,
+    # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions.
+    profiles_sample_rate=1.0,
+    send_default_pii=True,
+)
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -135,6 +146,10 @@ async def health_check():
             "mysql_configured": bool(settings.database_url)
         }
     }
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 if __name__ == "__main__":
     import uvicorn
