@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiClient } from '../../src/api/base';
+import { apiClient } from '../../api/base';
 
 describe('ApiClient', () => {
   // Save original fetch

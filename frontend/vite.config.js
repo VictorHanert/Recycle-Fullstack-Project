@@ -21,7 +21,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './tests/setup.js',
+    setupFiles: './src/setupTests.js', // Vitest to run this file before every test
     css: true,
+    exclude: ['node_modules/**', 'e2e/**'], // Exclude node_modules and e2e tests from Vitest
   },
 })
