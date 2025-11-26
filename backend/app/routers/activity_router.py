@@ -1,5 +1,4 @@
 """Activity router for view history and recent activity endpoints."""
-from typing import List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 

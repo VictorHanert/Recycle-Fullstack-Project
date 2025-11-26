@@ -1,6 +1,5 @@
 """Admin router for administrative operations."""
 from math import ceil
-from typing import List
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 

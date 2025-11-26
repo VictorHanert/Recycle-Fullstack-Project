@@ -1,6 +1,5 @@
-from datetime import datetime, timezone
 from typing import List, Tuple, Optional
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.repositories.mysql.message_repository import MySQLMessageRepository

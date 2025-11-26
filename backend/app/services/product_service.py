@@ -43,7 +43,7 @@ class ProductService:
             
             return self.product_repository.create(product, seller_id)
             
-        except Exception as e:
+        except Exception:
             if saved_image_urls:
                 await self.file_upload_service.delete_images(saved_image_urls)
             raise
@@ -137,7 +137,7 @@ class ProductService:
             
             return updated_product
             
-        except Exception as e:
+        except Exception:
             if saved_image_urls:
                 await self.file_upload_service.delete_images(saved_image_urls)
             raise

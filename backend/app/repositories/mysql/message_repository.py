@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, exists, and_
 
 from app.models.messages import Conversation, ConversationParticipant, Message, MessageRead
-from app.models.user import User
 
 
 class MySQLMessageRepository:
