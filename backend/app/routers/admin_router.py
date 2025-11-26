@@ -193,5 +193,5 @@ async def get_recent_activities(
 ):
     """Get recent activities (admin only)"""
     # TODO: Implement recent activities tracking in services
-    recent_activities = []
+    recent_activities: list[str] = []
     return {"recent_activities": recent_activities}

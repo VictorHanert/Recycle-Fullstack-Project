@@ -498,6 +498,8 @@ def seed_conversations(session: Session, users, products):
                 created_at=current_time,
             )
             session.add(msg)
+        # Keep conversation ordering aligned with most recent message
+        convo.updated_at = current_time
     session.commit()
 
 

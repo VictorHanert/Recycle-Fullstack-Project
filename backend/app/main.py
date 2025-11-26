@@ -24,6 +24,16 @@ from app.middleware import (
     format_validation_errors
 )
 
+from typing import Union, Awaitable
+from starlette.responses import Response
+
+HandlerReturn = Union[Response, Awaitable[Response]]
+
+def rate_limit_handler(request: Request, exc: Exception) -> HandlerReturn:
+    # We *only* register this for RateLimitExceeded,
+    # so it's safe to assert/cast here.
+    assert isinstance(exc, RateLimitExceeded)
+    return _rate_limit_exceeded_handler(request, exc)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,7 +89,7 @@ app.add_middleware(
 
 # Add rate limiting middleware
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Logging middleware

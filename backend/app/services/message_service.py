@@ -79,7 +79,6 @@ class MessageService:
             raise HTTPException(status_code=403, detail="Not a participant")
         
         msg = self.message_repo.create_message(conversation_id, sender_id, body)
-        self.message_repo.update_conversation_timestamp(conversation_id)
         self.message_repo.commit()
         
         self.db.refresh(msg)
@@ -97,6 +96,10 @@ class MessageService:
         self.message_repo.commit()
         
         self.db.refresh(updated_msg)
+        
+        if not updated_msg:
+            raise HTTPException(status_code=500, detail="Failed to update message")
+        
         return updated_msg
     
     def delete_message(self, message_id: int, requester_id: int) -> None:
@@ -125,4 +128,3 @@ class MessageService:
         if message_ids:
             self.message_repo.mark_messages_as_read(message_ids, user_id)
             self.message_repo.commit()
-
