@@ -27,6 +27,20 @@ const queryClient = new QueryClient({
   },
 });
 
+const sentryDisabled = import.meta.env.VITE_DISABLE_SENTRY === "1";
+
+if (!sentryDisabled) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      // Sentry replay SKAL KUN være enabling i production
+      Sentry.replayIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <QueryClientProvider client={queryClient}>
     <App />

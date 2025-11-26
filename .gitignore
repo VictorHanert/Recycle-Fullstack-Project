@@ -69,3 +69,9 @@ docker-compose.override.yml
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright test output
+test-results/
+playwright-report/
+blob-report/
+

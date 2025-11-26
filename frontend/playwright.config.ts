@@ -14,5 +14,9 @@ export default defineConfig({
     command: 'npm run dev',
     port: 5173,
     reuseExistingServer: !process.env.CI,
+    env: {
+      VITE_DISABLE_SENTRY: "1",
+      NODE_ENV: "e2e"
+    }
   },
 });
