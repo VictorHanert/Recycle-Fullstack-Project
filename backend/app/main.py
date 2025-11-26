@@ -3,7 +3,6 @@ import sentry_sdk
 import time
 from contextlib import asynccontextmanager
 
-from app.routers import activity_router, admin_router, auth_router, favorites_router, location_router, products_router, profile_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +13,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.routers import messages_router
+from app.routers import activity_router, admin_router, auth_router, favorites_router, location_router, products_router, profile_router, messages_router
 from app.config import get_settings
 from app.db.mysql import initialize_database
 from app.middleware import (

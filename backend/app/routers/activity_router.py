@@ -112,4 +112,3 @@ async def get_product_recommendations(
     
     return ProductRecommendationsResponse(recommendations=recommendations)
     
-    return {"product_id": product_id, "age_days": age_days}
