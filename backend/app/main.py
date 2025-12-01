@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -23,9 +24,7 @@ from app.middleware import (
     log_general_exception,
     format_validation_errors
 )
-
 from typing import Union, Awaitable
-from starlette.responses import Response
 
 HandlerReturn = Union[Response, Awaitable[Response]]
 
