@@ -7,15 +7,17 @@ A modern fullstack web application for buying and selling bicycles. Users can br
 ## Features
 
 - User authentication with JWT tokens
-- Product listing and browsing
-- Favorites system
-- Real-time messaging between users
-- User profiles and product management
-- Advanced search and filtering
-- Admin dashboard with analytics
 - Rate limiting for security (5 login attempts/minute)
-- Azure Blob Storage for images
-- Application monitoring with Azure Application Insights
+- User profiles and product management
+- Product listing and browsing
+- Seeding scripts for test data with Unsplash API images
+- Favorites system
+- Stored Procedures for optimized database operations
+- Audit data for tracking changes
+- Messaging between users
+- Advanced search and filtering
+- Admin dashboard with analytics and CRUD operations
+- Responsive design for mobile and desktop
 
 ## Tech Stack
 

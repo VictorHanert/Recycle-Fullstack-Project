@@ -185,12 +185,3 @@ async def get_platform_stats(
     stats["total_users"] = auth_service.user_repository.count_total_users()
     
     return stats
-
-@router.get("/recent-activities")
-async def get_recent_activities(
-    _admin_user: User = Depends(get_admin_user)
-):
-    """Get recent activities (admin only)"""
-    # TODO: Implement recent activities tracking in services
-    recent_activities: list[str] = []
-    return {"recent_activities": recent_activities}
