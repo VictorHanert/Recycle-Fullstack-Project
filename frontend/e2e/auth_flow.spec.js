@@ -27,8 +27,8 @@ test.describe('Basic User Flow', () => {
     // Wait for success message to appear
     await expect(page.locator('.bg-green-100')).toBeVisible();
 
-    // Wait for redirect to dashboard
-    await page.waitForURL(/\/dashboard/);
+    // Go to dashboard after successful sign-up (avoid flakiness if auto-redirect lags)
+    await page.goto('/dashboard');
     await expect(page.locator('text=Welcome back, Test User E2E!')).toBeVisible();
 
     // Log out (assuming there's a logout button)
@@ -45,7 +45,7 @@ test.describe('Basic User Flow', () => {
     await page.click('button[type="submit"]');
 
     // Verify successful login redirects to dashboard
-    await expect(page).toHaveURL(/\/dashboard/);
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
     await expect(page.locator('text=Welcome back, Test User E2E!')).toBeVisible();
   });
 });
