@@ -34,6 +34,18 @@ jobs:
     - name: Install dependencies
       run: poetry install
 
+    - name: Security scan with Safety
+      run: poetry run safety scan
+
+    - name: Security scan with Bandit
+      run: poetry run bandit -r app
+
+    - name: Lint with Ruff
+      run: poetry run ruff check .
+
+    - name: Type check with mypy
+      run: poetry run mypy app
+
     - name: Lint with pylint
       run: poetry run pylint app/ --fail-under=7
 
