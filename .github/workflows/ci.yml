@@ -35,7 +35,9 @@ jobs:
       run: poetry install
 
     - name: Security scan with Safety
-      run: poetry run safety scan
+      env:
+        SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+      run: poetry run safety scan --key "$SAFETY_API_KEY" --full-report
 
     - name: Security scan with Bandit
       run: poetry run bandit -r app
