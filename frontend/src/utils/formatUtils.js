@@ -47,7 +47,6 @@ export const formatCondition = (condition) => {
     'like_new': 'Like New',
     'good': 'Good',
     'fair': 'Fair',
-    'poor': 'Poor',
     'used': 'Used'
   };
 
