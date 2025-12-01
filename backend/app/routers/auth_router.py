@@ -6,10 +6,15 @@ from slowapi.util import get_remote_address
 from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
 from app.services.auth_service import AuthService
 from app.dependencies import get_auth_service
+from app.config import get_settings
 
 router = APIRouter()
 
 limiter = Limiter(key_func=get_remote_address)
+settings = get_settings()
+
+# Loosen rate limit in non-production to keep local/E2E auth stable
+LOGIN_RATE_LIMIT = "5/minute" if settings.environment == "production" else "50/minute"
 
 # Authentication endpoints
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -32,7 +37,7 @@ async def register_user(user: UserCreate, auth_service: AuthService = Depends(ge
     )
 
 @router.post("/login", response_model=Token)
-@limiter.limit("5/minute")
+@limiter.limit(LOGIN_RATE_LIMIT)
 async def login_user(request: Request, user: UserLogin, auth_service: AuthService = Depends(get_auth_service)):
     """Login user and return JWT token"""
     # Authenticate user
