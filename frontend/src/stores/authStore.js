@@ -65,24 +65,8 @@ export const useAuthStore = create(
         set({ user: null, token: null });
         apiClient.setToken(null);
         
-        // Clear localStorage
+        // Clear localStorage (only auth-storage persists)
         localStorage.removeItem('auth-storage');
-        
-        // Clear other stores
-        // We do this by directly accessing the stores to avoid circular dependencies
-        if (typeof window !== 'undefined') {
-          // Clear favorites
-          const favoritesStore = require('./favoritesStore').useFavoritesStore;
-          if (favoritesStore) favoritesStore.getState().clearFavorites();
-          
-          // Clear messages
-          const messagesStore = require('./messagesStore').useMessagesStore;
-          if (messagesStore) messagesStore.getState().clearMessages();
-          
-          // Clear products cache
-          const productsStore = require('./productsStore').useProductsStore;
-          if (productsStore) productsStore.getState().clearCache();
-        }
         
         notify.info("You have been logged out");
       },
