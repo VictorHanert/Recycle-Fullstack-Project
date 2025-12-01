@@ -1,8 +1,8 @@
-const axios = require("axios");
+import { post } from "axios";
 
-module.exports = async () => {
+export default async () => {
   try {
-    await axios.post("http://localhost:8000/api/auth/register", {
+    await post("http://localhost:8000/api/auth/register", {
       username: "test",
       email: "test@example.com",
       full_name: "Test User",
