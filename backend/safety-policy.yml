@@ -1,0 +1,7 @@
+ignore-vulnerabilities:
+  - id: 64459
+    reason: "ecdsa dragged in transitively; no patched version yet; not using ECDSA keys"
+    expires: "2024-12-31"
+  - id: 64396
+    reason: "Same context as 64459"
+    expires: "2024-12-31"
