@@ -1528,8 +1528,8 @@
 							"script": {
 								"exec": [
 									"// NEGATIVE TEST: Authorization Required for Admin",
-									"pm.test(\"N-1: Status code is 401 Unauthorized\", function () {",
-									"    pm.response.to.have.status(401);",
+									"pm.test(\"N-1: Status code is 403 Unauthorized\", function () {",
+									"    pm.response.to.have.status(403);",
 									"});",
 									"",
 									"",
