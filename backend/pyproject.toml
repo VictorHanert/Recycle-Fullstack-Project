@@ -27,6 +27,8 @@ requests = "^2.32.5"
 azure-storage-blob = "^12.23.1"
 slowapi = "^0.1.9"
 sentry-sdk = {extras = ["fastapi"], version = "^2.46.0"}
+types-python-jose = "^3.5.0.20250531"
+types-passlib = "^1.7.7.20250602"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.0"
