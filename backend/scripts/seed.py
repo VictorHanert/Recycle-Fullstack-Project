@@ -1,4 +1,7 @@
+import logging
 import random
+import re
+import unicodedata
 from datetime import datetime, timedelta, timezone
 
 from faker import Faker
@@ -21,8 +24,9 @@ from app.models.item_views import ItemView
 from app.services.auth_service import AuthService
 
 fake = Faker("da_DK")
+logger = logging.getLogger(__name__)
 _image_cache = {}
-
+USERNAME_PATTERN = re.compile(r'^[a-zA-Z0-9_.-]{3,30}$')
 def fetch_unsplash_bike_image(category, title=None):
     key = (category.lower(), title)
     if key in _image_cache:
@@ -45,7 +49,7 @@ def fetch_unsplash_bike_image(category, title=None):
     query = f"{style} {base_term} {title_word}".strip()
     url = f"https://api.unsplash.com/search/photos?query={query}&orientation=landscape&per_page=30&content_filter=low&client_id={access_key}"
     try:
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url, timeout=1)
         if resp.status_code == 200:
             data = resp.json()
             if data["results"]:
@@ -53,11 +57,174 @@ def fetch_unsplash_bike_image(category, title=None):
                 _image_cache[key] = img_url
                 return img_url
     except Exception:
-        pass
+        logger.debug("Falling back to local images for %s (%s)", category, title)
     fallbacks = ["/images/city-bike.jpg", "/images/mountain-bike.jpg", "/images/racing-bike.jpg"]
     img_url = random.choice(fallbacks)
     _image_cache[key] = img_url
     return img_url
+
+
+def _clear_database(db: Session) -> Session:
+    """Clear existing data while handling foreign key constraints."""
+    try:
+        db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        db.execute(text("TRUNCATE TABLE messages"))
+        db.execute(text("TRUNCATE TABLE conversation_participants"))
+        db.execute(text("TRUNCATE TABLE conversations"))
+        db.execute(text("TRUNCATE TABLE item_views"))
+        db.execute(text("TRUNCATE TABLE favorites"))
+        db.execute(text("TRUNCATE TABLE sold_item_archive"))
+        db.execute(text("TRUNCATE TABLE product_price_history"))
+        db.execute(text("TRUNCATE TABLE product_images"))
+        db.execute(text("TRUNCATE TABLE product_colors"))
+        db.execute(text("TRUNCATE TABLE product_materials"))
+        db.execute(text("TRUNCATE TABLE product_tags"))
+        db.execute(text("TRUNCATE TABLE products"))
+        db.execute(text("TRUNCATE TABLE users"))
+        db.execute(text("TRUNCATE TABLE categories"))
+        db.execute(text("TRUNCATE TABLE colors"))
+        db.execute(text("TRUNCATE TABLE materials"))
+        db.execute(text("TRUNCATE TABLE tags"))
+        db.execute(text("TRUNCATE TABLE locations"))
+        db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        db.commit()
+        logger.info("Database cleared before seeding.")
+        db.close()
+        return SessionLocal()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Error during clearing: %s. Falling back to delete statements.", exc)
+        db.execute(text("DELETE FROM messages"))
+        db.execute(text("DELETE FROM conversation_participants"))
+        db.execute(text("DELETE FROM conversations"))
+        db.execute(text("DELETE FROM item_views"))
+        db.execute(text("DELETE FROM favorites"))
+        db.execute(text("DELETE FROM sold_item_archive"))
+        db.execute(text("DELETE FROM product_price_history"))
+        db.execute(text("DELETE FROM product_images"))
+        db.execute(text("DELETE FROM product_colors"))
+        db.execute(text("DELETE FROM product_materials"))
+        db.execute(text("DELETE FROM product_tags"))
+        db.execute(text("DELETE FROM products"))
+        db.execute(text("DELETE FROM users"))
+        # Delete child categories first, then parent categories
+        db.execute(text("DELETE FROM categories WHERE parent_id IS NOT NULL"))
+        db.execute(text("DELETE FROM categories WHERE parent_id IS NULL"))
+        db.execute(text("DELETE FROM colors"))
+        db.execute(text("DELETE FROM materials"))
+        db.execute(text("DELETE FROM tags"))
+        db.execute(text("DELETE FROM locations"))
+        db.commit()
+        logger.info("Database cleared using fallback method.")
+        return db
+
+def _normalize_username(value: str) -> str:
+    """Convert arbitrary strings to ASCII-safe usernames matching our pattern."""
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+    cleaned = re.sub(r"[^a-zA-Z0-9_.]", "", ascii_only).lower()
+    if len(cleaned) < 3:
+        cleaned = f"user{random.randint(100, 999)}"
+    return cleaned[:50]
+
+
+def _sanitize_existing_usernames(db: Session) -> int:
+    """Ensure all stored usernames match the enforced pattern."""
+    updated = 0
+    existing_usernames = {u.username for u in db.query(User.username).all()}
+    for user in db.query(User).all():
+        if USERNAME_PATTERN.match(user.username or ""):
+            continue
+
+        new_username = _normalize_username(user.username or "user")
+        while new_username in existing_usernames and new_username != user.username:
+            new_username = f"{new_username.rstrip('0123456789')}{random.randint(100, 999)}"
+
+        if new_username != user.username:
+            user.username = new_username
+            updated += 1
+            existing_usernames.add(new_username)
+
+    if updated:
+        db.commit()
+        logger.info("Sanitized %s usernames to match allowed pattern.", updated)
+    return updated
+
+def _ensure_admin_user(db: Session, default_location: Location | None = None) -> User:
+    """Create admin user if missing to keep initialization idempotent."""
+    existing_admin = db.query(User).filter(User.email == "admin@test.com").first()
+    if existing_admin:
+        return existing_admin
+
+    location = default_location or db.query(Location).first()
+    if not location:
+        location = Location(city="Copenhagen", postcode="1000")
+        db.add(location)
+        db.commit()
+        db.refresh(location)
+
+    admin_user = User(
+        email="admin@test.com",
+        username="admin",
+        full_name="Admin User",
+        hashed_password=AuthService.get_password_hash("admin123"),
+        is_admin=True,
+        is_active=True,
+        location=location,
+        phone="+4512345678",
+    )
+    db.add(admin_user)
+    db.commit()
+    db.refresh(admin_user)
+    logger.info("Created admin user %s", admin_user.email)
+    return admin_user
+
+
+def seed_database_non_interactive(reset_existing: bool = False, log: logging.Logger | None = None) -> bool:
+    """Seed database without user prompts, returning True when a full seed runs."""
+    active_log = log or logger
+    db = SessionLocal()
+
+    try:
+        user_count = db.query(User).count()
+        product_count = db.query(Product).count()
+        _sanitize_existing_usernames(db)
+
+        if user_count > 0 or product_count > 0:
+            if not reset_existing:
+                active_log.info("Database already contains data; ensuring admin user exists and skipping full seed.")
+                _ensure_admin_user(db)
+                return False
+
+            active_log.info("Resetting existing data before seeding.")
+            db = _clear_database(db)
+
+        locations = seed_locations(db)
+        users = seed_users(db, 85, locations)
+        admin_user = _ensure_admin_user(db, locations[0] if locations else None)
+        users.append(admin_user)
+
+        categories = seed_categories(db)
+        colors, materials, tags = seed_details(db)
+        non_admin_users = [u for u in users if not u.is_admin]
+        products = seed_products(db, non_admin_users, categories, locations, colors, materials, tags)
+
+        seed_sold_archive(db, products)
+        seed_favorites(db, users, products)
+        seed_views(db, users, products)
+        seed_conversations(db, users, products)
+
+        active_log.info(
+            "Seeded %s users and %s products (%s active, %s sold)",
+            len(users),
+            len(products),
+            sum(1 for p in products if p.status == "active"),
+            sum(1 for p in products if p.status == "sold"),
+        )
+        return True
+    finally:
+        db.close()
+
 
 def seed_locations(session: Session):
     dk_cities = [
@@ -115,7 +282,8 @@ def seed_users(session: Session, n=150, locations=None):
             f"{first[0].lower()}{last.lower()}{random.randint(1,99)}",
             f"{first.lower()}{random.randint(10,99)}",
         ]
-        username = random.choice(username_patterns)
+        username_raw = random.choice(username_patterns)
+        username = _normalize_username(username_raw)
 
         phone_patterns = [
             f"{random.randint(10000000, 99999999)}",
@@ -288,7 +456,6 @@ def seed_products(session: Session, users, categories, locations, colors, materi
     # add images + price history
     for p in products:
         for i in range(random.randint(1, 3)):
-            keywords = f"bicycle,{p.category.name},{p.title.split()[0]}"
             img = ProductImage(
                 product=p,
                 url=fetch_unsplash_bike_image(category=p.category.name, title=p.title),
@@ -508,112 +675,32 @@ def main():
 
     db = SessionLocal()
     try:
-        # Check if database already has data
         user_count = db.query(User).count()
         product_count = db.query(Product).count()
-
-        if user_count > 0 or product_count > 0:
-            print("⚠️  WARNING: Database already contains data!")
-            print(f"   - {user_count} users")
-            print(f"   - {product_count} products")
-            print()
-            print("Running seed.py will DELETE ALL EXISTING DATA and create fresh test data.")
-            print()
-            response = input("Are you sure you want to continue? (y/N): ").strip().lower()
-
-            if response not in ['y', 'yes']:
-                print("Seeding cancelled.")
-                return
-
-            print("🗑️  Clearing existing data...")
-
-            # Use TRUNCATE which is faster and resets auto-increment counters
-            try:
-                db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-                db.execute(text("TRUNCATE TABLE messages"))
-                db.execute(text("TRUNCATE TABLE conversation_participants"))
-                db.execute(text("TRUNCATE TABLE conversations"))
-                db.execute(text("TRUNCATE TABLE item_views"))
-                db.execute(text("TRUNCATE TABLE favorites"))
-                db.execute(text("TRUNCATE TABLE sold_item_archive"))
-                db.execute(text("TRUNCATE TABLE product_price_history"))
-                db.execute(text("TRUNCATE TABLE product_images"))
-                db.execute(text("TRUNCATE TABLE product_colors"))
-                db.execute(text("TRUNCATE TABLE product_materials"))
-                db.execute(text("TRUNCATE TABLE product_tags"))
-                db.execute(text("TRUNCATE TABLE products"))
-                db.execute(text("TRUNCATE TABLE users"))
-                db.execute(text("TRUNCATE TABLE categories"))
-                db.execute(text("TRUNCATE TABLE colors"))
-                db.execute(text("TRUNCATE TABLE materials"))
-                db.execute(text("TRUNCATE TABLE tags"))
-                db.execute(text("TRUNCATE TABLE locations"))
-                db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-                db.commit()
-                print("✅ Database cleared.")
-                # Create a fresh session to avoid any caching issues
-                db.close()
-                db = SessionLocal()
-            except Exception as e:
-                db.rollback()
-                print(f"Error during clearing: {e}")
-                # Fallback to individual deletes
-                db.execute(text("DELETE FROM messages"))
-                db.execute(text("DELETE FROM conversation_participants"))
-                db.execute(text("DELETE FROM conversations"))
-                db.execute(text("DELETE FROM item_views"))
-                db.execute(text("DELETE FROM favorites"))
-                db.execute(text("DELETE FROM sold_item_archive"))
-                db.execute(text("DELETE FROM product_price_history"))
-                db.execute(text("DELETE FROM product_images"))
-                db.execute(text("DELETE FROM product_colors"))
-                db.execute(text("DELETE FROM product_materials"))
-                db.execute(text("DELETE FROM product_tags"))
-                db.execute(text("DELETE FROM products"))
-                db.execute(text("DELETE FROM users"))
-                # Delete child categories first, then parent categories
-                db.execute(text("DELETE FROM categories WHERE parent_id IS NOT NULL"))
-                db.execute(text("DELETE FROM categories WHERE parent_id IS NULL"))
-                db.execute(text("DELETE FROM colors"))
-                db.execute(text("DELETE FROM materials"))
-                db.execute(text("DELETE FROM tags"))
-                db.execute(text("DELETE FROM locations"))
-                db.commit()
-                print("✅ Database cleared (fallback method).")
-
-        locations = seed_locations(db)
-        users = seed_users(db, 85, locations)
-        print(f"Seeded {len(users)} users")
-
-        admin_user = User(
-            email="admin@test.com",
-            username="admin",
-            full_name="Admin User",
-            hashed_password=AuthService.get_password_hash("admin123"),
-            is_admin=True,
-            is_active=True,
-            location=locations[0],
-            phone="+4512345678",
-        )
-        db.add(admin_user)
-        db.commit()
-        users.append(admin_user)
-
-        categories = seed_categories(db)
-        colors, materials, tags = seed_details(db)
-        non_admin_users = [u for u in users if not u.is_admin]
-        products = seed_products(db, non_admin_users, categories, locations, colors, materials, tags)
-        print(f"Seeded {len(products)} products ({sum(1 for p in products if p.status == 'active')} active, {sum(1 for p in products if p.status == 'sold')} sold)")
-
-        seed_sold_archive(db, products)
-        seed_favorites(db, users, products)
-        seed_views(db, users, products)
-        seed_conversations(db, users, products)
-
-        print("✅ Created admin user: admin@test.com / admin123")
-
     finally:
         db.close()
+
+    reset_existing = False
+    if user_count > 0 or product_count > 0:
+        print("⚠️  WARNING: Database already contains data!")
+        print(f"   - {user_count} users")
+        print(f"   - {product_count} products")
+        print()
+        print("Running seed.py will DELETE ALL EXISTING DATA and create fresh test data.")
+        print()
+        response = input("Are you sure you want to continue? (y/N): ").strip().lower()
+
+        if response not in ['y', 'yes']:
+            print("Seeding cancelled.")
+            return
+
+        reset_existing = True
+
+    seeded = seed_database_non_interactive(reset_existing=reset_existing, log=logger)
+    if seeded:
+        print("✅ Seeding completed.")
+    else:
+        print("ℹ️  Database already contained data; ensured admin user exists.")
 
 
 if __name__ == "__main__":

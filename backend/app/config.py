@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Server Configuration
-    api_host: str = "0.0.0.0"
+    api_host: str = "127.0.0.1"
     api_port: int = 8000
 
     # Azure Storage Configuration

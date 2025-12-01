@@ -1,14 +1,17 @@
 """Service for handling file uploads with support for local and cloud storage."""
+import logging
+import os
 from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
-import os
 
 from fastapi import UploadFile, HTTPException, status
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class FileUploadService:
@@ -150,8 +153,8 @@ class FileUploadService:
                         blob=blob_name
                     )
                     blob_client.delete_blob()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to delete image %s using %s storage: %s", url, self.storage_mode, exc)
     
     def extract_filename_from_url(self, url: str) -> str:
         """Extract filename from image URL."""

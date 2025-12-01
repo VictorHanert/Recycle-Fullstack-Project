@@ -122,13 +122,13 @@ class MySQLUserRepository(UserRepositoryInterface):
     
     def get_active_users_count(self) -> int:
         """Count active users."""
-        return self.db.query(User).filter(User.is_active == True).count()
+        return self.db.query(User).filter(User.is_active.is_(True)).count()
     
     def get_admin_users(self) -> List[User]:
         """Get all admin users."""
         return self.db.query(User).options(
             joinedload(User.location)
-        ).filter(User.is_admin == True).all()
+        ).filter(User.is_admin.is_(True)).all()
     
     def toggle_user_status(self, user_id: int) -> Optional[User]:
         """Toggle user active status."""

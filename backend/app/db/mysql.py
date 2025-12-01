@@ -1,8 +1,8 @@
 import logging
-import subprocess
-import sys
 from pathlib import Path
 
+from alembic import command as alembic_command
+from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
@@ -52,18 +52,28 @@ def drop_tables():
     Base.metadata.drop_all(bind=engine)
 
 
+def _get_alembic_config() -> Config:
+    """Return an Alembic config with absolute paths to avoid subprocess calls."""
+    project_root = Path(__file__).resolve().parent.parent.parent
+    alembic_cfg = Config(str(project_root / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(project_root / "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    # Keep application logging config intact when running Alembic inside the app
+    alembic_cfg.attributes["configure_logger"] = False
+    return alembic_cfg
+
+
 # Database initialization functions
 def run_migrations():
     """Run Alembic migrations to update database schema."""
     try:
         logger.info("Running database migrations...")
-        subprocess.run(["alembic", "upgrade", "head"], check=True, capture_output=True)
+        alembic_cfg = _get_alembic_config()
+        alembic_command.upgrade(alembic_cfg, "head")
         logger.info("Migrations completed")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Migration failed: {e.stderr.decode()}")
+    except Exception as exc:
+        logger.error("Migration failed", exc_info=exc)
         raise
-    except FileNotFoundError:
-        logger.warning("Alembic not found, skipping migrations")
 
 
 def init_stored_objects():
@@ -151,21 +161,15 @@ def seed_database():
             return
         
         logger.info("Seeding database with test data...")
-        result = subprocess.run(
-            [sys.executable, "-m", "scripts.seed"], 
-            cwd=Path(__file__).parent.parent.parent,
-            capture_output=True, 
-            text=True
-        )
-        
-        if result.returncode == 0:
+        from scripts import seed as seed_script
+
+        seeded = seed_script.seed_database_non_interactive(log=logger)
+        if seeded:
             logger.info("Database seeding completed")
         else:
-            logger.error(f"Database seeding failed: {result.stderr}")
-            raise Exception(f"Seeding failed: {result.stderr}")
-            
-    except Exception as e:
-        logger.error(f"Failed to seed database: {e}")
+            logger.info("Database already contained data; ensured admin user exists.")
+    except Exception as exc:
+        logger.error(f"Failed to seed database: {exc}")
         raise
 
 

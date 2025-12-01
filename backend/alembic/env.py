@@ -8,15 +8,14 @@ from alembic import context # type: ignore
 
 # Import the Base and all models
 from app.db.mysql import Base
-from app.models import *  # Import all models to register them with Base
+import app.models  # noqa: F401  Ensure models are imported for metadata registration
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
+# Interpret the config file for Python logging if allowed.
+if config.config_file_name is not None and config.attributes.get("configure_logger", True):
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here

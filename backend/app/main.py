@@ -32,7 +32,8 @@ HandlerReturn = Union[Response, Awaitable[Response]]
 def rate_limit_handler(request: Request, exc: Exception) -> HandlerReturn:
     # We *only* register this for RateLimitExceeded,
     # so it's safe to assert/cast here.
-    assert isinstance(exc, RateLimitExceeded)
+    if not isinstance(exc, RateLimitExceeded):
+        raise TypeError(f"Unexpected exception type for rate limiting: {type(exc).__name__}") from exc
     return _rate_limit_exceeded_handler(request, exc)
 
 logging.basicConfig(

@@ -10,6 +10,7 @@ from app.dependencies import get_auth_service
 router = APIRouter()
 
 limiter = Limiter(key_func=get_remote_address)
+TOKEN_TYPE = "bearer"  # nosec B105
 
 # Authentication endpoints
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -26,7 +27,7 @@ async def register_user(user: UserCreate, auth_service: AuthService = Depends(ge
 
     return Token(
         access_token=access_token,
-        token_type="bearer",
+        token_type=TOKEN_TYPE,
         expires_in=30000 * 60,  # 30 minutes in seconds
         user=UserResponse.model_validate(db_user)
     )
@@ -47,7 +48,7 @@ async def login_user(request: Request, user: UserLogin, auth_service: AuthServic
 
     return Token(
         access_token=access_token,
-        token_type="bearer",
+        token_type=TOKEN_TYPE,
         expires_in=30000 * 60,  # 30 minutes in seconds
         user=UserResponse.model_validate(db_user)
     )
