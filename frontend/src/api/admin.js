@@ -32,7 +32,7 @@ export const adminAPI = {
     return apiClient.get(`/api/locations/${queryParams ? '?' + queryParams : ''}`);
   },
   createLocation: (locationData) =>
-    apiClient.post("/api/locations", locationData),
+    apiClient.post("/api/locations/", locationData),
   updateLocation: (id, locationData) =>
     apiClient.put(`/api/locations/${id}`, locationData),
   deleteLocation: (id) => apiClient.delete(`/api/locations/${id}`),
