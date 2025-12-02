@@ -9,13 +9,13 @@ export const profileAPI = {
   removeMyLocation: () => apiClient.delete('/api/profile/me/location'),
   getMyProducts: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/profile/me/products/${queryParams ? '?' + queryParams : ''}`);
+    return apiClient.get(`/api/profile/me/products?${queryParams}`);
   },
 
   // Public profile
   getPublicProfile: (userId) => apiClient.get(`/api/profile/${userId}`),
   getUserProducts: (userId, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/profile/${userId}/products/${queryParams ? '?' + queryParams : ''}`);
+    return apiClient.get(`/api/profile/${userId}/products?${queryParams}`);
   }
 };
