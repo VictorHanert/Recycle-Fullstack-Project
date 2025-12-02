@@ -1,4 +1,4 @@
-"""MySQL implementation of the Location Repository."""
+"""Location Repository implementation."""
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -9,8 +9,8 @@ from app.repositories.base import LocationRepositoryInterface
 from app.models.location import Location
 
 
-class MySQLLocationRepository(LocationRepositoryInterface):
-    """MySQL implementation of location repository operations."""
+class LocationRepository(LocationRepositoryInterface):
+    """Location repository operations."""
     
     def __init__(self, db: Session):
         self.db = db

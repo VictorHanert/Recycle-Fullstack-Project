@@ -1,4 +1,4 @@
-"""MySQL implementation of the Product Repository."""
+"""Product Repository implementation."""
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 
@@ -39,8 +39,8 @@ PRODUCT_DETAIL_LOAD_OPTIONS = [
 ]
 
 
-class MySQLProductRepository(ProductRepositoryInterface):
-    """MySQL implementation of product repository operations."""
+class ProductRepository(ProductRepositoryInterface):
+    """Product repository operations."""
     
     def __init__(self, db: Session):
         self.db = db
@@ -59,9 +59,11 @@ class MySQLProductRepository(ProductRepositoryInterface):
         filters: Optional[ProductFilter] = None,
         skip: int = 0, 
         limit: int = 100,
-        load_details: bool = False
+        load_details: bool = False,
+        sort_field: Optional[str] = None,
+        sort_direction: str = 'desc'
     ) -> List[Product]:
-        """Get filtered products with pagination."""
+        """Get filtered products with pagination and sorting."""
         load_options = PRODUCT_DETAIL_LOAD_OPTIONS if load_details else PRODUCT_LIST_LOAD_OPTIONS
         query = self.db.query(Product).options(*load_options).filter(Product.deleted_at.is_(None))
         
@@ -70,7 +72,13 @@ class MySQLProductRepository(ProductRepositoryInterface):
             query = self._apply_filters(query, filters)
         
         # Apply sorting
-        query = self._apply_sorting(query, filters)
+        if sort_field:
+            if sort_direction == 'asc':
+                query = query.order_by(getattr(Product, sort_field).asc())
+            else:
+                query = query.order_by(getattr(Product, sort_field).desc())
+        else:
+            query = self._apply_sorting(query, filters)
         
         products = query.offset(skip).limit(limit).all()
         

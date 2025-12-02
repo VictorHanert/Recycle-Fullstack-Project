@@ -20,22 +20,20 @@ async def get_all_users(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(15, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search term for username, email, or full name"),
+    sort_field: str = Query(None, description="Field to sort by"),
+    sort_direction: str = Query('desc', description="Sort direction: asc or desc"),
     _admin_user: User = Depends(get_admin_user),
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Get all users (admin only)"""
     skip = (page - 1) * size
     
-    # Use AuthService search functionality
     if search:
-        users = auth_service.search_users(search, skip, size)
-        # For total count, we'll get all matching results (could optimize this later)
-        all_matching = auth_service.search_users(search, 0, 1000)  # Large limit
-        total = len(all_matching)
+        users = auth_service.user_repository.search_users(search, skip, size, sort_field, sort_direction)
+        total = auth_service.user_repository.count_filtered(search_term=search)
     else:
-        # Use repository get_all method through auth service
-        users = auth_service.user_repository.get_all(skip, size)
-        total = auth_service.user_repository.count_total_users()
+        users = auth_service.user_repository.get_all(skip, size, sort_field=sort_field, sort_direction=sort_direction)
+        total = auth_service.user_repository.count_filtered()
     
     # Calculate total pages
     total_pages = ceil(total / size) if total > 0 else 1
@@ -106,6 +104,8 @@ async def get_all_products_admin(
     size: int = Query(50, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search term for product title or description"),
     include_sold: bool = Query(True, description="Include sold products"),
+    sort_field: str = Query(None, description="Field to sort by"),
+    sort_direction: str = Query('desc', description="Sort direction: asc or desc"),
     _admin_user: User = Depends(get_admin_user),
     product_service: ProductService = Depends(get_product_service)
 ):
@@ -114,7 +114,7 @@ async def get_all_products_admin(
 
     # Get all products for admin (including sold, paused, draft)
     filter_params = ProductFilter(status=None, min_price=None, max_price=None, search_term=search)  # Admin sees all products
-    products, total = product_service.get_products(skip=skip, limit=size, filter_params=filter_params)
+    products, total = product_service.get_products(skip=skip, limit=size, filter_params=filter_params, sort_field=sort_field, sort_direction=sort_direction)
     total_pages = ceil(total / size) if total > 0 else 1
 
     return ProductListResponse(

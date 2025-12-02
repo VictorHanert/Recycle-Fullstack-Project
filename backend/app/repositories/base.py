@@ -84,18 +84,23 @@ class UserRepositoryInterface(ABC):
         pass
     
     @abstractmethod
-    def get_all(self, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None) -> List[User]:
+    def get_all(self, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None, sort_field: Optional[str] = None, sort_direction: str = 'asc') -> List[User]:
         """Get all users with pagination and optional filtering."""
         pass
 
     @abstractmethod
-    def search_users(self, search_term: str, skip: int = 0, limit: int = 100) -> List[User]:
+    def search_users(self, search_term: str, skip: int = 0, limit: int = 100, sort_field: Optional[str] = None, sort_direction: str = 'asc') -> List[User]:
         """Search users by username, email, or full name."""
         pass
 
     @abstractmethod
     def count_total_users(self) -> int:
         """Get total count of users."""
+        pass
+
+    @abstractmethod
+    def count_filtered(self, is_active: Optional[bool] = None, search_term: Optional[str] = None) -> int:
+        """Get total count of users with optional filtering."""
         pass
 
     @abstractmethod
@@ -118,7 +123,9 @@ class ProductRepositoryInterface(ABC):
         filters: Optional[ProductFilter] = None,
         skip: int = 0, 
         limit: int = 100,
-        load_details: bool = False
+        load_details: bool = False,
+        sort_field: Optional[str] = None,
+        sort_direction: str = 'desc'
     ) -> List[Product]:
         """Get filtered products with pagination."""
         pass

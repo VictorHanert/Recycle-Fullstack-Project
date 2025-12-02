@@ -11,36 +11,15 @@ function ProductsTable({
   loading,
   currentPage,
   totalPages,
-  onPageChange
+  onPageChange,
+  sortField,
+  sortDirection,
+  onSortChange
 }) {
-  const [sortField, setSortField] = useState('created_at');
-  const [sortDirection, setSortDirection] = useState('desc');
-
   const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
+    onSortChange(field, newDirection);
   };
-
-  const sortedProducts = [...products].sort((a, b) => {
-    let aValue = a[sortField];
-    let bValue = b[sortField];
-
-    if (sortField === 'price_amount') {
-      aValue = parseFloat(aValue);
-      bValue = parseFloat(bValue);
-    } else if (sortField === 'created_at') {
-      aValue = new Date(aValue);
-      bValue = new Date(bValue);
-    }
-
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) return null;
@@ -103,14 +82,14 @@ function ProductsTable({
                         <InlineLoader message="Loading products..." />
                       </td>
                     </tr>
-                  ) : sortedProducts.length === 0 ? (
+                  ) : products.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
                         No products found
                       </td>
                     </tr>
                   ) : (
-                    sortedProducts.map((product) => (
+                    products.map((product) => (
                       <tr key={product.id} className='hover:bg-gray-50'>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <div>

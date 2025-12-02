@@ -11,44 +11,56 @@ from app.services.admin_service import AdminService
 from app.services.message_service import MessageService
 from app.db.mysql import get_db
 from app.models.user import User
-from app.repositories.mysql.factory import get_repository_factory, RepositoryFactory
+from app.repositories.user_repository import UserRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.location_repository import LocationRepository
 
 security = HTTPBearer()
 optional_security = HTTPBearer(auto_error=False)
 
 
 # Repository Dependencies
-def get_repository_factory_dep(db: Session = Depends(get_db)) -> RepositoryFactory:
-    """Get repository factory instance"""
-    return get_repository_factory(db)
+def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
+    """Get user repository instance"""
+    return UserRepository(db)
+
+
+def get_product_repository(db: Session = Depends(get_db)) -> ProductRepository:
+    """Get product repository instance"""
+    return ProductRepository(db)
+
+
+def get_location_repository(db: Session = Depends(get_db)) -> LocationRepository:
+    """Get location repository instance"""
+    return LocationRepository(db)
 
 
 # Service Dependencies
-def get_auth_service(repo_factory: RepositoryFactory = Depends(get_repository_factory_dep)) -> AuthService:
+def get_auth_service(user_repo = Depends(get_user_repository)) -> AuthService:
     """Get auth service instance"""
-    return AuthService(repo_factory.get_user_repository())
+    return AuthService(user_repo)
 
 
-def get_product_service(repo_factory: RepositoryFactory = Depends(get_repository_factory_dep)) -> ProductService:
+def get_product_service(
+    product_repo = Depends(get_product_repository),
+    user_repo = Depends(get_user_repository)
+) -> ProductService:
     """Get product service instance"""
-    return ProductService(
-        repo_factory.get_product_repository(),
-        repo_factory.get_user_repository()
-    )
+    return ProductService(product_repo, user_repo)
 
 
-def get_profile_service(repo_factory: RepositoryFactory = Depends(get_repository_factory_dep)) -> ProfileService:
+def get_profile_service(
+    user_repo = Depends(get_user_repository),
+    product_repo = Depends(get_product_repository),
+    location_repo = Depends(get_location_repository)
+) -> ProfileService:
     """Get profile service instance"""
-    return ProfileService(
-        repo_factory.get_user_repository(),
-        repo_factory.get_product_repository(),
-        repo_factory.get_location_repository()
-    )
+    return ProfileService(user_repo, product_repo, location_repo)
 
 
-def get_location_service(repo_factory: RepositoryFactory = Depends(get_repository_factory_dep)) -> LocationService:
+def get_location_service(location_repo = Depends(get_location_repository)) -> LocationService:
     """Get location service instance"""
-    return LocationService(repo_factory.get_location_repository())
+    return LocationService(location_repo)
 
 
 def get_admin_service(db: Session = Depends(get_db)) -> AdminService:
