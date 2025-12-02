@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useFetch } from "../hooks/useFetch";
 import { useAuth } from "../hooks/useAuth";
 import { currencyUtils } from "../utils/currencyUtils";
@@ -10,6 +10,7 @@ import { PageLoader } from "../components/shared/LoadingSpinners";
 function UserProfile() {
   const { userId } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const { data: profileData, loading: profileLoading, error: profileError } = useFetch(
     userId ? `/api/profile/${userId}` : null
@@ -19,7 +20,7 @@ function UserProfile() {
     userId ? `/api/profile/${userId}/products` : null
   );
 
-  const { alertState, showInfo, closeAlert } = useAlert();
+  const { alertState, closeAlert } = useAlert();
 
   const loading = profileLoading || productsLoading;
   const error = profileError || productsError;
@@ -40,7 +41,7 @@ function UserProfile() {
   }
 
   const handleSendMessage = () => {
-    showInfo('Send Message', 'Message functionality would be implemented here. You would be able to send a message to the seller.');
+    navigate(`/messages/${userId}`);
   };
 
   return (
@@ -82,23 +83,28 @@ function UserProfile() {
           {userProducts?.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {userProducts.map((product) => (
-                <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <h3 className="font-semibold">{product.title}</h3>
-                  <p className="text-gray-600">
-                    {Number(product.price_amount) % 1 === 0
-                      ? Number(product.price_amount)
-                      : Number(product.price_amount).toFixed(2)
-                    } {currencyUtils.getCurrencySymbol(product.price_currency)}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-2">
-                    Condition: {formatCondition(product.condition)}
-                  </p>
-                  {product.location && (
-                    <p className="text-sm text-gray-500">
-                      Location: {product.location.city}, {product.location.postcode}
+                <div key={product.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  <img
+                    src={product.images?.[0]?.url || "https://placehold.co/600x400.png"}
+                    alt={product.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-4">
+                    <h3 className="font-semibold mb-2">{product.title}</h3>
+                    <p className="text-gray-600 mb-1">
+                      {Number(product.price_amount) % 1 === 0
+                        ? Number(product.price_amount)
+                        : Number(product.price_amount).toFixed(2)
+                      } {currencyUtils.getCurrencySymbol(product.price_currency)}
                     </p>
-                  )}
-                  <div className="mt-2">
+                    <p className="text-sm text-gray-500 mb-2">
+                      Condition: {formatCondition(product.condition)}
+                    </p>
+                    {product.location && (
+                      <p className="text-sm text-gray-500 mb-3">
+                        Location: {product.location.city}, {product.location.postcode}
+                      </p>
+                    )}
                     <a
                       href={`/products/${product.id}`}
                       className="text-blue-500 hover:underline text-sm"
@@ -110,25 +116,9 @@ function UserProfile() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No active products found</p>
+            <p className="text-gray-500">No products found.</p>
           )}
         </div>
-
-        {/* Contact Information (if viewing someone else's profile) */}
-        {!isOwnProfile && (
-          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-            <h2 className="text-xl font-semibold text-blue-800 mb-4">Contact Seller {profileData.full_name || profileData.username}</h2>
-            <p className="text-blue-700 mb-4">
-              Interested in {profileData.full_name || profileData.username}'s products?
-            </p>
-            <button 
-              onClick={handleSendMessage}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Send Message
-            </button>
-          </div>
-        )}
 
         {/* Link to own profile management */}
         {isOwnProfile && (

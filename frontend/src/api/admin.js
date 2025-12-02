@@ -5,8 +5,8 @@ export const adminAPI = {
   getAllUsers: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     const url = queryParams
-      ? `/api/admin/users?${queryParams}`
-      : "/api/admin/users";
+      ? `/api/admin/users/?${queryParams}`
+      : "/api/admin/users/";
     return apiClient.get(url);
   },
   getUserById: (id) => apiClient.get(`/api/admin/users/${id}`),
@@ -17,7 +17,7 @@ export const adminAPI = {
   // Products admin CRUD operations
   getAllProducts: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/admin/products?${queryParams}`);
+    return apiClient.get(`/api/admin/products/${queryParams ? '?' + queryParams : ''}`);
   },
   getProductById: (id) => apiClient.get(`/api/admin/products/${id}`),
   createProduct: (productData) => apiClient.post("/api/admin/products", productData),
@@ -29,7 +29,7 @@ export const adminAPI = {
     apiClient.get(`/api/locations/search?q=${encodeURIComponent(query)}`),
   getLocations: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/locations?${queryParams}`);
+    return apiClient.get(`/api/locations/${queryParams ? '?' + queryParams : ''}`);
   },
   createLocation: (locationData) =>
     apiClient.post("/api/locations", locationData),
