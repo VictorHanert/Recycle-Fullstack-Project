@@ -21,24 +21,10 @@ function ProductsManagement() {
   const [colors, setColors] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [tags, setTags] = useState([]);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price_amount: '',
-    price_currency: 'DKK',
-    category_id: '',
-    condition: 'good',
-    quantity: 1,
-    location_id: '',
-    width_cm: '',
-    height_cm: '',
-    depth_cm: '',
-    weight_kg: '',
-    status: 'active',
-    color_ids: [],
-    material_ids: [],
-    tag_ids: []
-  });
+  const [formData, setFormData] = useState([]);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
+
   const [formLoading, setFormLoading] = useState(false);
 
   const { alertState, showConfirm, closeAlert } = useAlert();
@@ -50,6 +36,8 @@ function ProductsManagement() {
       setError(null);
       const params = { page, size: 15 };
       if (search) params.search = search;
+      params.sort_field = sortField;
+      params.sort_direction = sortDirection;
 
       const response = await adminAPI.getAllProducts(params);
       setProducts(response.products);
@@ -252,6 +240,13 @@ function ProductsManagement() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={(page) => fetchProducts(page, searchTerm)}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSortChange={(field, direction) => {
+          setSortField(field);
+          setSortDirection(direction);
+          fetchProducts(1, searchTerm);
+        }}
       />
 
       {/* Create Product Modal */}

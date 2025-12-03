@@ -29,10 +29,10 @@ export const adminAPI = {
     apiClient.get(`/api/locations/search?q=${encodeURIComponent(query)}`),
   getLocations: (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return apiClient.get(`/api/locations?${queryParams}`);
+    return apiClient.get(`/api/locations/${queryParams ? '?' + queryParams : ''}`);
   },
   createLocation: (locationData) =>
-    apiClient.post("/api/locations", locationData),
+    apiClient.post("/api/locations/", locationData),
   updateLocation: (id, locationData) =>
     apiClient.put(`/api/locations/${id}`, locationData),
   deleteLocation: (id) => apiClient.delete(`/api/locations/${id}`),

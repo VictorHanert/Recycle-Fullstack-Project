@@ -9,7 +9,7 @@ from app.dependencies import (
     get_current_active_user, 
     get_current_user_optional, 
     get_product_service,
-    get_repository_factory_dep
+    get_location_repository
 )
 from app.models.user import User
 from app.schemas.product_schema import (
@@ -90,10 +90,9 @@ async def get_my_products(
     )
 
 @router.get("/locations", response_model=List[LocationInfo])
-async def get_all_locations(repo_factory = Depends(get_repository_factory_dep)):
+async def get_all_locations(location_repo = Depends(get_location_repository)):
     """Get all product locations"""
-    location_repository = repo_factory.get_location_repository()
-    locations = location_repository.get_all(skip=0, limit=1000)  # Get all locations
+    locations = location_repo.get_all(skip=0, limit=1000)  # Get all locations
     return [LocationInfo.model_validate(loc) for loc in locations]
 
 @router.get("/currencies")
@@ -118,12 +117,11 @@ async def get_all_categories(product_service: ProductService = Depends(get_produ
 @router.get("/productdetails", response_model=ProductDetailsResponse)
 async def get_all_product_details(
     product_service: ProductService = Depends(get_product_service),
-    repo_factory = Depends(get_repository_factory_dep)
+    location_repo = Depends(get_location_repository)
 ):
     """Get all product details including colors, materials, tags, and locations"""
     details = product_service.get_all_details()
-    location_repository = repo_factory.get_location_repository()
-    locations = location_repository.get_all(skip=0, limit=1000)
+    locations = location_repo.get_all(skip=0, limit=1000)
 
     return ProductDetailsResponse(
         colors=[ColorInfo.model_validate(color) for color in details['colors']],

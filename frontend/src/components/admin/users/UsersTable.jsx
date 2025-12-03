@@ -11,36 +11,15 @@ function UsersTable({
   loading,
   currentPage,
   totalPages,
-  onPageChange
+  onPageChange,
+  sortField,
+  sortDirection,
+  onSortChange
 }) {
-  const [sortField, setSortField] = useState('created_at');
-  const [sortDirection, setSortDirection] = useState('desc');
-
   const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
+    onSortChange(field, newDirection);
   };
-
-  const sortedUsers = [...users].sort((a, b) => {
-    let aValue = a[sortField];
-    let bValue = b[sortField];
-
-    if (sortField === 'created_at') {
-      aValue = new Date(aValue);
-      bValue = new Date(bValue);
-    } else if (sortField === 'is_active') {
-      aValue = aValue ? 1 : 0;
-      bValue = bValue ? 1 : 0;
-    }
-
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) return null;
@@ -87,14 +66,14 @@ function UsersTable({
                   <InlineLoader message="Loading users..." />
                 </td>
               </tr>
-            ) : sortedUsers.length === 0 ? (
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
                   No users found
                 </td>
               </tr>
             ) : (
-              sortedUsers.map((user) => (
+              users.map((user) => (
                 <tr key={user.id} className='hover:bg-gray-50'>
                   <td className="px-6 py-2 whitespace-nowrap">
                     <div>

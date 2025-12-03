@@ -2,7 +2,7 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
-from app.repositories.mysql.activity_repository import MySQLActivityRepository
+from app.repositories.activity_repository import ActivityRepository
 
 
 class ActivityService:
@@ -10,7 +10,7 @@ class ActivityService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.activity_repo = MySQLActivityRepository(db)
+        self.activity_repo = ActivityRepository(db)
     
     # ============================================
     # VIEW HISTORY

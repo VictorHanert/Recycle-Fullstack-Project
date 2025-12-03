@@ -16,6 +16,8 @@ function UsersManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -36,6 +38,8 @@ function UsersManagement() {
       setError(null);
       const params = { page, size: 15 };
       if (search) params.search = search;
+      params.sort_field = sortField;
+      params.sort_direction = sortDirection;
 
       const response = await adminAPI.getAllUsers(params);
       setUsers(response.users);
@@ -202,6 +206,13 @@ function UsersManagement() {
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={(page) => fetchUsers(page, searchTerm)}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSortChange={(field, direction) => {
+          setSortField(field);
+          setSortDirection(direction);
+          fetchUsers(1, searchTerm);
+        }}
       />
 
       {/* Create User Modal */}

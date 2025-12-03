@@ -13,7 +13,7 @@ from .location_schema import LocationResponse
 class UserBase(BaseModel):
     """Base user schema with common fields"""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
+    username: str = Field(..., min_length=3, max_length=50, pattern=r"^[\w.]+$")
     full_name: Optional[str] = Field(None, max_length=100)
 
 
@@ -35,7 +35,7 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     """Schema for user updates (admin can update all fields)"""
     email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern="^[a-zA-Z0-9_.]+$")
+    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern=r"^[\w.]+$")
     full_name: Optional[str] = Field(None, max_length=100)
     phone: Optional[str] = Field(None, max_length=64)
     location_id: Optional[int] = None

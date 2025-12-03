@@ -1,10 +1,10 @@
-"""MySQL Activity Repository - calls stored procedures for activity/history."""
+"""Activity Repository - calls stored procedures for activity/history."""
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 
-class MySQLActivityRepository:
+class ActivityRepository:
     """Repository for activity and history operations using stored procedures."""
     
     def __init__(self, db: Session):

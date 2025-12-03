@@ -6,9 +6,9 @@ from app.repositories.base import (
     ProductRepositoryInterface, 
     LocationRepositoryInterface
 )
-from app.repositories.mysql.user_repository import MySQLUserRepository
-from app.repositories.mysql.product_repository import MySQLProductRepository
-from app.repositories.mysql.location_repository import MySQLLocationRepository
+from app.repositories.user_repository import UserRepository
+from app.repositories.product_repository import ProductRepository
+from app.repositories.location_repository import LocationRepository
 
 
 class RepositoryFactory:
@@ -19,15 +19,15 @@ class RepositoryFactory:
     
     def get_user_repository(self) -> UserRepositoryInterface:
         """Get user repository instance."""
-        return MySQLUserRepository(self.db)
+        return UserRepository(self.db)
     
     def get_product_repository(self) -> ProductRepositoryInterface:
         """Get product repository instance."""
-        return MySQLProductRepository(self.db)
+        return ProductRepository(self.db)
     
     def get_location_repository(self) -> LocationRepositoryInterface:
         """Get location repository instance."""
-        return MySQLLocationRepository(self.db)
+        return LocationRepository(self.db)
 
 
 # Convenience function for dependency injection

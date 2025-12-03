@@ -69,14 +69,18 @@ class ProductService:
         self,
         skip: int = 0,
         limit: int = 20,
-        filter_params: Optional[ProductFilter] = None
+        filter_params: Optional[ProductFilter] = None,
+        sort_field: Optional[str] = None,
+        sort_direction: str = 'desc'
     ) -> Tuple[List[Product], int]:
-        """Get products with filtering and pagination"""
+        """Get products with filtering, pagination and sorting"""
         products = self.product_repository.get_all_filtered(
             filters=filter_params,
             skip=skip,
             limit=limit,
-            load_details=False
+            load_details=False,
+            sort_field=sort_field,
+            sort_direction=sort_direction
         )
         
         total = self.product_repository.count_filtered(filter_params)

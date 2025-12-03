@@ -2,7 +2,7 @@ from typing import List, Tuple, Optional
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.repositories.mysql.message_repository import MySQLMessageRepository
+from app.repositories.message_repository import MessageRepository
 from app.models.messages import Conversation, Message
 from app.models.product import Product
 
@@ -12,7 +12,7 @@ class MessageService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.message_repo = MySQLMessageRepository(db)
+        self.message_repo = MessageRepository(db)
     
     # ===== Query Operations =====
     

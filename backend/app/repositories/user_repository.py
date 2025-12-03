@@ -1,4 +1,4 @@
-"""MySQL implementation of the User Repository."""
+"""User Repository implementation."""
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -15,8 +15,8 @@ from app.models.sold import SoldItemArchive
 from app.schemas.user_schema import UserCreate, UserUpdate
 
 
-class MySQLUserRepository(UserRepositoryInterface):
-    """MySQL implementation of user repository operations."""
+class UserRepository(UserRepositoryInterface):
+    """User repository operations."""
     
     def __init__(self, db: Session):
         self.db = db
@@ -93,19 +93,25 @@ class MySQLUserRepository(UserRepositoryInterface):
         """Check if email already exists."""
         return self.db.query(User).filter(User.email == email).first() is not None
     
-    def get_all(self, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None) -> List[User]:
-        """Get all users with pagination and optional filtering"""
+    def get_all(self, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None, sort_field: Optional[str] = None, sort_direction: str = 'asc') -> List[User]:
+        """Get all users with pagination, optional filtering, and sorting"""
         query = self.db.query(User)
         
         if is_active is not None:
             query = query.filter(User.is_active == is_active)
         
+        if sort_field:
+            if sort_direction == 'asc':
+                query = query.order_by(getattr(User, sort_field).asc())
+            else:
+                query = query.order_by(getattr(User, sort_field).desc())
+        
         return query.offset(skip).limit(limit).all()
 
-    def search_users(self, search_term: str, skip: int = 0, limit: int = 100) -> List[User]:
-        """Search users by username, email, or full name"""
+    def search_users(self, search_term: str, skip: int = 0, limit: int = 100, sort_field: Optional[str] = None, sort_direction: str = 'asc') -> List[User]:
+        """Search users by username, email, or full name with sorting"""
         if not search_term:
-            return self.get_all(skip, limit)
+            return self.get_all(skip, limit, sort_field=sort_field, sort_direction=sort_direction)
         
         search_filter = f"%{search_term}%"
         query = self.db.query(User).filter(
@@ -114,12 +120,35 @@ class MySQLUserRepository(UserRepositoryInterface):
             (User.full_name.ilike(search_filter))
         )
         
+        if sort_field:
+            if sort_direction == 'asc':
+                query = query.order_by(getattr(User, sort_field).asc())
+            else:
+                query = query.order_by(getattr(User, sort_field).desc())
+        
         return query.offset(skip).limit(limit).all()
 
+    def count_filtered(self, is_active: Optional[bool] = None, search_term: Optional[str] = None) -> int:
+        """Get total count of users with optional filtering"""
+        query = self.db.query(User)
+        
+        if is_active is not None:
+            query = query.filter(User.is_active == is_active)
+        
+        if search_term:
+            search_filter = f"%{search_term}%"
+            query = query.filter(
+                (User.username.ilike(search_filter)) |
+                (User.email.ilike(search_filter)) |
+                (User.full_name.ilike(search_filter))
+            )
+        
+        return query.count()
+    
     def count_total_users(self) -> int:
         """Get total count of users"""
-        return self.db.query(User).count()
-    
+        return self.count_filtered()
+
     def get_active_users_count(self) -> int:
         """Count active users."""
         return self.db.query(User).filter(User.is_active.is_(True)).count()

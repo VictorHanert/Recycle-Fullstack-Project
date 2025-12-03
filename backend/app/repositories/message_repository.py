@@ -1,4 +1,4 @@
-"""MySQL implementation of the Message Repository."""
+"""Message Repository implementation."""
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -8,8 +8,8 @@ from sqlalchemy import desc, exists, and_
 from app.models.messages import Conversation, ConversationParticipant, Message, MessageRead
 
 
-class MySQLMessageRepository:
-    """MySQL implementation of message repository operations."""
+class MessageRepository:
+    """Message repository operations."""
     
     def __init__(self, db: Session):
         self.db = db
