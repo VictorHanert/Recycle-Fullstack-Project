@@ -106,9 +106,19 @@ poetry run python scripts/seed.py
 │   └── tests/              # Backend tests
 │
 └── docker-compose.yml      # Container orchestration
+```
 
 ## 🔐 Default Credentials
 
 For testing purposes, use these credentials:
 - **Admin**: admin@test.com / admin123
 - **Regular User**: register your own
+
+## Static tests
+Kør disse inden push
+```sh
+poetry run safety scan
+poetry run bandit -r app
+poetry run ruff check .
+poetry run mypy app
+```

@@ -45,6 +45,12 @@ safety = "^3.7.0"
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning:pytest_asyncio.plugin",
+    "ignore::DeprecationWarning:sentry_sdk.integrations.fastapi",
+    "ignore::DeprecationWarning:sentry_sdk.integrations.starlette",
+    "ignore::DeprecationWarning:slowapi.extension",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

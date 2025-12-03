@@ -1,10 +1,15 @@
 """Configuration settings for the application."""
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings from environment variables"""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore"
+    )
 
     # Database
     database_url: str = "mysql+pymysql://root:root@localhost:3307/marketplace"
@@ -31,13 +36,6 @@ class Settings(BaseSettings):
 
     # Sentry Configuration
     sentry_dsn: str = ""
-
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        case_sensitive = False
-        extra = "ignore"  # Ignore extra fields from .env
-
 
 @lru_cache()
 def get_settings() -> Settings:
