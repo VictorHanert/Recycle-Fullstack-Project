@@ -1,27 +1,17 @@
-"""
-Unit tests for User Registration using Boundary Value Analysis (BVA) 
-and Equivalence Partitioning (EP).
-
-Based on test analysis covering:
-- Username length (3-50 chars)
-- Username pattern (a-zA-Z0-9_.)
-- Password length (8-100 chars)
-- Email format validation
-- Full name validation (0-255 chars)
-"""
-
 import pytest
 from pydantic import ValidationError
 
 from app.schemas.user_schema import UserCreate
 
+"""
+Unit tests for User registration using Boundary Value Analysis (BVA) 
+and Equivalence Partitioning (EP).
 
+"""
 # ============================================
 # HELPER FUNCTIONS
 # ============================================
-
 def create_valid_user(**overrides):
-    """Helper to create a valid UserCreate with optional field overrides"""
     defaults = {
         "username": "john_doe",
         "email": "test@mail.com",
@@ -31,7 +21,6 @@ def create_valid_user(**overrides):
 
 
 def expect_validation_error(error_msg_fragment, **user_fields):
-    """Helper to assert ValidationError with message fragment"""
     with pytest.raises(ValidationError) as exc_info:
         create_valid_user(**user_fields)
     assert error_msg_fragment in str(exc_info.value).lower()
@@ -202,7 +191,6 @@ class TestFullName:
 # ============================================
 
 class TestCombinedBoundaryScenarios:
-    """Test combined boundary scenarios"""
     
     @pytest.mark.parametrize("username,password,full_name,description", [
         ("abc", "Pass1234", "A", "all minimum boundaries"),

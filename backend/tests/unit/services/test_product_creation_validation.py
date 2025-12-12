@@ -2,16 +2,6 @@
 Unit tests for Product Creation using Boundary Value Analysis (BVA) 
 and Equivalence Partitioning (EP).
 
-Based on test analysis covering:
-- Title length (1-200 chars)
-- Description length (1-1000 chars)
-- Price amount (0.01 - 999,999)
-- Price currency (supported codes)
-- Category ID validation
-- Quantity (1-999)
-- Condition (enum values)
-- Images count (0-10)
-- Dimensions validation (0.1-1000)
 """
 
 from decimal import Decimal

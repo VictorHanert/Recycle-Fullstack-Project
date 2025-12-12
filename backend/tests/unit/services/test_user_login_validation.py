@@ -1,25 +1,19 @@
-"""
-Unit tests for User Login using Boundary Value Analysis (BVA) 
-and Equivalence Partitioning (EP).
-
-Based on test analysis covering:
-- Identifier validation (username or email format)
-- Password length (8-100 chars)
-- Empty/invalid input handling
-"""
-
 import pytest
 from pydantic import ValidationError
 
 from app.schemas.user_schema import UserLogin
 
+"""
+Unit tests for User login using Boundary Value Analysis (BVA) 
+and Equivalence Partitioning (EP).
+
+"""
 
 # ============================================
 # HELPER FUNCTIONS
 # ============================================
 
 def create_valid_login(**overrides):
-    """Helper to create a valid UserLogin with optional field overrides"""
     defaults = {
         "identifier": "john_doe",
         "password": "Password123"
@@ -128,12 +122,12 @@ class TestRequiredFields:
     
     def test_missing_identifier_fails(self):
         """EP: Missing identifier should fail"""
-        with pytest.raises(ValidationError):  # Pydantic v2 raises ValidationError
+        with pytest.raises(ValidationError):  
             UserLogin(password="Password123")
     
     def test_missing_password_fails(self):
         """EP: Missing password should fail"""
-        with pytest.raises(ValidationError):  # Pydantic v2 raises ValidationError
+        with pytest.raises(ValidationError):  
             UserLogin(identifier="john_doe")
     
     def test_both_fields_none_fails(self):

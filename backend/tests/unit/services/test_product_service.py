@@ -348,29 +348,6 @@ def test_toggle_product_status_missing_product_raises(product_service, product_r
 # BVA and EP tests for ProductService.create_product validations
 # Image Size, Images Count, Category Existence 
 
-# TODO: Category existence validation not yet implemented in ProductService
-# @pytest.mark.asyncio
-# async def test_create_product_fails_when_category_does_not_exist(
-#     product_service, product_repository
-# ):
-#     """
-#     Covers Analysis: Category ID -> Invalid (Non-Existing)
-#     TODO: Implement category existence check in ProductService.create_product()
-#     """
-#     payload = ProductCreate(
-#         title="Test", 
-#         description="Test description",
-#         category_id=99999, 
-#         price_amount=Decimal("10")
-#     )
-#     
-#     # When implemented, should check category exists before creating product
-#     with pytest.raises(HTTPException) as exc:
-#         await product_service.create_product(payload, seller_id=1)
-#     
-#     assert exc.value.status_code == 404
-#     assert "Category not found" in exc.value.detail
-
 
 @pytest.mark.asyncio
 async def test_create_product_fails_when_file_too_large(
@@ -433,6 +410,29 @@ async def test_create_product_fails_when_file_too_large(
 #     
 #     assert exc.value.status_code == 400
 #     assert "Too many images" in str(exc.value.detail)
+
+# TODO: Category existence validation not yet implemented in ProductService
+# @pytest.mark.asyncio
+# async def test_create_product_fails_when_category_does_not_exist(
+#     product_service, product_repository
+# ):
+#     """
+#     Covers Analysis: Category ID -> Invalid (Non-Existing)
+#     TODO: Implement category existence check in ProductService.create_product()
+#     """
+#     payload = ProductCreate(
+#         title="Test", 
+#         description="Test description",
+#         category_id=99999, 
+#         price_amount=Decimal("10")
+#     )
+#     
+#     # When implemented, should check category exists before creating product
+#     with pytest.raises(HTTPException) as exc:
+#         await product_service.create_product(payload, seller_id=1)
+#     
+#     assert exc.value.status_code == 404
+#     assert "Category not found" in exc.value.detail
 
 
 # ============================================
