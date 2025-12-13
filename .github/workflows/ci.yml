@@ -111,7 +111,7 @@ jobs:
       run: npx playwright install --with-deps
 
     - name: Run unit tests
-      run: npm test
+      run: npx vitest --run
 
     - name: Run E2E tests
       run: npx playwright test
