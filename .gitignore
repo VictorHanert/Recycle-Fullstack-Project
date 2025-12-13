@@ -56,6 +56,18 @@ backend/*.egg-info/
 backend/.installed.cfg
 backend/*.egg
 
+# pytest coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+# mypy/ruff caches (optional)
+.mypy_cache/
+.ruff_cache/
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Images:
 backend/uploads/
 
