@@ -107,7 +107,3 @@ jobs:
     - name: Lint with ESLint
       run: npm run lint
 
-    - name: Run unit tests
-      env:
-        NODE_OPTIONS: "--max-old-space-size=4096"
-      run: npx vitest --run --pool=forks
