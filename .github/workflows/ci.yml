@@ -111,7 +111,9 @@ jobs:
       run: npx playwright install --with-deps
 
     - name: Run unit tests
-      run: npx vitest --run --reporter=verbose --no-file-parallelism
+      env:
+        NODE_OPTIONS: "--max-old-space-size=4096"
+      run: npx vitest --run --reporter=basic --pool=forks --poolOptions.forks.maxForks=1
 
     - name: Run E2E tests
       run: npx playwright test
