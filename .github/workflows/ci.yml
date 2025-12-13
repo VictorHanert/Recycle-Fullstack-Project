@@ -1,10 +1,33 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "18"
 
 jobs:
-  lint-backend:
+  backend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     defaults:
       run:
@@ -13,10 +36,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python 3.13
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v5
       with:
-        python-version: "3.13"
+        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install Poetry
       run: |
@@ -39,7 +62,6 @@ jobs:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: poetry run safety scan --key "$SAFETY_API_KEY" --full-report --policy-file .safety-policy.yml
 
-
     - name: Security scan with Bandit
       run: poetry run bandit -r app
 
@@ -52,7 +74,17 @@ jobs:
     - name: Lint with pylint
       run: poetry run pylint app/ --fail-under=7
 
-  lint-frontend:
+    - name: Run tests
+      run: poetry run pytest --cov=backend --cov-report=xml
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  frontend:
     runs-on: ubuntu-latest
 
     defaults:
@@ -62,10 +94,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Node.js
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
@@ -74,3 +106,20 @@ jobs:
 
     - name: Lint with ESLint
       run: npm run lint
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Run unit tests
+      run: npm test
+
+    - name: Run E2E tests
+      run: npx playwright test
+
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: frontend/playwright-report/
+        retention-days: 30

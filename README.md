@@ -54,6 +54,8 @@ A modern fullstack web application for buying and selling bicycles. Users can br
 - Node.js 20+ (for local frontend development)
 - Python 3.13+ (for local backend development)
 
+Copy `.env.example` to `.env` and set your environment variables for BOTH /frontend and /backend.
+
 ### Start the Application
 
 ```bash
