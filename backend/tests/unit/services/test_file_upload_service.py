@@ -16,7 +16,7 @@ Based on black box testing analysis for:
 import pytest
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from fastapi import HTTPException, UploadFile
 
 from app.services.file_upload_service import FileUploadService
