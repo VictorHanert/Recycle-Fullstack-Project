@@ -51,6 +51,8 @@ services:
       retries: 2
       interval: 15s
       start_period: 30s
+    command: --max_connections=500
+
 
 volumes:
   mysql_data:

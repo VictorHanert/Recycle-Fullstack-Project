@@ -125,6 +125,25 @@ poetry run ruff check .
 poetry run mypy app
 ```
 
+## End-to-end test
+- Cd \frontend
+- Kør:`npm run test:e2e`
+
+
+## Performance tests (k6)
+- Kræver backend kørende (default `http://localhost:8000`, kan overstyres med `BASE_URL`).
+- Lokal k6:
+  - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/load.js`
+  - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/spike.js`
+  - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/stress.js`
+  - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/soak.js`
+
+- Nuværende mål:
+  - Load: p95 < 2s @ 50 VU
+  - Spike: p95 < 6s @ 150 VU
+  - Stress: p95 < 4.5s @ 150 VU
+  - Soak: 20 VU i 1 time (overvåg for fejlrate/drift)
+ 
 ## Code Coverage
 - Backend: `poetry run pytest --cov=app --cov-report=html --cov-report=term` and `poetry run coverage
 - Frontend: `npx vitest --run --coverage`
