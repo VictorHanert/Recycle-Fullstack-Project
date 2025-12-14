@@ -108,10 +108,13 @@ jobs:
       run: npm run lint
 
     - name: Run unit tests
+      env:
+        CI: true
       run: npm test 
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
+      if: always()
       with:
         file: frontend/coverage/coverage-final.json
         flags: frontend
