@@ -124,3 +124,7 @@ poetry run bandit -r app
 poetry run ruff check .
 poetry run mypy app
 ```
+
+## Code Coverage
+- Backend: `poetry run pytest --cov=app --cov-report=html --cov-report=term` and `poetry run coverage
+- Frontend: `npx vitest --run --coverage`
