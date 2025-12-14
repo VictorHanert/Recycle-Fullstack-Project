@@ -124,3 +124,8 @@ poetry run bandit -r app
 poetry run ruff check .
 poetry run mypy app
 ```
+
+## How to run the test 
+- Code report: poetry run pytest --cov=app --cov-report=html --cov-report=term
+- Run backend tests: poetry run pytest
+- Run frontend tests: npm tests
