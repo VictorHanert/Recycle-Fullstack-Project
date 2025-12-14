@@ -123,6 +123,17 @@ poetry run ruff check .
 poetry run mypy app
 ```
 
+## End-to-end test
+- Cd \frontend
+- Kør:`npm run test:e2e`
+
+## Code coverage (Husk at vær i backend eller frontend alt efter hvad du kører):
+- Code report: poetry run pytest --cov=app --cov-report=html --cov-report=term
+- Run backend tests: poetry run pytest
+- Run frontend tests: npm tests
+
+
+
 ## Performance tests (k6)
 - Kræver backend kørende (default `http://localhost:8000`, kan overstyres med `BASE_URL`).
 - Lokal k6:
@@ -130,9 +141,8 @@ poetry run mypy app
   - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/spike.js`
   - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/stress.js`
   - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/soak.js`
-- Via Docker (uden k6 installeret):
-  `docker run --rm -it --network host -v ${PWD}/performance-tests:/scripts grafana/k6 run --env BASE_URL=http://localhost:8000 /scripts/<file>.js`
-- Nuværende mål (justér efter behov):
+
+- Nuværende mål:
   - Load: p95 < 2s @ 50 VU
   - Spike: p95 < 6s @ 150 VU
   - Stress: p95 < 4.5s @ 150 VU
