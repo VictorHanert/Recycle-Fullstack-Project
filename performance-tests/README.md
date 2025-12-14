@@ -2,7 +2,16 @@
 
 All scripts use the same base URL helper. Default: `http://localhost:8000` (override with `BASE_URL`).
 
-Run locally (k6 installed):
+Install k6:
+- Via Homebrew (macOS): `brew install k6`
+- Via Chocolatey (Windows): `choco install k6`
+
+Verify installation:
+```sh
+k6 version
+```
+
+Run locally:
 - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/load.js`
 - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/spike.js`
 - `k6 run --env BASE_URL=http://localhost:8000 performance-tests/stress.js`
