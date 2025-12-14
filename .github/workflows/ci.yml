@@ -107,3 +107,14 @@ jobs:
     - name: Lint with ESLint
       run: npm run lint
 
+    - name: Run unit tests
+      run: npm test -- --run --coverage
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: frontend/coverage/coverage-final.json
+        flags: frontend
+        name: frontend-coverage
+
+
