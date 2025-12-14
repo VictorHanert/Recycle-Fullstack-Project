@@ -88,7 +88,7 @@ class TestImageCount:
         files = [create_mock_upload_file(filename=f"test{i}.jpg") for i in range(count)]
         
         with patch.object(service, '_validate_and_save_single_image', new_callable=AsyncMock) as mock_save:
-            mock_save.return_value = f"http://example.com/image.jpg"
+            mock_save.return_value = "http://example.com/image.jpg"
             
             result = await service.validate_and_save_images(files)
             
