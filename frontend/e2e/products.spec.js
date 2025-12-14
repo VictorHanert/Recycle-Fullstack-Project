@@ -71,7 +71,7 @@ test.describe('Product Creation', () => {
     await expect(loggedInPage.getByText('This is a test bicycle in excellent condition')).toBeVisible();
   });
 
-  test('User can create a product with optional fields', async ({ loggedInPage }) => {
+  test('User can create a product with condition field', async ({ loggedInPage }) => {
     // Navigate to create product page
     await loggedInPage.goto('/create-product');
     await loggedInPage.waitForLoadState('networkidle');
@@ -83,9 +83,8 @@ test.describe('Product Creation', () => {
     await loggedInPage.fill('input[name="price_amount"]', '2500');
     await loggedInPage.selectOption('select[name="category_id"]', { index: 1 });
 
-    // Fill in optional fields
+    // Fill in optional condition field (this is visible without toggling advanced options)
     await loggedInPage.selectOption('select[name="condition"]', 'like_new');
-    await loggedInPage.fill('input[name="quantity"]', '2');
 
     // Submit the form
     await loggedInPage.click('button[type="submit"]');
