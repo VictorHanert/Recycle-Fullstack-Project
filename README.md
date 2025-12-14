@@ -54,6 +54,8 @@ A modern fullstack web application for buying and selling bicycles. Users can br
 - Node.js 20+ (for local frontend development)
 - Python 3.13+ (for local backend development)
 
+Copy `.env.example` to `.env` and set your environment variables for BOTH /frontend and /backend.
+
 ### Start the Application
 
 ```bash
@@ -127,12 +129,6 @@ poetry run mypy app
 - Cd \frontend
 - Kør:`npm run test:e2e`
 
-## Code coverage (Husk at vær i backend eller frontend alt efter hvad du kører):
-- Code report: poetry run pytest --cov=app --cov-report=html --cov-report=term
-- Run backend tests: poetry run pytest
-- Run frontend tests: npm tests
-
-
 
 ## Performance tests (k6)
 - Kræver backend kørende (default `http://localhost:8000`, kan overstyres med `BASE_URL`).
@@ -147,3 +143,7 @@ poetry run mypy app
   - Spike: p95 < 6s @ 150 VU
   - Stress: p95 < 4.5s @ 150 VU
   - Soak: 20 VU i 1 time (overvåg for fejlrate/drift)
+ 
+## Code Coverage
+- Backend: `poetry run pytest --cov=app --cov-report=html --cov-report=term` and `poetry run coverage
+- Frontend: `npx vitest --run --coverage`

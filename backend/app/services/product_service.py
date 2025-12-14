@@ -1,5 +1,6 @@
 """Service class for product operations using the repository pattern."""
 from typing import List, Optional, Tuple
+import html
 
 from fastapi import HTTPException, status, UploadFile
 
@@ -184,8 +185,19 @@ class ProductService:
         return self.product_repository.get_platform_statistics()
 
     def search_products(self, query: str, skip: int = 0, limit: int = 20) -> List[Product]:
-        """Search products by title or description"""
-        return self.product_repository.search_by_title(query, skip, limit)
+  
+        # Validate search term length
+        if len(query) > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Search term is too long (maximum 100 characters)"
+            )
+        
+        # Sanitize input to prevent XSS attacks
+        # html.escape converts special characters like <, >, &, etc.
+        sanitized_query = html.escape(query.strip())
+        
+        return self.product_repository.search_by_title(sanitized_query, skip, limit)
 
     def get_recent_products(self, limit: int = 10) -> List[Product]:
         """Get most recently created products"""
