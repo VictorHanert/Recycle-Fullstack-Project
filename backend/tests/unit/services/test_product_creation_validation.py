@@ -2,6 +2,10 @@
 Unit tests for Product Creation using Boundary Value Analysis (BVA) 
 and Equivalence Partitioning (EP).
 
+Following best practices:
+- Each test verifies only one behavior
+- Positive and negative tests are separated
+- Test case selection is comprehensive
 """
 
 from decimal import Decimal
@@ -29,13 +33,6 @@ def create_valid_product(**overrides):
     return ProductCreate(**{**defaults, **overrides})
 
 
-def expect_validation_error(error_msg_fragment, **product_fields):
-    """Helper to assert ValidationError with message fragment"""
-    with pytest.raises(ValidationError) as exc_info:
-        create_valid_product(**product_fields)
-    assert error_msg_fragment in str(exc_info.value).lower()
-
-
 # ============================================
 # TITLE TESTS
 # ============================================
@@ -46,34 +43,53 @@ class TestTitleLength:
     BVA Test Values: 0, 1, 2, 199, 200, 201, 202, 250
     """
     
-    @pytest.mark.parametrize("length,should_pass", [
-        (0, False),   # empty - required
-        (1, True),    # min
-        (2, True),    # min+1
-        (199, True),  # max-1
-        (200, True),  # max
-        (201, False), # max+1
-        (202, False), # max+2
-        (250, False), # EP invalid partition
-    ])
-    def test_title_length_boundaries(self, length, should_pass):
-        """BVA: Test title length at various boundaries"""
-        title = "A" * length if length > 0 else ""
-        if should_pass:
-            product = create_valid_product(title=title)
-            assert len(product.title) == length
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(title=title)
+    #
+    # Positive testing
+    #
     
-    def test_title_required(self):
+    @pytest.mark.parametrize("length", [
+        1,     # Valid partition 1-200: lower boundary value
+        2,     # Valid partition 1-200: lower boundary value + 1
+        199,   # Valid partition 1-200: upper boundary value - 1
+        200,   # Valid partition 1-200: upper boundary value
+    ])
+    def test_title_length_valid_passes(self, length):
+        """BVA: Test valid title length boundaries"""
+        title = "A" * length
+        product = create_valid_product(title=title)
+        assert len(product.title) == length
+    
+    #
+    # Negative testing
+    #
+    
+    def test_title_empty_fails(self):
+        """BVA: Empty title (required field)"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(title="")
+        assert error_info.value is not None
+    
+    @pytest.mark.parametrize("length", [
+        201,   # Invalid partition >200: upper boundary value + 1
+        202,   # Invalid partition >200: upper boundary value + 2
+        250,   # EP: invalid partition middle value
+    ])
+    def test_title_too_long_fails(self, length):
+        """BVA: Test title length above maximum boundary"""
+        title = "A" * length
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(title=title)
+        assert error_info.value is not None
+    
+    def test_title_required_fails(self):
         """EP: Title is required field"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as error_info:
             ProductCreate(
                 description="Test",
                 price_amount=Decimal("100"),
                 category_id=1
             )
+        assert error_info.value is not None
 
 
 # ============================================
@@ -86,34 +102,53 @@ class TestDescriptionLength:
     BVA Test Values: 0, 1, 2, 999, 1000, 1001, 1002, 1500
     """
     
-    @pytest.mark.parametrize("length,should_pass", [
-        (0, False),    # empty - required
-        (1, True),     # min
-        (2, True),     # min+1
-        (999, True),   # max-1
-        (1000, True),  # max
-        (1001, False), # max+1
-        (1002, False), # max+2
-        (1500, False), # EP invalid partition
-    ])
-    def test_description_length_boundaries(self, length, should_pass):
-        """BVA: Test description length at various boundaries"""
-        description = "A" * length if length > 0 else ""
-        if should_pass:
-            product = create_valid_product(description=description)
-            assert len(product.description) == length
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(description=description)
+    #
+    # Positive testing
+    #
     
-    def test_description_required(self):
+    @pytest.mark.parametrize("length", [
+        1,      # Valid partition 1-1000: lower boundary value
+        2,      # Valid partition 1-1000: lower boundary value + 1
+        999,    # Valid partition 1-1000: upper boundary value - 1
+        1000,   # Valid partition 1-1000: upper boundary value
+    ])
+    def test_description_length_valid_passes(self, length):
+        """BVA: Test valid description length boundaries"""
+        description = "A" * length
+        product = create_valid_product(description=description)
+        assert len(product.description) == length
+    
+    #
+    # Negative testing
+    #
+    
+    def test_description_empty_fails(self):
+        """BVA: Empty description (required field)"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(description="")
+        assert error_info.value is not None
+    
+    @pytest.mark.parametrize("length", [
+        1001,   # Invalid partition >1000: upper boundary value + 1
+        1002,   # Invalid partition >1000: upper boundary value + 2
+        1500,   # EP: invalid partition middle value
+    ])
+    def test_description_too_long_fails(self, length):
+        """BVA: Test description length above maximum boundary"""
+        description = "A" * length
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(description=description)
+        assert error_info.value is not None
+    
+    def test_description_required_fails(self):
         """EP: Description is required field"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as error_info:
             ProductCreate(
                 title="Test Product",
                 price_amount=Decimal("100"),
                 category_id=1
             )
+        assert error_info.value is not None
 
 
 # ============================================
@@ -126,49 +161,75 @@ class TestPriceAmount:
     BVA Test Values: -1, 0, 0.01, 0.02, 999999
     """
     
-    @pytest.mark.parametrize("amount,should_pass", [
-        (Decimal("-1"), False),      # negative
-        (Decimal("0"), False),        # zero
-        (Decimal("0.001"), False),    # too many decimal places
-        (Decimal("0.01"), True),      # min valid
-        (Decimal("0.02"), True),      # min+0.01
-        (Decimal("1.00"), True),      # normal
-        (Decimal("150.50"), True),    # normal with decimals
-        (Decimal("999999.00"), True), # max reasonable
-        (Decimal("999999.99"), True), # max with decimals
-    ])
-    def test_price_amount_boundaries(self, amount, should_pass):
-        """BVA: Test price amount at various boundaries"""
-        if should_pass:
-            product = create_valid_product(price_amount=amount)
-            assert product.price_amount == amount
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(price_amount=amount)
+    #
+    # Positive testing
+    #
     
-    def test_price_amount_required(self):
+    @pytest.mark.parametrize("amount", [
+        Decimal("0.01"),        # Valid partition >0: lower boundary value
+        Decimal("0.02"),        # Valid partition >0: lower boundary value + 0.01
+        Decimal("1.00"),        # EP: normal value
+        Decimal("150.50"),      # EP: normal with decimals
+        Decimal("999999.00"),   # BVA: max reasonable
+        Decimal("999999.99"),   # BVA: max with decimals
+    ])
+    def test_price_amount_valid_passes(self, amount):
+        """BVA: Test valid price amount boundaries"""
+        product = create_valid_product(price_amount=amount)
+        assert product.price_amount == amount
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("amount", [
+        Decimal("-1"),          # Invalid: negative value
+        Decimal("0"),           # Invalid: zero
+        Decimal("0.001"),       # Invalid: too many decimal places
+    ])
+    def test_price_amount_invalid_fails(self, amount):
+        """BVA/EP: Test invalid price amounts"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(price_amount=amount)
+        assert error_info.value is not None
+    
+    def test_price_amount_required_fails(self):
         """EP: Price amount is required field"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as error_info:
             ProductCreate(
                 title="Test",
                 description="Test",
                 category_id=1
             )
+        assert error_info.value is not None
+
+
+class TestPriceDecimalPlaces:
+    """Test price decimal places validation (max 2 decimal places)"""
     
-    @pytest.mark.parametrize("amount_str,should_pass", [
-        ("100", True),        # integer
-        ("100.5", True),      # one decimal
-        ("100.50", True),     # two decimals
-        ("100.505", False),   # three decimals (too many)
+    #
+    # Positive testing
+    #
+    
+    @pytest.mark.parametrize("amount_str", [
+        "100",          # EP: integer (0 decimals)
+        "100.5",        # EP: one decimal place
+        "100.50",       # EP: two decimal places
     ])
-    def test_price_decimal_places(self, amount_str, should_pass):
-        """BVA: Test decimal places validation"""
-        if should_pass:
-            product = create_valid_product(price_amount=Decimal(amount_str))
-            assert product.price_amount == Decimal(amount_str)
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(price_amount=Decimal(amount_str))
+    def test_price_decimal_places_valid_passes(self, amount_str):
+        """BVA: Test valid decimal places"""
+        product = create_valid_product(price_amount=Decimal(amount_str))
+        assert product.price_amount == Decimal(amount_str)
+    
+    #
+    # Negative testing
+    #
+    
+    def test_price_three_decimal_places_fails(self):
+        """BVA: Test three decimal places (too many)"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(price_amount=Decimal("100.505"))
+        assert error_info.value is not None
 
 
 # ============================================
@@ -178,31 +239,25 @@ class TestPriceAmount:
 class TestPriceCurrency:
     """Price currency validation (3-letter uppercase codes)"""
     
-    @pytest.mark.parametrize("currency,should_pass", [
-        ("DKK", True),   # Danish Krone
-        ("EUR", True),   # Euro
-        ("USD", True),   # US Dollar
-        ("GBP", True),   # British Pound
-        ("NOK", True),   # Norwegian Krone
-        ("SEK", True),   # Swedish Krona
-        ("XYZ", True),   # Pattern matches but semantically invalid (service validates)
-        ("dkk", False),  # lowercase
-        ("Dkk", False),  # mixed case
-        ("DK", False),   # too short
-        ("DKKK", False), # too long
-        ("123", False),  # numbers
-        ("D K", False),  # with space
-    ])
-    def test_currency_code_validation(self, currency, should_pass):
-        """EP: Test valid and invalid currency codes"""
-        if should_pass:
-            product = create_valid_product(price_currency=currency)
-            assert product.price_currency == currency
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(price_currency=currency)
+    #
+    # Positive testing
+    #
     
-    def test_currency_default_value(self):
+    @pytest.mark.parametrize("currency", [
+        "DKK",   # EP: Danish Krone
+        "EUR",   # EP: Euro
+        "USD",   # EP: US Dollar
+        "GBP",   # EP: British Pound
+        "NOK",   # EP: Norwegian Krone
+        "SEK",   # EP: Swedish Krona
+        "XYZ",   # EP: Pattern matches but semantically invalid (service validates)
+    ])
+    def test_currency_code_valid_passes(self, currency):
+        """EP: Test valid currency code patterns"""
+        product = create_valid_product(price_currency=currency)
+        assert product.price_currency == currency
+    
+    def test_currency_default_value_passes(self):
         """EP: Currency defaults to DKK if not provided"""
         product = ProductCreate(
             title="Test",
@@ -211,6 +266,24 @@ class TestPriceCurrency:
             category_id=1
         )
         assert product.price_currency == "DKK"
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("currency", [
+        "dkk",    # EP: lowercase
+        "Dkk",    # EP: mixed case
+        "DK",     # BVA: too short
+        "DKKK",   # BVA: too long
+        "123",    # EP: numbers
+        "D K",    # EP: with space
+    ])
+    def test_currency_code_invalid_fails(self, currency):
+        """EP/BVA: Test invalid currency codes"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(price_currency=currency)
+        assert error_info.value is not None
 
 
 # ============================================
@@ -220,31 +293,44 @@ class TestPriceCurrency:
 class TestCategoryId:
     """Category ID validation (must be > 0)"""
     
-    @pytest.mark.parametrize("category_id,should_pass", [
-        (-1, False),    # negative
-        (0, False),     # zero
-        (1, True),      # min valid
-        (2, True),      # min+1
-        (999, True),    # large valid
-        (99999, True),  # very large (existence checked by service)
-    ])
-    def test_category_id_boundaries(self, category_id, should_pass):
-        """BVA: Test category ID boundaries"""
-        if should_pass:
-            product = create_valid_product(category_id=category_id)
-            assert product.category_id == category_id
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(category_id=category_id)
+    #
+    # Positive testing
+    #
     
-    def test_category_id_required(self):
+    @pytest.mark.parametrize("category_id", [
+        1,       # Valid partition >0: lower boundary value
+        2,       # Valid partition >0: lower boundary value + 1
+        999,     # EP: large valid value
+        99999,   # EP: very large (existence checked by service)
+    ])
+    def test_category_id_valid_passes(self, category_id):
+        """BVA: Test valid category ID boundaries"""
+        product = create_valid_product(category_id=category_id)
+        assert product.category_id == category_id
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("category_id", [
+        -1,   # Invalid: negative value
+        0,    # Invalid: zero
+    ])
+    def test_category_id_invalid_fails(self, category_id):
+        """BVA: Test invalid category IDs"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(category_id=category_id)
+        assert error_info.value is not None
+    
+    def test_category_id_required_fails(self):
         """EP: Category ID is required field"""
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as error_info:
             ProductCreate(
                 title="Test",
                 description="Test",
                 price_amount=Decimal("100")
             )
+        assert error_info.value is not None
 
 
 # ============================================
@@ -257,27 +343,25 @@ class TestQuantity:
     BVA Test Values: -1, 0, 1, 2, 998, 999, 1000, 1001, 1500
     """
     
-    @pytest.mark.parametrize("quantity,should_pass", [
-        (-1, False),   # negative
-        (0, False),    # zero
-        (1, True),     # min
-        (2, True),     # min+1
-        (50, True),    # normal
-        (998, True),   # max-1
-        (999, True),   # max
-        (1000, True),  # schema allows (no upper limit enforced)
-        (1500, True),  # schema allows (no upper limit enforced)
-    ])
-    def test_quantity_boundaries(self, quantity, should_pass):
-        """BVA: Test quantity at various boundaries"""
-        if should_pass:
-            product = create_valid_product(quantity=quantity)
-            assert product.quantity == quantity
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(quantity=quantity)
+    #
+    # Positive testing
+    #
     
-    def test_quantity_defaults_to_1(self):
+    @pytest.mark.parametrize("quantity", [
+        1,      # Valid partition >=1: lower boundary value
+        2,      # Valid partition >=1: lower boundary value + 1
+        50,     # EP: normal value
+        998,    # BVA: reasonable max - 1
+        999,    # BVA: reasonable max
+        1000,   # Schema allows (no upper limit enforced)
+        1500,   # Schema allows (no upper limit enforced)
+    ])
+    def test_quantity_valid_passes(self, quantity):
+        """BVA: Test valid quantity boundaries"""
+        product = create_valid_product(quantity=quantity)
+        assert product.quantity == quantity
+    
+    def test_quantity_defaults_to_1_passes(self):
         """EP: Quantity defaults to 1 if not provided"""
         product = ProductCreate(
             title="Test",
@@ -286,6 +370,20 @@ class TestQuantity:
             category_id=1
         )
         assert product.quantity == 1
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("quantity", [
+        -1,   # Invalid: negative value
+        0,    # Invalid: zero
+    ])
+    def test_quantity_invalid_fails(self, quantity):
+        """BVA: Test invalid quantities"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(quantity=quantity)
+        assert error_info.value is not None
 
 
 # ============================================
@@ -295,28 +393,23 @@ class TestQuantity:
 class TestCondition:
     """Condition validation (enum values)"""
     
-    @pytest.mark.parametrize("condition,should_pass", [
-        ("new", True),
-        ("like_new", True),
-        ("good", True),
-        ("fair", True),
-        ("needs_repair", True),
-        ("broken", False),      # not in enum
-        ("excellent", False),   # not in enum
-        ("New", False),         # wrong case
-        ("GOOD", False),        # wrong case
-        ("", False),            # empty
-    ])
-    def test_condition_enum_values(self, condition, should_pass):
-        """EP: Test valid and invalid condition values"""
-        if should_pass:
-            product = create_valid_product(condition=condition)
-            assert product.condition == condition
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(condition=condition)
+    #
+    # Positive testing
+    #
     
-    def test_condition_optional(self):
+    @pytest.mark.parametrize("condition", [
+        "new",           # EP: valid enum value
+        "like_new",      # EP: valid enum value
+        "good",          # EP: valid enum value
+        "fair",          # EP: valid enum value
+        "needs_repair",  # EP: valid enum value
+    ])
+    def test_condition_enum_valid_passes(self, condition):
+        """EP: Test valid condition enum values"""
+        product = create_valid_product(condition=condition)
+        assert product.condition == condition
+    
+    def test_condition_optional_passes(self):
         """EP: Condition is optional field"""
         product = ProductCreate(
             title="Test",
@@ -326,6 +419,23 @@ class TestCondition:
             condition=None
         )
         assert product.condition is None
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("condition", [
+        "broken",      # EP: not in enum
+        "excellent",   # EP: not in enum
+        "New",         # EP: wrong case
+        "GOOD",        # EP: wrong case
+        "",            # EP: empty string
+    ])
+    def test_condition_enum_invalid_fails(self, condition):
+        """EP: Test invalid condition values"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(condition=condition)
+        assert error_info.value is not None
 
 
 # ============================================
@@ -339,28 +449,32 @@ class TestImageUrls:
     Note: Schema doesn't enforce max, but analysis suggests 10 max
     """
     
-    @pytest.mark.parametrize("count,description", [
-        (0, "no images"),
-        (1, "one image"),
-        (2, "two images"),
-        (5, "five images"),
-        (9, "nine images"),
-        (10, "ten images"),
-        (11, "eleven images - may exceed limit"),
-        (12, "twelve images - may exceed limit"),
+    #
+    # Positive testing
+    #
+    
+    @pytest.mark.parametrize("count", [
+        0,    # BVA: no images
+        1,    # BVA: one image
+        2,    # EP: two images
+        5,    # EP: five images
+        9,    # BVA: nine images
+        10,   # BVA: ten images (suggested max)
+        11,   # Eleven images - may exceed limit
+        12,   # Twelve images - may exceed limit
     ])
-    def test_image_urls_count(self, count, description):
+    def test_image_urls_count_passes(self, count):
         """BVA: Test image URLs count (schema allows any, business may limit)"""
         image_urls = [f"https://example.com/image{i}.jpg" for i in range(count)]
         product = create_valid_product(image_urls=image_urls)
         assert len(product.image_urls) == count
     
-    def test_image_urls_optional(self):
+    def test_image_urls_optional_passes(self):
         """EP: Image URLs are optional"""
         product = create_valid_product(image_urls=None)
         assert product.image_urls is None
     
-    def test_empty_image_urls_list(self):
+    def test_empty_image_urls_list_passes(self):
         """EP: Empty list is valid"""
         product = create_valid_product(image_urls=[])
         assert product.image_urls == []
@@ -376,75 +490,41 @@ class TestDimensions:
     BVA Test Values: -1, 0, 0.1, 0.2, 999.9, 1000, 1000.1, 1500
     """
     
-    @pytest.mark.parametrize("dimension,should_pass", [
-        (Decimal("-1"), False),     # negative
-        (Decimal("0"), False),       # zero
-        (Decimal("0.1"), True),      # min valid
-        (Decimal("0.2"), True),      # min+0.1
-        (Decimal("50"), True),       # normal
-        (Decimal("999.9"), True),    # max-0.1
-        (Decimal("1000"), True),     # max
-        (Decimal("1000.1"), True),   # max+0.1 (schema allows but may be limit)
-        (Decimal("1500"), True),     # large (schema allows but may be limit)
-    ])
-    def test_width_boundaries(self, dimension, should_pass):
-        """BVA: Test width_cm boundaries"""
-        if should_pass:
-            product = create_valid_product(width_cm=dimension)
-            assert product.width_cm == dimension
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(width_cm=dimension)
+    #
+    # Positive testing
+    #
     
-    @pytest.mark.parametrize("dimension,should_pass", [
-        (Decimal("-1"), False),
-        (Decimal("0"), False),
-        (Decimal("0.1"), True),
-        (Decimal("999.9"), True),
-        (Decimal("1000"), True),
+    @pytest.mark.parametrize("field_name,dimension", [
+        # width_cm tests
+        ("width_cm", Decimal("0.1")),      # Valid partition >0: lower boundary value
+        ("width_cm", Decimal("0.2")),      # Valid partition >0: lower boundary value + 0.1
+        ("width_cm", Decimal("50")),       # EP: normal value
+        ("width_cm", Decimal("999.9")),    # BVA: max - 0.1
+        ("width_cm", Decimal("1000")),     # BVA: max
+        ("width_cm", Decimal("1000.1")),   # Max + 0.1 (schema allows but may be limit)
+        ("width_cm", Decimal("1500")),     # Large (schema allows but may be limit)
+        
+        # height_cm tests
+        ("height_cm", Decimal("0.1")),     # Valid partition >0: lower boundary value
+        ("height_cm", Decimal("999.9")),   # BVA: near max
+        ("height_cm", Decimal("1000")),    # BVA: max
+        
+        # depth_cm tests
+        ("depth_cm", Decimal("0.1")),      # Valid partition >0: lower boundary value
+        ("depth_cm", Decimal("1000")),     # BVA: max
+        
+        # weight_kg tests (allows 3 decimal places)
+        ("weight_kg", Decimal("0.001")),   # Valid partition >0: min with 3 decimals
+        ("weight_kg", Decimal("0.1")),     # EP: small value
+        ("weight_kg", Decimal("50.5")),    # EP: normal value
+        ("weight_kg", Decimal("999.999")), # BVA: near max with 3 decimals
     ])
-    def test_height_boundaries(self, dimension, should_pass):
-        """BVA: Test height_cm boundaries"""
-        if should_pass:
-            product = create_valid_product(height_cm=dimension)
-            assert product.height_cm == dimension
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(height_cm=dimension)
+    def test_dimensions_valid_passes(self, field_name, dimension):
+        """BVA: Test valid dimension boundaries for all dimension fields"""
+        product = create_valid_product(**{field_name: dimension})
+        assert getattr(product, field_name) == dimension
     
-    @pytest.mark.parametrize("dimension,should_pass", [
-        (Decimal("-1"), False),
-        (Decimal("0"), False),
-        (Decimal("0.1"), True),
-        (Decimal("1000"), True),
-    ])
-    def test_depth_boundaries(self, dimension, should_pass):
-        """BVA: Test depth_cm boundaries"""
-        if should_pass:
-            product = create_valid_product(depth_cm=dimension)
-            assert product.depth_cm == dimension
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(depth_cm=dimension)
-    
-    @pytest.mark.parametrize("weight,should_pass", [
-        (Decimal("-1"), False),
-        (Decimal("0"), False),
-        (Decimal("0.001"), True),    # min with 3 decimals
-        (Decimal("0.1"), True),
-        (Decimal("50.5"), True),
-        (Decimal("999.999"), True),
-    ])
-    def test_weight_boundaries(self, weight, should_pass):
-        """BVA: Test weight_kg boundaries (3 decimal places)"""
-        if should_pass:
-            product = create_valid_product(weight_kg=weight)
-            assert product.weight_kg == weight
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(weight_kg=weight)
-    
-    def test_dimensions_all_optional(self):
+    def test_dimensions_all_optional_passes(self):
         """EP: All dimensions are optional"""
         product = create_valid_product(
             width_cm=None,
@@ -456,6 +536,33 @@ class TestDimensions:
         assert product.height_cm is None
         assert product.depth_cm is None
         assert product.weight_kg is None
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("field_name,dimension", [
+        # width_cm invalid
+        ("width_cm", Decimal("-1")),    # Invalid: negative value
+        ("width_cm", Decimal("0")),     # Invalid: zero
+        
+        # height_cm invalid
+        ("height_cm", Decimal("-1")),   # Invalid: negative value
+        ("height_cm", Decimal("0")),    # Invalid: zero
+        
+        # depth_cm invalid
+        ("depth_cm", Decimal("-1")),    # Invalid: negative value
+        ("depth_cm", Decimal("0")),     # Invalid: zero
+        
+        # weight_kg invalid
+        ("weight_kg", Decimal("-1")),   # Invalid: negative value
+        ("weight_kg", Decimal("0")),    # Invalid: zero
+    ])
+    def test_dimensions_invalid_fails(self, field_name, dimension):
+        """BVA: Test invalid dimension values for all dimension fields"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(**{field_name: dimension})
+        assert error_info.value is not None
 
 
 # ============================================
@@ -465,22 +572,34 @@ class TestDimensions:
 class TestLocationId:
     """Location ID validation (optional, must be > 0 if provided)"""
     
-    @pytest.mark.parametrize("location_id,should_pass", [
-        (None, True),   # optional - can be None
-        (-1, False),    # negative
-        (0, False),     # zero
-        (1, True),      # min valid
-        (2, True),      # valid
-        (999, True),    # large valid
+    #
+    # Positive testing
+    #
+    
+    @pytest.mark.parametrize("location_id", [
+        None,   # EP: optional - can be None
+        1,      # Valid partition >0: lower boundary value
+        2,      # Valid partition >0: lower boundary value + 1
+        999,    # EP: large valid value
     ])
-    def test_location_id_boundaries(self, location_id, should_pass):
-        """BVA: Test location ID boundaries"""
-        if should_pass:
-            product = create_valid_product(location_id=location_id)
-            assert product.location_id == location_id
-        else:
-            with pytest.raises(ValidationError):
-                create_valid_product(location_id=location_id)
+    def test_location_id_valid_passes(self, location_id):
+        """BVA: Test valid location ID boundaries"""
+        product = create_valid_product(location_id=location_id)
+        assert product.location_id == location_id
+    
+    #
+    # Negative testing
+    #
+    
+    @pytest.mark.parametrize("location_id", [
+        -1,   # Invalid: negative value
+        0,    # Invalid: zero
+    ])
+    def test_location_id_invalid_fails(self, location_id):
+        """BVA: Test invalid location IDs"""
+        with pytest.raises(ValidationError) as error_info:
+            create_valid_product(location_id=location_id)
+        assert error_info.value is not None
 
 
 # ============================================
@@ -490,83 +609,24 @@ class TestLocationId:
 class TestRelatedIds:
     """Test color_ids, material_ids, tag_ids (optional lists)"""
     
-    def test_color_ids_optional(self):
-        """EP: color_ids is optional"""
-        product = create_valid_product(color_ids=None)
-        assert product.color_ids is None
+    #
+    # Positive testing
+    #
     
-    def test_color_ids_empty_list(self):
-        """EP: color_ids can be empty list"""
-        product = create_valid_product(color_ids=[])
-        assert product.color_ids == []
-    
-    def test_color_ids_with_values(self):
-        """EP: color_ids with valid integers"""
-        product = create_valid_product(color_ids=[1, 2, 3])
-        assert product.color_ids == [1, 2, 3]
-    
-    def test_material_ids_optional(self):
-        """EP: material_ids is optional"""
-        product = create_valid_product(material_ids=None)
-        assert product.material_ids is None
-    
-    def test_tag_ids_optional(self):
-        """EP: tag_ids is optional"""
-        product = create_valid_product(tag_ids=None)
-        assert product.tag_ids is None
+    @pytest.mark.parametrize("field,value", [
+        ("color_ids", None),
+        ("color_ids", []),
+        ("color_ids", [1, 2, 3]),
+        ("material_ids", None),
+        ("material_ids", []),
+        ("material_ids", [1, 2]),
+        ("tag_ids", None),
+        ("tag_ids", []),
+        ("tag_ids", [5, 10, 15]),
+    ])
+    def test_related_ids_valid_passes(self, field, value):
+        """EP: Test valid related IDs (optional lists)"""
+        product = create_valid_product(**{field: value})
+        assert getattr(product, field) == value
 
 
-# ============================================
-# COMBINED BOUNDARY TESTS
-# ============================================
-
-class TestCombinedBoundaryScenarios:
-    """Test combined boundary scenarios"""
-    
-    def test_all_required_fields_at_minimum(self):
-        """Test with all required fields at minimum boundaries"""
-        product = ProductCreate(
-            title="A",                      # 1 char (min)
-            description="B",                # 1 char (min)
-            price_amount=Decimal("0.01"),   # min price
-            price_currency="DKK",
-            category_id=1,                  # min ID
-            quantity=1                      # min quantity
-        )
-        assert len(product.title) == 1
-        assert len(product.description) == 1
-        assert product.price_amount == Decimal("0.01")
-        assert product.quantity == 1
-    
-    def test_all_fields_at_maximum(self):
-        """Test with fields at maximum boundaries"""
-        product = ProductCreate(
-            title="A" * 200,                 # max title
-            description="B" * 1000,          # max description
-            price_amount=Decimal("999999.99"), # high price
-            price_currency="USD",
-            category_id=999,
-            quantity=999,                    # max reasonable quantity
-            condition="needs_repair",
-            width_cm=Decimal("1000"),
-            height_cm=Decimal("1000"),
-            depth_cm=Decimal("1000"),
-            weight_kg=Decimal("999.999")
-        )
-        assert len(product.title) == 200
-        assert len(product.description) == 1000
-        assert product.quantity == 999
-    
-    def test_minimal_required_only(self):
-        """Test with only required fields"""
-        product = ProductCreate(
-            title="Test Product",
-            description="Test description",
-            price_amount=Decimal("100.00"),
-            category_id=1
-        )
-        # Check defaults and optional fields
-        assert product.price_currency == "DKK"
-        assert product.quantity == 1
-        assert product.condition is None
-        assert product.location_id is None
