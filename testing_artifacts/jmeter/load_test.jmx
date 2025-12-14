@@ -1,6 +1,0 @@
-Task:
-1. Open JMeter.
-2. Create a "Thread Group" (Simulate 50 users).
-3. Add an "HTTP Request" to your Product Listing Page.
-4. Add a "View Results Tree".
-5. Save the plan here as 'load_test.jmx'.

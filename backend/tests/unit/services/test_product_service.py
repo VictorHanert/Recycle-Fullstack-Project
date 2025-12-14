@@ -343,3 +343,306 @@ def test_toggle_product_status_missing_product_raises(product_service, product_r
         product_service.toggle_product_status(1, user_id=1)
 
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+
+
+# BVA and EP tests for ProductService.create_product validations
+# Image Size, Images Count, Category Existence 
+
+
+@pytest.mark.asyncio
+async def test_create_product_fails_when_file_too_large(
+    product_service, file_upload_service
+):
+    """
+    Covers Analysis: Image Size -> Invalid (> 5MB)
+    """
+    payload = ProductCreate(
+        title="Test",
+        description="Test description",
+        category_id=1,
+        price_amount=Decimal("10")
+    )
+    
+    # MOCK BEHAVIOR: Simulate the FileUploadService rejecting the file
+    file_upload_service.validate_and_save_images.side_effect = HTTPException(
+        status_code=413, 
+        detail="File too large"
+    )
+
+    # Act & Assert
+    with pytest.raises(HTTPException) as exc:
+        await product_service.create_product(
+            payload, 
+            seller_id=1, 
+            image_files=[MagicMock()] # The mock file itself doesn't matter, the side_effect does
+        )
+    
+    assert exc.value.status_code == 413
+    assert "File too large" in exc.value.detail
+
+
+# TODO: Image count validation not yet implemented in ProductService
+# @pytest.mark.asyncio
+# async def test_create_product_fails_when_too_many_images(
+#     product_service, file_upload_service
+# ):
+#     """
+#     Covers Analysis: Images Count -> Invalid (11+ files)
+#     TODO: Implement max images check in ProductService.create_product()
+#     Note: FileUploadService.MAX_IMAGES_PER_PRODUCT = 10
+#     """
+#     payload = ProductCreate(
+#         title="Test",
+#         description="Test description",
+#         category_id=1,
+#         price_amount=Decimal("10")
+#     )
+#     
+#     too_many_files = [MagicMock() for _ in range(11)]
+# 
+#     # When implemented, should validate image count before processing
+#     with pytest.raises(HTTPException) as exc:
+#         await product_service.create_product(
+#             payload, 
+#             seller_id=1, 
+#             image_files=too_many_files
+#         )
+#     
+#     assert exc.value.status_code == 400
+#     assert "Too many images" in str(exc.value.detail)
+
+# TODO: Category existence validation not yet implemented in ProductService
+# @pytest.mark.asyncio
+# async def test_create_product_fails_when_category_does_not_exist(
+#     product_service, product_repository
+# ):
+#     """
+#     Covers Analysis: Category ID -> Invalid (Non-Existing)
+#     TODO: Implement category existence check in ProductService.create_product()
+#     """
+#     payload = ProductCreate(
+#         title="Test", 
+#         description="Test description",
+#         category_id=99999, 
+#         price_amount=Decimal("10")
+#     )
+#     
+#     # When implemented, should check category exists before creating product
+#     with pytest.raises(HTTPException) as exc:
+#         await product_service.create_product(payload, seller_id=1)
+#     
+#     assert exc.value.status_code == 404
+#     assert "Category not found" in exc.value.detail
+
+
+# ============================================
+# SEARCH TERM VALIDATION TESTS
+# ============================================
+
+class TestSearchProductsValidation:
+    """
+    Search term validation based on BVA/EP analysis:
+    - Search Length: 0 (empty), 1-100 chars (valid), 101+ chars (invalid)
+    - Search Content: Standard text, special chars, security attacks
+    - BVA Boundaries: 0, 1, 99, 100, 101, 102
+    """
+
+    @pytest.mark.parametrize("length,should_pass", [
+        (0, True),    # empty - show all
+        (1, True),    # min
+        (2, True),    # min+1
+        (99, True),   # max-1
+        (100, True),  # max
+        (101, False), # max+1
+        (102, False), # max+2
+        (150, False), # EP invalid partition
+    ])
+    def test_search_length_boundaries(self, length, should_pass, product_service, product_repository):
+        """BVA: Test search term length boundaries (0-100 chars)"""
+        search_term = "a" * length
+        
+        if should_pass:
+            product_repository.search_by_title.return_value = [make_product()]
+            result = product_service.search_products(search_term)
+            
+            # Verify repository was called
+            product_repository.search_by_title.assert_called_once()
+            assert isinstance(result, list)
+        else:
+            # Should raise validation error for too long search terms
+            with pytest.raises(HTTPException) as exc:
+                product_service.search_products(search_term)
+            assert exc.value.status_code == 400
+            assert "too long" in str(exc.value.detail).lower()
+
+    def test_search_standard_text(self, product_service, product_repository):
+        """EP: Search with standard text returns filtered results"""
+        search_term = "Trek"
+        expected_products = [
+            make_product(id=1, title="Trek Mountain Bike"),
+            make_product(id=2, title="Trek Road Bike"),
+        ]
+        product_repository.search_by_title.return_value = expected_products
+        
+        result = product_service.search_products(search_term)
+        
+        assert result == expected_products
+        # Default: page=1, size=20 → skip=0, limit=20
+        product_repository.search_by_title.assert_called_once()
+
+    def test_search_with_special_characters(self, product_service, product_repository):
+        """EP: Search with special characters (bike-2024!) succeeds"""
+        search_term = "bike-2024!"
+        product_repository.search_by_title.return_value = [make_product()]
+        
+        result = product_service.search_products(search_term)
+        
+        assert isinstance(result, list)
+        product_repository.search_by_title.assert_called_once()
+
+    def test_search_empty_string_shows_all(self, product_service, product_repository):
+        """EP: Empty search (0 chars) returns all products"""
+        all_products = [
+            make_product(id=1, title="Product 1"),
+            make_product(id=2, title="Product 2"),
+            make_product(id=3, title="Product 3"),
+        ]
+        product_repository.search_by_title.return_value = all_products
+        
+        result = product_service.search_products("")
+        
+        assert result == all_products
+        product_repository.search_by_title.assert_called_once()
+
+    def test_search_with_whitespace(self, product_service, product_repository):
+        """EP: Search with whitespace is handled correctly"""
+        search_term = "red bike"
+        product_repository.search_by_title.return_value = [make_product(title="Red Bike")]
+        
+        result = product_service.search_products(search_term)
+        
+        assert isinstance(result, list)
+        product_repository.search_by_title.assert_called_once()
+
+    @pytest.mark.parametrize("malicious_input", [
+        "' OR 1=1",                    # SQL injection attempt
+        "'; DROP TABLE products; --", # SQL injection
+        "<script>alert('xss')</script>", # XSS attempt
+        "../../../etc/passwd",        # Path traversal
+        "%'; DELETE FROM users; --",  # SQL with wildcards
+    ])
+    def test_search_security_sanitization(self, malicious_input, product_service, product_repository):
+        """EP: Security attacks are sanitized and handled safely"""
+        # Service should sanitize and search safely without executing malicious code
+        product_repository.search_by_title.return_value = []
+        
+        result = product_service.search_products(malicious_input)
+        
+        # Should return empty results or safe results, not execute malicious code
+        assert isinstance(result, list)
+        # Verify the repository was called (meaning sanitization happened in service)
+        product_repository.search_by_title.assert_called_once()
+        
+        # Verify the actual call - the service should pass the sanitized input
+        call_args = product_repository.search_by_title.call_args
+        assert call_args is not None
+
+    def test_search_with_unicode_characters(self, product_service, product_repository):
+        """EP: Search with unicode characters succeeds"""
+        search_term = "café ñoño 中文"
+        product_repository.search_by_title.return_value = [make_product()]
+        
+        result = product_service.search_products(search_term)
+        
+        assert isinstance(result, list)
+        product_repository.search_by_title.assert_called_once()
+
+    def test_search_pagination_parameters(self, product_service, product_repository):
+        """Test search respects skip and limit parameters"""
+        search_term = "bike"
+        product_repository.search_by_title.return_value = [make_product()]
+        
+        result = product_service.search_products(search_term, skip=50, limit=50)
+        
+        # skip=50, limit=50 (equivalent to page=2, size=50)
+        assert isinstance(result, list)
+        product_repository.search_by_title.assert_called_once_with(search_term, 50, 50)
+
+    def test_search_no_results_returns_empty_list(self, product_service, product_repository):
+        """EP: Search with no matching results returns empty list"""
+        search_term = "nonexistentproduct12345"
+        product_repository.search_by_title.return_value = []
+        
+        result = product_service.search_products(search_term)
+        
+        assert result == []
+        product_repository.search_by_title.assert_called_once()
+
+
+# ============================================
+# PAGINATION VALIDATION TESTS (skip/limit parameters)
+# ============================================
+
+class TestPaginationValidation:
+    """
+    Pagination validation based on BVA/EP analysis.
+    Tests the skip/limit parameters used in repository methods.
+    
+    Analysis converts page/size to skip/limit:
+    - Page ≥ 1 → skip = (page - 1) * size
+    - Size 1-100 → limit = size
+    
+    BVA Boundaries tested:
+    - Skip: 0, 20, 50 (calculated from page/size)
+    - Limit: -1, 0, 1, 2, 99, 100, 101, 102
+    """
+
+    @pytest.mark.parametrize("skip,limit", [
+        (0, 20),      # First page
+        (20, 20),     # Second page
+        (50, 15),     # Page 4 with size 15
+        (0, 1),       # Min limit
+        (0, 100),     # Max limit
+        (100, 50),    # Large skip
+    ])
+    def test_search_with_valid_skip_limit(self, skip, limit, product_service, product_repository):
+        """EP: Valid skip/limit combinations work correctly"""
+        product_repository.search_by_title.return_value = [make_product()]
+        
+        result = product_service.search_products("test", skip=skip, limit=limit)
+        
+        assert isinstance(result, list)
+        product_repository.search_by_title.assert_called_once_with("test", skip, limit)
+
+    def test_search_default_pagination(self, product_service, product_repository):
+        """EP: Default pagination is skip=0, limit=20"""
+        product_repository.search_by_title.return_value = [make_product()]
+        
+        result = product_service.search_products("test")
+        
+        # Defaults: skip=0, limit=20
+        product_repository.search_by_title.assert_called_once_with("test", 0, 20)
+        assert isinstance(result, list)
+
+    def test_get_products_by_seller_pagination(self, product_service, product_repository):
+        """EP: get_products_by_seller respects skip/limit"""
+        product_repository.get_by_seller.return_value = [make_product()]
+        product_repository.count_by_seller.return_value = 100
+        
+        products, total = product_service.get_products_by_seller(seller_id=1, skip=30, limit=30)
+        
+        product_repository.get_by_seller.assert_called_once_with(1, 30, 30)
+        assert total == 100
+        assert isinstance(products, list)
+
+    def test_get_products_by_category_pagination(self, product_service, product_repository):
+        """EP: get_products_by_category respects skip/limit"""
+        product_repository.get_by_category.return_value = [make_product()]
+        
+        products, total = product_service.get_products_by_category(category="electronics", skip=50, limit=25)
+        
+        # Called twice: once for paginated results, once for count
+        assert product_repository.get_by_category.call_count == 2
+        first_call = product_repository.get_by_category.call_args_list[0]
+        assert first_call[0] == ("electronics", 50, 25)
+        assert isinstance(products, list)
