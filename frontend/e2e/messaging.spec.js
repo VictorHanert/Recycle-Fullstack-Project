@@ -2,7 +2,7 @@ import { test, expect } from './fixtures/auth.js';
 
 test('User can open a product page', async ({ loggedInPage, request }) => {
   // Fetch a real product id to avoid clicking random nav links
-  const res = await request.get('http://localhost:8000/api/products?page=1&size=1');
+  const res = await request.get('http://localhost:8000/api/products/?page=1&size=1');
   const data = await res.json();
   const firstProductId = data?.products?.[0]?.id;
   if (!firstProductId) throw new Error('No products returned from API');
