@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 // Components
@@ -50,9 +50,14 @@ function Products() {
   const [tempMaxPrice, setTempMaxPrice] = useState("");
 
   const [showFilters, setShowFilters] = useState(false);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
+  const syncingFromSearch = useRef(false);
+  const requestIdRef = useRef(0);
 
   // Initialize filters from URL parameters
   useEffect(() => {
+    syncingFromSearch.current = true;
+
     const newFilters = {
       search: searchParams.get('search') || "",
       category: searchParams.get('category') || "",
@@ -62,15 +67,29 @@ function Products() {
       condition: searchParams.get('condition') || "",
       sortBy: searchParams.get('sort') || "newest"
     };
-    setFilters(newFilters);
+
+    setFilters(prev => {
+      const hasChanges = Object.entries(newFilters).some(
+        ([key, value]) => prev[key] !== value
+      );
+      return hasChanges ? newFilters : prev;
+    });
     // Initialize temporary state with URL values
     setTempSearch(newFilters.search);
     setTempMinPrice(newFilters.minPrice);
     setTempMaxPrice(newFilters.maxPrice);
+    setFiltersHydrated(true);
   }, [searchParams]);
 
   // Update URL when filters change
   useEffect(() => {
+    if (!filtersHydrated) return;
+
+    if (syncingFromSearch.current) {
+      syncingFromSearch.current = false;
+      return;
+    }
+
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value && value !== "newest") {
@@ -79,8 +98,13 @@ function Products() {
       }
     });
 
-    setSearchParams(params);
-  }, [filters, setSearchParams]);
+    const nextParams = params.toString();
+    const currentParams = searchParams.toString();
+
+    if (nextParams !== currentParams) {
+      setSearchParams(params);
+    }
+  }, [filters, filtersHydrated, searchParams, setSearchParams]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -125,6 +149,10 @@ function Products() {
 
   // Fetch products
   useEffect(() => {
+    if (!filtersHydrated) return;
+
+    const currentRequestId = ++requestIdRef.current;
+
     const fetchProducts = async () => {
       try {
         setLoading(true);
@@ -142,18 +170,24 @@ function Products() {
           sort: filters.sortBy || undefined
         });
 
-        setProductsData(data);
+        if (currentRequestId === requestIdRef.current) {
+          setProductsData(data);
+        }
       } catch (err) {
         const errorMessage = err.message || "Error fetching products";
-        setError(errorMessage);
-        notify.error(errorMessage);
+        if (currentRequestId === requestIdRef.current) {
+          setError(errorMessage);
+          notify.error(errorMessage);
+        }
       } finally {
-        setLoading(false);
+        if (currentRequestId === requestIdRef.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchProducts();
-  }, [page, filters]);
+  }, [page, filters, filtersHydrated]);
 
   // Reset page when filters change
   useEffect(() => {
