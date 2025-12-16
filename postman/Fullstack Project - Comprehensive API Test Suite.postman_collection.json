@@ -311,13 +311,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseURL}}/api/products?page=1&size=15",
+							"raw": "{{baseURL}}/api/products/?page=1&size=15",
 							"host": [
 								"{{baseURL}}"
 							],
 							"path": [
 								"api",
-								"products"
+								"products",
+								""
 							],
 							"query": [
 								{
@@ -359,13 +360,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseURL}}/api/products?page=-1&size=15",
+							"raw": "{{baseURL}}/api/products/?page=-1&size=15",
 							"host": [
 								"{{baseURL}}"
 							],
 							"path": [
 								"api",
-								"products"
+								"products",
+								""
 							],
 							"query": [
 								{
@@ -573,13 +575,14 @@
 							]
 						},
 						"url": {
-							"raw": "{{baseURL}}/api/products",
+							"raw": "{{baseURL}}/api/products/",
 							"host": [
 								"{{baseURL}}"
 							],
 							"path": [
 								"api",
-								"products"
+								"products",
+								""
 							]
 						}
 					},
@@ -675,13 +678,14 @@
 							]
 						},
 						"url": {
-							"raw": "{{baseURL}}/api/products",
+							"raw": "{{baseURL}}/api/products/",
 							"host": [
 								"{{baseURL}}"
 							],
 							"path": [
 								"api",
-								"products"
+								"products",
+								""
 							]
 						}
 					},
@@ -902,13 +906,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseURL}}/api/favorites",
+							"raw": "{{baseURL}}/api/favorites/",
 							"host": [
 								"{{baseURL}}"
 							],
 							"path": [
 								"api",
-								"favorites"
+								"favorites",
+								""
 							]
 						}
 					},
@@ -1519,8 +1524,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{adminAuthToken}}",
-								"disabled": true
+								"value": "Bearer {{adminAuthToken}}"
 							}
 						],
 						"url": {
