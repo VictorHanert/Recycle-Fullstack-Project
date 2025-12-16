@@ -85,3 +85,7 @@ docker-compose.override.yml
 *.njsproj
 *.sln
 *.sw?
+
+# Safety CLI
+.safety/
+.safety-project.ini
