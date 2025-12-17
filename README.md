@@ -128,6 +128,8 @@ poetry run mypy app
 ## End-to-end test
 - Cd \frontend
 - Kør:`npm run test:e2e`
+- Kør en fil: `npm run test:e2e -- e2e/messaging.spec.js`
+- Kør en test: `npm run test:e2e -- e2e/messaging.spec.js -g "User can contact seller and send a quick message"`
 
 
 ## Performance tests (k6)
