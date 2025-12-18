@@ -26,6 +26,8 @@ from app.middleware import (
 )
 from typing import Union, Awaitable
 
+import math
+
 HandlerReturn = Union[Response, Awaitable[Response]]
 
 def rate_limit_handler(request: Request, exc: Exception) -> HandlerReturn:
