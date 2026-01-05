@@ -129,6 +129,11 @@ class ProductService:
             # Check if marking as sold - use stored procedure
             update_dict = product_update.model_dump(exclude_unset=True)
             if update_dict.get('status') == "sold":
+                if product.price_amount is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Product must have a price to be marked as sold"
+                    )
                 success = self.product_repository.archive_sold_product(
                     product_id=product_id,
                     buyer_id=None,
@@ -140,7 +145,7 @@ class ProductService:
                         detail="Failed to mark product as sold"
                     )
                 updated_product = self.product_repository.get_by_id(product_id)
-                deleted_image_urls = []
+                deleted_image_urls: list[str] = []
             else:
                 # Regular update
                 updated_product, deleted_image_urls = self.product_repository.update(
@@ -240,6 +245,12 @@ class ProductService:
 
         # Use stored procedure to archive and mark as sold
         # buyer_id = None means seller marked it sold (no specific buyer)
+        if product.price_amount is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Product must have a price to be marked as sold"
+            )
+        
         success = self.product_repository.archive_sold_product(
             product_id=product_id,
             buyer_id=None,
@@ -254,6 +265,11 @@ class ProductService:
         
         # Fetch updated product
         updated_product = self.product_repository.get_by_id(product_id)
+        if updated_product is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch updated product"
+            )
         return updated_product
 
     def get_product_statistics(self) -> dict:
