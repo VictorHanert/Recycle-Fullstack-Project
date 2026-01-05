@@ -199,6 +199,11 @@ class ProductRepositoryInterface(ABC):
     def get_by_category(self, category: str, skip: int = 0, limit: int = 100) -> List[Product]:
         """Get products by category name."""
         pass
+    
+    @abstractmethod
+    def archive_sold_product(self, product_id: int, buyer_id: int | None, sale_price: float) -> bool:
+        """Archive product as sold using stored procedure."""
+        pass
 
 
 class LocationRepositoryInterface(ABC):

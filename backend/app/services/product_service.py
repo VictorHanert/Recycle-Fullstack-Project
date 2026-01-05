@@ -126,11 +126,29 @@ class ProductService:
             if image_files:
                 saved_image_urls = await self.file_upload_service.validate_and_save_images(image_files)
             
-            updated_product, deleted_image_urls = self.product_repository.update(
-                product_id, 
-                product_update,
-                new_image_urls=saved_image_urls
-            )
+            # Check if marking as sold - use stored procedure
+            update_dict = product_update.model_dump(exclude_unset=True)
+            if update_dict.get('status') == "sold":
+                success = self.product_repository.archive_sold_product(
+                    product_id=product_id,
+                    buyer_id=None,
+                    sale_price=float(product.price_amount)
+                )
+                if not success:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to mark product as sold"
+                    )
+                updated_product = self.product_repository.get_by_id(product_id)
+                deleted_image_urls = []
+            else:
+                # Regular update
+                updated_product, deleted_image_urls = self.product_repository.update(
+                    product_id, 
+                    product_update,
+                    new_image_urls=saved_image_urls
+                )
+            
             if updated_product is None:
             # Defensive: repo should normally not return None here
                 raise HTTPException(
@@ -204,7 +222,7 @@ class ProductService:
         return self.product_repository.get_recent_products(limit)
 
     def mark_product_as_sold(self, product_id: int, user_id: int, is_admin: bool = False) -> Product:
-        """Mark a product as sold"""
+        """Mark a product as sold using stored procedure"""
         product = self.product_repository.get_by_id(product_id)
         
         if not product:
@@ -220,14 +238,22 @@ class ProductService:
                 detail="Not authorized to modify this product"
             )
 
-        # Use update method with status change
-        update_data = ProductUpdate.model_validate({"status": "sold"})
-        updated_product, _ = self.product_repository.update(product_id, update_data)
-        if updated_product is None:
+        # Use stored procedure to archive and mark as sold
+        # buyer_id = None means seller marked it sold (no specific buyer)
+        success = self.product_repository.archive_sold_product(
+            product_id=product_id,
+            buyer_id=None,
+            sale_price=float(product.price_amount)
+        )
+        
+        if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to mark product as sold",
-        )
+                detail="Failed to mark product as sold"
+            )
+        
+        # Fetch updated product
+        updated_product = self.product_repository.get_by_id(product_id)
         return updated_product
 
     def get_product_statistics(self) -> dict:
