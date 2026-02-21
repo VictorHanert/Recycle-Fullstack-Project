@@ -57,13 +57,13 @@ jobs:
     - name: Install dependencies
       run: poetry install
 
-    # - name: Security scan with Safety
-    #   env:
-    #     SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
-    #   run: poetry run safety scan --key "$SAFETY_API_KEY" --full-report --policy-file .safety-policy.yml
+    - name: Security scan with Safety
+      env:
+        SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+      run: poetry run safety scan --key "$SAFETY_API_KEY" --full-report --policy-file .safety-policy.yml
 
-    # - name: Security scan with Bandit
-    #   run: poetry run bandit -r app
+    - name: Security scan with Bandit
+      run: poetry run bandit -r app
 
     - name: Lint with Ruff
       run: poetry run ruff check .
