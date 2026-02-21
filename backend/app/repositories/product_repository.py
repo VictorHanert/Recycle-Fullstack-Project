@@ -436,6 +436,19 @@ class ProductRepository(ProductRepositoryInterface):
             return query.order_by(sort_options.get(filters.sort_by, desc(Product.created_at)))
         return query.order_by(desc(Product.created_at))
     
+    def archive_sold_product(self, product_id: int, buyer_id: int | None, sale_price: float) -> bool:
+        """Archive product as sold using stored procedure."""
+        try:
+            self.db.execute(
+                text("CALL ArchiveSoldProduct(:product_id, :buyer_id, :sale_price)"),
+                {"product_id": product_id, "buyer_id": buyer_id, "sale_price": sale_price}
+            )
+            self.db.commit()
+            return True
+        except Exception:
+            self.db.rollback()
+            return False
+    
     def _handle_product_relationships(self, product: Product, data, is_update: bool = False):
         """Handle many-to-many relationships for colors, materials, and tags."""
         # Handle colors

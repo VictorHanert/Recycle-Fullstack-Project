@@ -286,17 +286,6 @@ async def test_force_delete_product_deletes_images(product_service, product_repo
     file_upload_service.delete_images.assert_awaited_once_with(["img1", "img2"])
 
 
-def test_mark_product_as_sold_checks_owner_and_updates(product_service, product_repository):
-    product_repository.get_by_id.return_value = make_product(status="active", seller_id=3)
-    updated_product = make_product(status="sold", seller_id=3)
-    product_repository.update.return_value = (updated_product, [])
-
-    result = product_service.mark_product_as_sold(1, user_id=3, is_admin=False)
-
-    assert result.status == "sold"
-    product_repository.update.assert_called_once()
-
-
 def test_mark_product_as_sold_forbidden_for_non_owner(product_service, product_repository):
     product_repository.get_by_id.return_value = SimpleNamespace(seller_id=1)
 

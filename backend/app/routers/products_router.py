@@ -168,7 +168,7 @@ async def get_product(
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    product_data: str = Form(...),
+    product_data: str = Form(..., examples=['{"title":"Exam TEST Bike","description":"Beautiful vintage bicycle in excellent condition","price_amount":1500,"price_currency":"DKK","category_id":1,"condition":"like_new","quantity":1}']),
     images: List[UploadFile] = File(default=[]),
     current_user: User = Depends(get_current_active_user),
     product_service: ProductService = Depends(get_product_service)

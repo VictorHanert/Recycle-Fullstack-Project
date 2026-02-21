@@ -75,7 +75,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
-    redirect_slashes=False  # Disable automatic redirects to preserve HTTPS
+    redirect_slashes=False,  # Disable automatic redirects to preserve HTTPS
+    swagger_ui_parameters={"persistAuthorization": True}
 )
 
 # Configure CORS
