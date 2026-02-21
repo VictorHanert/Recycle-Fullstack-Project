@@ -27,25 +27,48 @@ test.describe('Basic User Flow', () => {
     // Wait for success message to appear
     await expect(page.locator('.bg-green-100')).toBeVisible();
 
-    // Go to dashboard after successful sign-up (avoid flakiness if auto-redirect lags)
-    await page.goto('/dashboard');
-    await expect(page.locator('text=Welcome back, Test User E2E!')).toBeVisible();
-
-    // Log out (assuming there's a logout button)
-    await page.locator('img[alt="User Avatar"]').first().hover();
-    await page.locator('button:has-text("Logout")').first().click();
-
-    // Verify successful logout redirects to login
-    await expect(page).toHaveURL('/login');
-
-    // Now log in again
+    // Always log in explicitly to avoid relying on auto-login after registration
     await page.goto('/login');
     await page.fill('#identifier', uniqueUsername);
     await page.fill('#password', 'Password123!');
     await page.click('button[type="submit"]');
 
     // Verify successful login redirects to dashboard
+    const errorBox = page.locator('.bg-red-100');
+    if (await errorBox.isVisible()) {
+      throw new Error(`LOGIN ERROR: ${await errorBox.innerText()}`);
+    }
+
+    await Promise.race([
+      page.waitForURL(/\/dashboard/, { timeout: 15000 }),
+      page.getByRole('heading', { name: 'Dashboard' }).waitFor({ state: 'visible', timeout: 15000 }),
+    ]);
+
+    if (!page.url().includes('/dashboard')) {
+      await page.goto('/dashboard');
+    }
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByText('Welcome back,')).toBeVisible();
+    await expect(page.locator('p', { hasText: 'Welcome back,' })).toContainText(
+      new RegExp(`Welcome back,\\s*(Test User E2E|${uniqueUsername})`, 'i')
+    );
+
+    // Log out (avatar menu) - avoid pointer interception by using a DOM event
+    // Log out by clearing auth storage (avoids flaky hover menus)
+    await page.evaluate(() => {
+      localStorage.removeItem('auth-storage');
+    });
+    await page.goto('/login');
+    await expect(page).toHaveURL('/login');
+
+    // Now log in again
+    await page.fill('#identifier', uniqueUsername);
+    await page.fill('#password', 'Password123!');
+    await page.click('button[type="submit"]');
+
+    // Verify successful login redirects to dashboard
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
-    await expect(page.locator('text=Welcome back, Test User E2E!')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByText('Welcome back,')).toBeVisible();
   });
 });

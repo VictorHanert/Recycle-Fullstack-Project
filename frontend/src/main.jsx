@@ -4,16 +4,20 @@ import App from './App.jsx'
 import * as Sentry from "@sentry/react"
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN,
-  integrations: [
-    Sentry.browserTracingIntegration(),
-    Sentry.replayIntegration(),
-  ],
-  tracesSampleRate: 1.0, // Capture 100% of the transactions
-  replaysSessionSampleRate: 1.0, // Capture 100% of sessions for performance monitoring
-  replaysOnErrorSampleRate: 1.0, // Capture 100% of sessions with errors
-});
+const sentryDisabled = import.meta.env.VITE_SENTRY_DISABLED === '1';
+
+if (!sentryDisabled) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+    tracesSampleRate: 1.0, // Capture 100% of the transactions
+    replaysSessionSampleRate: 1.0, // Capture 100% of sessions for performance monitoring
+    replaysOnErrorSampleRate: 1.0, // Capture 100% of sessions with errors
+  });
+}
 
 // Caching and retries
 const queryClient = new QueryClient({

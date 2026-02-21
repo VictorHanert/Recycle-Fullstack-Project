@@ -62,6 +62,9 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
+    env: {
+      VITE_SENTRY_DISABLED: '1',
+    },
     reuseExistingServer: !process.env.CI,
   },
 });

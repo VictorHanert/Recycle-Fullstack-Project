@@ -1,41 +1,70 @@
 import { test, expect } from './fixtures/auth.js';
 
+async function getAuthToken(page) {
+  return await page.evaluate(() => {
+    try {
+      const raw = localStorage.getItem('auth-storage');
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed?.state?.token || null;
+    } catch {
+      return null;
+    }
+  });
+}
+
+async function waitForCreateProductForm(page) {
+  await page.getByRole('heading', { name: 'Sell Your Bicycle' }).waitFor();
+  await page.locator('form').waitFor();
+  // Options in a <select> are not "visible" in Playwright, just ensure they exist.
+  await page.locator('select[name="category_id"] option:not([value=""])').first().waitFor({ state: 'attached' });
+}
+
 test.describe('Product Viewing', () => {
   test('User can open a product page', async ({ loggedInPage, request }) => {
-    // Fetch a real product id, or create one if none exist
-    let res = await request.get('http://localhost:8000/api/products/?page=1&size=1');
-    let data = await res.json();
-    let firstProductId = data?.products?.[0]?.id;
-    
-    // If no products exist, create one
-    if (!firstProductId) {
-      // First get categories to use in product creation
-      const categoriesRes = await request.get('http://localhost:8000/api/products/categories');
-      const categories = await categoriesRes.json();
-      const categoryId = categories[0]?.id;
+    const token = await getAuthToken(loggedInPage);
+    if (!token) throw new Error('Missing auth token for product creation');
 
-      if (!categoryId) throw new Error('No categories available to create product');
+    // Always create a product owned by the logged-in user for this test
+    const categoriesRes = await request.get('http://localhost:8000/api/products/categories');
+    const categories = await categoriesRes.json();
+    const categoryId = categories[0]?.id;
 
-      // Create a test product
-      const createRes = await request.post('http://localhost:8000/api/products/', {
-        data: {
-          title: `Test Bicycle ${Date.now()}`,
+    if (!categoryId) throw new Error('No categories available to create product');
+
+    const productTitle = `Test Bicycle ${Date.now()}`;
+    const createRes = await request.post('http://localhost:8000/api/products/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      form: {
+        product_data: JSON.stringify({
+          title: productTitle,
           description: 'Test bicycle for E2E test',
-          price_amount: 1000,
+          price_amount: '1000.00',
           price_currency: 'DKK',
           category_id: categoryId,
-        },
-      });
+        }),
+      },
+    });
 
-      const newProduct = await createRes.json();
-      firstProductId = newProduct.id;
+    if (!createRes.ok()) {
+      let body = '';
+      try {
+        body = await createRes.text();
+      } catch {
+        body = '';
+      }
+      throw new Error(`Product creation failed: ${createRes.status()} ${body}`);
     }
+
+    const newProduct = await createRes.json();
+    const firstProductId = newProduct.id;
 
     await loggedInPage.goto(`/products/${firstProductId}`);
 
     // Assert product detail page loaded
     await expect(loggedInPage).toHaveURL(new RegExp(`/products/${firstProductId}`));
-    await expect(loggedInPage.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(loggedInPage.getByRole('heading', { name: productTitle, level: 1 })).toBeVisible();
   });
 });
 
@@ -49,7 +78,7 @@ test.describe('Product Creation', () => {
   test('User can create a product with required fields only', async ({ loggedInPage }) => {
     // Navigate to create product page
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Fill in required fields
     const uniqueTitle = `Test Bicycle ${Date.now()}`;
@@ -58,7 +87,8 @@ test.describe('Product Creation', () => {
     await loggedInPage.fill('input[name="price_amount"]', '1500');
     
     // Select a category (assuming at least one exists)
-    await loggedInPage.selectOption('select[name="category_id"]', { index: 1 });
+    const categorySelect = loggedInPage.locator('select[name="category_id"]');
+    await categorySelect.selectOption({ index: 1 });
 
     // Submit the form
     await loggedInPage.click('button[type="submit"]');
@@ -67,21 +97,22 @@ test.describe('Product Creation', () => {
     await loggedInPage.waitForURL(/\/products\/\d+/, { timeout: 10000 });
     
     // Verify product details are displayed
-    await expect(loggedInPage.getByText(uniqueTitle)).toBeVisible();
-    await expect(loggedInPage.getByText('This is a test bicycle in excellent condition')).toBeVisible();
+    await expect(loggedInPage.getByRole('heading', { name: uniqueTitle })).toBeVisible();
+    await expect(loggedInPage.locator('main')).toContainText('This is a test bicycle in excellent condition');
   });
 
   test('User can create a product with condition field', async ({ loggedInPage }) => {
     // Navigate to create product page
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Fill in required fields
     const uniqueTitle = `Premium Bicycle ${Date.now()}`;
     await loggedInPage.fill('input[name="title"]', uniqueTitle);
     await loggedInPage.fill('textarea[name="description"]', 'High-quality bicycle with advanced features and excellent build quality.');
     await loggedInPage.fill('input[name="price_amount"]', '2500');
-    await loggedInPage.selectOption('select[name="category_id"]', { index: 1 });
+    const categorySelect = loggedInPage.locator('select[name="category_id"]');
+    await categorySelect.selectOption({ index: 1 });
 
     // Fill in optional condition field (this is visible without toggling advanced options)
     await loggedInPage.selectOption('select[name="condition"]', 'like_new');
@@ -93,12 +124,12 @@ test.describe('Product Creation', () => {
     await loggedInPage.waitForURL(/\/products\/\d+/, { timeout: 10000 });
     
     // Verify product was created
-    await expect(loggedInPage.getByText(uniqueTitle)).toBeVisible();
+    await expect(loggedInPage.getByRole('heading', { name: uniqueTitle })).toBeVisible();
   });
 
   test('Form validation prevents submission with missing required fields', async ({ loggedInPage }) => {
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Try to submit without filling anything
     await loggedInPage.click('button[type="submit"]');
@@ -112,13 +143,14 @@ test.describe('Product Creation', () => {
 
   test('Form validation shows error for invalid price', async ({ loggedInPage }) => {
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Fill required fields with invalid price
     await loggedInPage.fill('input[name="title"]', 'Test Bicycle');
     await loggedInPage.fill('textarea[name="description"]', 'Test description for validation');
     await loggedInPage.fill('input[name="price_amount"]', '-10');
-    await loggedInPage.selectOption('select[name="category_id"]', { index: 1 });
+    const categorySelect = loggedInPage.locator('select[name="category_id"]');
+    await categorySelect.selectOption({ index: 1 });
 
     // Try to submit
     await loggedInPage.click('button[type="submit"]');
@@ -129,7 +161,7 @@ test.describe('Product Creation', () => {
 
   test('User can add and remove images when creating a product', async ({ loggedInPage }) => {
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Look for file input (it might be hidden, so we'll use setInputFiles directly)
     const fileInput = loggedInPage.locator('input[type="file"]');
@@ -146,7 +178,7 @@ test.describe('Product Creation', () => {
 
   test('Character count updates as user types in title and description', async ({ loggedInPage }) => {
     await loggedInPage.goto('/create-product');
-    await loggedInPage.waitForLoadState('networkidle');
+    await waitForCreateProductForm(loggedInPage);
 
     // Type in title and check character count
     const testTitle = 'Mountain Bike';
