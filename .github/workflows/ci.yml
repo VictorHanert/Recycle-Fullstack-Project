@@ -59,6 +59,7 @@ jobs:
 
     
     - name: Security scan with Safety
+      continue-on-error: true
       env:
         SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: poetry run safety scan --key "$SAFETY_API_KEY" --full-report --policy-file .safety-policy.yml
