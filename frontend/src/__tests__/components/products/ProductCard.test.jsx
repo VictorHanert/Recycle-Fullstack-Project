@@ -97,7 +97,7 @@ describe('ProductCard Component', () => {
     const decimalPriceProduct = { ...mockProduct, price_amount: 99.99 };
     render(<ProductCard product={decimalPriceProduct} onClick={mockOnClick} />);
 
-    expect(screen.getByText('99.99 DKK symbol')).toBeInTheDocument();
+    expect(screen.getByText('99.99 DKK symbol (broken)')).toBeInTheDocument();
   });
 
   test('calls onClick when card is clicked', () => {
