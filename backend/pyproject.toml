@@ -41,6 +41,12 @@ bandit = "^1.9.2"
 ruff = "^0.14.6"
 safety = "^3.7.0"
 
+
+[[tool.poetry.source]]
+name = "safety"
+url = "https://pkgs.safetycli.com/repository/recycle/project/recycle-fullstack-project/pypi/simple/"
+priority = "primary"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
